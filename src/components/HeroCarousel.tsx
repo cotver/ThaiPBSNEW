@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Title } from "@/lib/content";
+import { isPayloadMediaSrc } from "@/lib/media-image";
 
 export function HeroCarousel({ titles }: { titles: Title[] }) {
   const [active, setActive] = useState(0);
@@ -58,6 +59,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                 priority={index === 0}
                 sizes="100vw"
                 src={title.heroImage || title.posterImage || ""}
+                unoptimized={isPayloadMediaSrc(title.heroImage || title.posterImage)}
               />
             </div>
           ) : (
@@ -144,6 +146,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                   fill
                   sizes="96px"
                   src={title.heroImage || title.posterImage || ""}
+                  unoptimized={isPayloadMediaSrc(title.heroImage || title.posterImage)}
                 />
               ) : (
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_58%_28%,rgba(255,255,255,0.24),transparent_26%),linear-gradient(0deg,rgba(0,0,0,0.42),transparent_55%)]" />

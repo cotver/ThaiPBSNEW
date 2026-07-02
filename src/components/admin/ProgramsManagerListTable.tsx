@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import React, { useState, useCallback, useMemo, useEffect } from 'react'
+import { isPayloadMediaSrc } from '@/lib/media-image'
 import type { ProgramsListColumnDef } from './programsManagerListConstants'
 import { PROGRAMS_FILTER_FIELDS } from './programsManagerListConstants'
 
@@ -252,7 +253,7 @@ export function ProgramsManagerListTable({
           {canEditPrograms ? (
             <Link href={editHref} className="relative block h-[104px] w-[156px] overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-900">
               {imgSrc ? (
-                <Image src={imgSrc} alt="" fill sizes="156px" className="object-cover" />
+                <Image src={imgSrc} alt="" fill sizes="156px" className="object-cover" unoptimized={isPayloadMediaSrc(imgSrc)} />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-xs text-neutral-400">No image</div>
               )}
@@ -260,7 +261,7 @@ export function ProgramsManagerListTable({
           ) : (
             <span className="relative block h-[104px] w-[156px] overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-900">
               {imgSrc ? (
-                <Image src={imgSrc} alt="" fill sizes="156px" className="object-cover" />
+                <Image src={imgSrc} alt="" fill sizes="156px" className="object-cover" unoptimized={isPayloadMediaSrc(imgSrc)} />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-xs text-neutral-400">No image</div>
               )}
@@ -304,7 +305,7 @@ export function ProgramsManagerListTable({
         <td className="p-3 align-middle text-sm" key={columnId}>
           {u ? (
             <span className="relative block h-8 w-20">
-              <Image src={u} alt="" fill sizes="80px" className="object-contain" />
+              <Image src={u} alt="" fill sizes="80px" className="object-contain" unoptimized={isPayloadMediaSrc(u)} />
             </span>
           ) : '—'}
         </td>

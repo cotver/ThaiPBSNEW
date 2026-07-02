@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useCallback, useState } from "react";
 import type { Title } from "@/lib/content";
+import { isPayloadMediaSrc } from "@/lib/media-image";
 import { TitlePreviewModal } from "./TitlePreviewModal";
 
 type CardProps = {
@@ -69,6 +70,7 @@ export function PosterCard({
                     : "(max-width: 768px) 50vw, 20vw"
                 }
                 src={imageSrc}
+                unoptimized={isPayloadMediaSrc(imageSrc)}
               />
             ) : null}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_45%_24%,rgba(255,255,255,0.22),transparent_24%),linear-gradient(0deg,rgba(0,0,0,0.82),transparent_56%)]" />
@@ -112,7 +114,14 @@ export function WideCard({ onOpenTitle, onPreviewEnd, onPreviewStart, title }: C
         >
           <div className={`relative aspect-video bg-gradient-to-br ${title.tone}`}>
             {imageSrc ? (
-              <Image alt="" className="object-cover" fill sizes="384px" src={imageSrc} />
+              <Image
+                alt=""
+                className="object-cover"
+                fill
+                sizes="384px"
+                src={imageSrc}
+                unoptimized={isPayloadMediaSrc(imageSrc)}
+              />
             ) : null}
             <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.20),transparent_35%),linear-gradient(0deg,rgba(0,0,0,0.72),transparent_55%)]" />
             <div className="absolute bottom-4 left-4 right-4">

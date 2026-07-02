@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import type { Title, TitleSeason } from "@/lib/content";
+import { isPayloadMediaSrc } from "@/lib/media-image";
 
 type DetailTab = "episodes" | "details";
 
@@ -147,6 +148,7 @@ function EpisodesPanel({
                     fill
                     sizes="168px"
                     src={episode.image || selectedSeason.image || title.heroImage || title.posterImage || ""}
+                    unoptimized={isPayloadMediaSrc(episode.image || selectedSeason.image || title.heroImage || title.posterImage)}
                   />
                 ) : null}
                 <div className="absolute inset-0 bg-black/18" />

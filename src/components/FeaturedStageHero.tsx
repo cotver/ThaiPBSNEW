@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Title } from "@/lib/content";
+import { isPayloadMediaSrc } from "@/lib/media-image";
 
 const AUTO_ADVANCE_MS = 5000;
 
@@ -61,6 +62,7 @@ export function FeaturedStageHero({ titles }: { titles: Title[] }) {
             priority
             sizes="100vw"
             src={imageSrc}
+            unoptimized={isPayloadMediaSrc(imageSrc)}
           />
         ) : (
           <div className={`absolute inset-0 bg-gradient-to-br ${current.tone}`} />

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { Title } from "@/lib/content";
+import { isPayloadMediaSrc } from "@/lib/media-image";
 import { TitleDetails } from "./TitleDetails";
 
 export function TitlePreviewModal({
@@ -73,6 +74,7 @@ export function TitlePreviewModal({
               priority
               sizes="min(100vw, 1024px)"
               src={imageSrc}
+              unoptimized={isPayloadMediaSrc(imageSrc)}
             />
           ) : (
             <div className={`absolute inset-0 bg-gradient-to-br ${title.tone}`} />

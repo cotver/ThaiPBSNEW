@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { TitleDetails } from "@/components/TitleDetails";
+import { isPayloadMediaSrc } from "@/lib/media-image";
 import { getCatalogTitle } from "@/lib/payload-content";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +32,7 @@ export default async function TitlePage({
             priority
             sizes="100vw"
             src={heroImage}
+            unoptimized={isPayloadMediaSrc(heroImage)}
           />
         ) : (
           <div className={`absolute inset-0 bg-gradient-to-br ${title.tone}`} />
