@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { isPayloadMediaSrc } from "@/lib/media-image";
 
 const PIXELS_PER_SECOND = 60;
 const PANEL_CLASS = "relative h-full min-w-[100vw] flex-shrink-0 bg-black";
@@ -189,7 +188,6 @@ function LandingImage({
         priority={priority}
         sizes="100vw"
         src={url}
-        unoptimized={isPayloadMediaSrc(url)}
       />
     </div>
   );

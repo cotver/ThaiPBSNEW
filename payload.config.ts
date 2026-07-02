@@ -106,8 +106,6 @@ export default buildConfig({
   ]),
 
   upload: {
-    safeFileNames: true,
-    preserveExtension: true,
     useTempFiles: false,
     uploadTimeout: 0,
   },

@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Title } from "@/lib/content";
-import { isPayloadMediaSrc } from "@/lib/media-image";
 import { PosterCard, WideCard } from "./PosterCard";
 import { TitlePreviewModal } from "./TitlePreviewModal";
 
@@ -421,14 +420,7 @@ export function RowFloatingPreview({
         >
           <div className={`relative aspect-video bg-gradient-to-br ${title.tone}`}>
             {imageSrc ? (
-              <Image
-                alt=""
-                className="object-cover"
-                fill
-                sizes={`${Math.ceil(active.width)}px`}
-                src={imageSrc}
-                unoptimized={isPayloadMediaSrc(imageSrc)}
-              />
+              <Image alt="" className="object-cover" fill sizes={`${Math.ceil(active.width)}px`} src={imageSrc} />
             ) : null}
             <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(17,24,39,0.58),transparent_54%),radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.20),transparent_24%)]" />
             <div className="absolute bottom-4 left-4 right-4">
