@@ -3,9 +3,6 @@ import { withPayload } from "@payloadcms/next/withPayload";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  images: {
-    unoptimized: true,
-  },
   reactCompiler: false,
 };
 
