@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import type { Title } from "@/lib/content";
+import { titleHref, type Title } from "@/lib/content";
 import { TitleDetails } from "./TitleDetails";
 
 export function TitlePreviewModal({
@@ -104,7 +104,7 @@ export function TitlePreviewModal({
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 className="inline-flex h-12 items-center gap-2 rounded-[6px] bg-white px-7 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
-                href={`/title/${title.slug}`}
+                href={titleHref(title.slug)}
                 onClick={onClose}
               >
                 <PlayIcon />
@@ -112,7 +112,7 @@ export function TitlePreviewModal({
               </Link>
               <Link
                 className="inline-flex h-12 items-center rounded-[6px] border border-white/16 bg-white/12 px-6 text-sm font-black uppercase text-white transition hover:bg-white/20"
-                href={`/title/${title.slug}`}
+                href={titleHref(title.slug)}
                 onClick={onClose}
               >
                 Details

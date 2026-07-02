@@ -43,3 +43,7 @@ export const navItems = [
   { label: "Movies", href: "/movies", icon: "film" },
   { label: "Series", href: "/series", icon: "screen" },
 ];
+
+export function titleHref(slug: string) {
+  return `/title/${encodeURIComponent(slug)}`;
+}

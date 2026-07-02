@@ -64,6 +64,7 @@ export async function getCatalogTitles(): Promise<Title[]> {
 
 export async function getCatalogTitle(slug: string): Promise<Title | undefined> {
   try {
+    const titleKey = normalizeTitleLookupKey(slug);
     const payload = await getPayloadClient();
     const result = await payload.find({
       collection: "programs",
@@ -71,9 +72,18 @@ export async function getCatalogTitle(slug: string): Promise<Title | undefined> 
       limit: 1,
       overrideAccess: true,
       where: {
-        slug: {
-          equals: slug,
-        },
+        or: [
+          {
+            slug: {
+              equals: slug,
+            },
+          },
+          {
+            slug: {
+              equals: titleKey,
+            },
+          },
+        ],
       },
     });
 
@@ -436,6 +446,14 @@ function dateLabel(date?: string | null) {
 
 function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeTitleLookupKey(value: string) {
+  try {
+    return decodeURIComponent(value).trim().replace(/\s+/g, " ");
+  } catch {
+    return value.trim().replace(/\s+/g, " ");
+  }
 }
 
 function relationNames(value: unknown): string[] {

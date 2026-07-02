@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { Title } from "@/lib/content";
+import { titleHref, type Title } from "@/lib/content";
 
 export function HeroCarousel({ titles }: { titles: Title[] }) {
   const [active, setActive] = useState(0);
@@ -91,13 +91,13 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             className="rounded-[6px] bg-white px-9 py-3 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
-            href={`/title/${current.slug}`}
+            href={titleHref(current.slug)}
           >
             Play
           </Link>
           <Link
             className="rounded-[6px] border border-white/16 bg-white/12 px-8 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
-            href={`/title/${current.slug}`}
+            href={titleHref(current.slug)}
           >
             Details
           </Link>

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Title } from "@/lib/content";
+import { titleHref, type Title } from "@/lib/content";
 import { PosterCard, WideCard } from "./PosterCard";
 import { TitlePreviewModal } from "./TitlePreviewModal";
 
@@ -445,7 +445,7 @@ export function RowFloatingPreview({
             <Link
               aria-label={`Open ${title.title} page`}
               className="grid size-10 place-items-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
-              href={`/title/${title.slug}`}
+              href={titleHref(title.slug)}
             >
               <InfoIcon />
             </Link>

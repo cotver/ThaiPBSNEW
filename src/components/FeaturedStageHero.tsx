@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { Title } from "@/lib/content";
+import { titleHref, type Title } from "@/lib/content";
 
 const AUTO_ADVANCE_MS = 5000;
 
@@ -48,7 +48,7 @@ export function FeaturedStageHero({ titles }: { titles: Title[] }) {
       <Link
         aria-label={`Open ${current.title}`}
         className="relative block aspect-video w-full"
-        href={`/title/${current.slug}`}
+        href={titleHref(current.slug)}
       >
         {imageSrc ? (
           <Image

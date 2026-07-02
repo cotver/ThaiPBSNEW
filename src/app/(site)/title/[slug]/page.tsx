@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { TitleDetails } from "@/components/TitleDetails";
+import { titleHref } from "@/lib/content";
 import { getCatalogTitle } from "@/lib/payload-content";
 
 export const dynamic = "force-dynamic";
@@ -63,14 +64,14 @@ export default async function TitlePage({
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               className="inline-flex h-12 items-center gap-2 rounded-[6px] bg-white px-7 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
-              href={`/title/${title.slug}`}
+              href={titleHref(title.slug)}
             >
               <PlayIcon />
               Play
             </Link>
             <Link
               className="inline-flex h-12 items-center rounded-[6px] border border-white/16 bg-white/12 px-6 text-sm font-black uppercase text-white transition hover:bg-white/20"
-              href={`/title/${title.slug}`}
+              href={titleHref(title.slug)}
             >
               Details
             </Link>
