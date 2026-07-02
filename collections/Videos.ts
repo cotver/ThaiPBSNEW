@@ -10,7 +10,7 @@ export const Videos: CollectionConfig = {
         read: () => true,
       },
       upload: {
-        staticDir: process.env.PAYLOAD_VIDEOS_DIR || '../payload-uploads/videos',
+        staticDir: process.env.PAYLOAD_VIDEOS_DIR || './payload-uploads/videos',
         mimeTypes: ['video/*', 'image/gif'],
       },
       fields: [

@@ -10,7 +10,7 @@ export const Media: CollectionConfig = {
         read: () => true,
       },
       upload: {
-        staticDir: process.env.PAYLOAD_MEDIA_DIR || '../payload-uploads/media',
+        staticDir: process.env.PAYLOAD_MEDIA_DIR || './payload-uploads/media',
         mimeTypes: ['image/*'],
         // Enable server-side paste URL so pasting external URLs works when client fetch
         // fails (e.g. CORS). Empty hostname lets any host for that protocol.
