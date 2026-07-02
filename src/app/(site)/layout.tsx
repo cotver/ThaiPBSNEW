@@ -3,9 +3,9 @@ import { AppShell } from "@/components/AppShell";
 import "../globals.css";
 
 export const metadata: Metadata = {
-  title: "Stream+ | Movie Streaming UI",
+  title: "ThaiPBS Parvilions",
   description:
-    "A Disney+-inspired movie streaming homepage built with Next.js 16 and Tailwind CSS.",
+    "A ThaiPBS Parvilions streaming homepage built with Next.js 16 and Tailwind CSS.",
 };
 
 export default function RootLayout({

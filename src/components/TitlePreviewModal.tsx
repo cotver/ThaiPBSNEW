@@ -85,7 +85,7 @@ export function TitlePreviewModal({
 
           <div className="relative z-10 flex min-h-[420px] max-w-2xl flex-col justify-end px-5 pb-8 pt-20 sm:min-h-[520px] sm:px-9 sm:pb-10">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-200">
-              {title.type === "Original" ? "Stream+ Original" : title.type}
+              {title.type === "Original" ? "ThaiPBS Parvilions Original" : title.type}
             </p>
             <h2 className="mt-3 text-4xl font-black leading-[0.95] sm:text-6xl">
               {title.title}

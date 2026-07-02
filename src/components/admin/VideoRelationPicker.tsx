@@ -15,8 +15,8 @@ function getApiBase(): string {
   if (typeof window === 'undefined') return ''
   const apiPath =
     typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH
-      ? `${process.env.NEXT_PUBLIC_BASE_PATH}/api`
-      : '/admin/api'
+      ? `${process.env.NEXT_PUBLIC_BASE_PATH.replace(/\/$/, '')}/api`
+      : '/api'
   return window.location.origin + apiPath
 }
 

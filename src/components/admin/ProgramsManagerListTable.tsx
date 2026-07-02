@@ -34,7 +34,9 @@ function getImageUrlForDoc(media: unknown): string | null {
     return normalizeImageSrc(url)
   }
   if (typeof media === 'number' || typeof media === 'string') {
-    const base = typeof process.env.NEXT_PUBLIC_BASE_PATH === 'string' ? process.env.NEXT_PUBLIC_BASE_PATH : '/admin'
+    const base = typeof process.env.NEXT_PUBLIC_BASE_PATH === 'string'
+      ? process.env.NEXT_PUBLIC_BASE_PATH.replace(/\/$/, '')
+      : ''
     return `${base}/api/media/${media}/file`
   }
   return null
@@ -45,7 +47,7 @@ export type ProgramsManagerListTableProps = {
   effectiveColumns: string[]
   listColumns: ProgramsListColumnDef[]
   adminRoute: string
-  /** Optional API base path for delete (e.g. /admin/api). Defaults to /admin/api */
+  /** Optional API base path for delete and bulk edit. Defaults to the Payload REST API route. */
   apiBase?: string
   /** Base URL for list (e.g. /admin/programs-manager) for sort links */
   listBaseHref?: string
@@ -59,7 +61,7 @@ export function ProgramsManagerListTable({
   effectiveColumns,
   listColumns,
   adminRoute,
-  apiBase = '/admin/api',
+  apiBase = `${typeof process.env.NEXT_PUBLIC_BASE_PATH === 'string' ? process.env.NEXT_PUBLIC_BASE_PATH.replace(/\/$/, '') : ''}/api`,
   listBaseHref,
   initialSort = '-updatedAt',
   canEditPrograms = false,

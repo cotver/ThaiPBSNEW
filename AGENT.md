@@ -2,7 +2,7 @@
 
 ## Project Snapshot
 
-- App: Disney+-inspired multi-page streaming UI named `Stream+`.
+- App: Disney+-inspired multi-page streaming UI named `ThaiPBS Parvilions`.
 - Stack: Next.js `16.2.9`, React `19.2.4`, TypeScript, Tailwind CSS `4`.
 - Routing: App Router under `src/app`.
 - App shell: `src/components/AppShell.tsx`.

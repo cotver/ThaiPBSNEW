@@ -12,8 +12,8 @@ export default async function MoviesPage() {
         <p className="text-sm font-bold uppercase text-cyan-200">Feature films</p>
         <h1 className="mt-3 text-4xl font-black sm:text-6xl">Movies</h1>
         <p className="mt-4 leading-7 text-white/68">
-          Browse adventure, sci-fi, coming-of-age, action, and animated movies from the Stream+
-          catalog.
+          Browse adventure, sci-fi, coming-of-age, action, and animated movies from the ThaiPBS
+          Parvilions catalog.
         </p>
       </div>
       <ContentRow layout="vertical" title="Featured Movies" titles={collections.movies} />

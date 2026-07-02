@@ -4,7 +4,7 @@ import Image from 'next/image'
 import React, { useCallback, useState } from 'react'
 
 const AIRFLOW_ORIGIN = process.env.NEXT_PUBLIC_AIRFLOW_ORIGIN || 'https://airflow.thaipbs.or.th:8005'
-const API_BASE = process.env.NEXT_PUBLIC_BASE_PATH || '/admin'
+const API_BASE = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, '') || ''
 
 type AnyResult = Record<string, unknown>
 

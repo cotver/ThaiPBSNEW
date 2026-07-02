@@ -567,6 +567,19 @@ function normalizeImageSrc(src: string): string {
   return src
 }
 
+function getPayloadApiPath(): string {
+  const basePath =
+    typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH
+      ? process.env.NEXT_PUBLIC_BASE_PATH.replace(/\/$/, '')
+      : ''
+
+  return `${basePath}/api`
+}
+
+function getPayloadApiBase(): string {
+  return typeof window !== 'undefined' ? window.location.origin + getPayloadApiPath() : ''
+}
+
 function AwardUploadPreview({
   data,
   editor,
@@ -581,8 +594,7 @@ function AwardUploadPreview({
   const valueDoc = getAwardUploadValueDoc(data.value)
   const valueId = getAwardUploadValueId(data.value)
   const [doc, setDoc] = React.useState<MediaDoc | null>(valueDoc)
-  const apiPath = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) ? `${process.env.NEXT_PUBLIC_BASE_PATH}/api` : '/admin/api'
-  const base = typeof window !== 'undefined' ? window.location.origin + apiPath : ''
+  const base = getPayloadApiBase()
 
   React.useEffect(() => {
     if (valueDoc) {
@@ -648,8 +660,7 @@ function AwardImageGroupPreview({
   nodeKey: NodeKey
   onRemove?: () => void
 }) {
-  const apiPath = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) ? `${process.env.NEXT_PUBLIC_BASE_PATH}/api` : '/admin/api'
-  const base = typeof window !== 'undefined' ? window.location.origin + apiPath : ''
+  const base = getPayloadApiBase()
   const [docs, setDocs] = React.useState<Record<string, MediaDoc>>(() => {
     const initial: Record<string, MediaDoc> = {}
     for (const item of data.images) {
@@ -761,8 +772,7 @@ function ArticleEmbedPreview({
   const imageId = getAwardUploadValueId(data.image ?? null)
   const imageDoc = getAwardUploadValueDoc(data.image ?? null)
   const [doc, setDoc] = React.useState<MediaDoc | null>(imageDoc)
-  const apiPath = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) ? `${process.env.NEXT_PUBLIC_BASE_PATH}/api` : '/admin/api'
-  const base = typeof window !== 'undefined' ? window.location.origin + apiPath : ''
+  const base = getPayloadApiBase()
 
   React.useEffect(() => {
     if (imageDoc) {
@@ -1139,8 +1149,7 @@ function MediaPicker({
   const [modalOpen, setModalOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [dragOver, setDragOver] = useState(false)
-  const apiPath = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) ? `${process.env.NEXT_PUBLIC_BASE_PATH}/api` : '/admin/api'
-  const base = typeof window !== 'undefined' ? window.location.origin + apiPath : ''
+  const base = getPayloadApiBase()
 
   const loadMedia = React.useCallback(() => {
     setLoading(true)
@@ -1174,7 +1183,7 @@ function MediaPicker({
     if (doc.url) {
       return normalizeImageSrc(doc.url)
     }
-    return `${apiPath}/media/${doc.id}/file`
+    return `${getPayloadApiPath()}/media/${doc.id}/file`
   }
 
   const handleFile = React.useCallback(
@@ -1632,8 +1641,7 @@ function AwardDetailRichTextEditor({
   const [uploading, setUploading] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement | null>(null)
   const editorNamespace = React.useId()
-  const apiPath = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) ? `${process.env.NEXT_PUBLIC_BASE_PATH}/api` : '/admin/api'
-  const base = typeof window !== 'undefined' ? window.location.origin + apiPath : ''
+  const base = getPayloadApiBase()
 
   const initialEditorState = React.useMemo(() => {
     const normalized = normalizeLexicalValue(value)
@@ -1837,7 +1845,7 @@ function AwardDetailRichTextEditor({
   const mediaFileUrl = (doc: MediaDoc) => {
     if (doc.thumbnailURL) return normalizeImageSrc(doc.thumbnailURL)
     if (doc.url) return normalizeImageSrc(doc.url)
-    return `${apiPath}/media/${doc.id}/file`
+    return `${getPayloadApiPath()}/media/${doc.id}/file`
   }
 
   const handleImageFile = async (file: File) => {
@@ -2939,9 +2947,7 @@ export function ProgramsManagerAddForm(props?: {
   }, [isEdit, initialData, loadedEdit])
 
   const getApiBase = () => {
-    if (typeof window === 'undefined') return ''
-    const apiPath = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) ? `${process.env.NEXT_PUBLIC_BASE_PATH}/api` : '/admin/api'
-    return window.location.origin + apiPath
+    return getPayloadApiBase()
   }
 
   const addSeason = () => {

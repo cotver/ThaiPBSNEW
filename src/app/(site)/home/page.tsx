@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { BrandTiles } from "@/components/BrandTiles";
 import { ContentRow } from "@/components/ContentRow";
 import { HeroCarousel } from "@/components/HeroCarousel";
@@ -24,7 +23,7 @@ export default async function HomePage() {
         <ContentRow layout="vertical" title="New Poster Mockups" titles={collections.posterMockups} />
         <ContentRow layout="wide" title="Continue Watching" titles={collections.continueWatching} />
         <ContentRow layout="vertical" title="Trending Movies" titles={collections.trending} />
-        <ContentRow layout="vertical" title="Stream+ Originals" titles={collections.originals} />
+        <ContentRow layout="vertical" title="ThaiPBS Parvilions Originals" titles={collections.originals} />
       </section>
     </>
   );

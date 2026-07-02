@@ -44,7 +44,7 @@ export default async function TitlePage({
 
         <div className="relative z-10 flex min-h-[560px] max-w-3xl flex-col justify-end lg:min-h-[620px]">
           <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-200">
-            {title.type === "Original" ? "Stream+ Original" : title.type}
+            {title.type === "Original" ? "ThaiPBS Parvilions Original" : title.type}
           </p>
           <h1 className="mt-3 max-w-4xl text-5xl font-black leading-[0.95] sm:text-7xl">
             {title.title}

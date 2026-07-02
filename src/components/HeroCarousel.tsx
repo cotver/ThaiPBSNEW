@@ -74,7 +74,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
 
       <div className="relative z-10 flex min-h-[560px] max-w-3xl flex-col justify-end lg:min-h-[590px]">
         <p className="mb-3 text-xs font-black uppercase text-cyan-200">
-          {current.type === "Original" ? "Stream+ Original" : current.type}
+          {current.type === "Original" ? "ThaiPBS Parvilions Original" : current.type}
         </p>
         <h1 className="max-w-3xl text-5xl font-black leading-[0.98] sm:text-6xl lg:text-7xl">
           {current.title}

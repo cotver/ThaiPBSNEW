@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -51,15 +52,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         ref={sidebarRef}
       >
         <Link
-          aria-label="Stream+ home"
-          className="mb-16 flex h-12 shrink-0 items-center text-lg font-black text-white"
+          aria-label="ThaiPBS Parvilions home"
+          className="mb-16 flex h-12 w-12 shrink-0 items-center justify-center"
           href="/"
           onClick={(event) => event.currentTarget.blur()}
         >
-          <span className="relative">
-            <span className="absolute -top-2 left-1 h-4 w-12 rounded-[50%] border-t border-cyan-200/80" />
-            Stream+
-          </span>
+          <Image
+            alt="ThaiPBS Parvilions"
+            className="h-12 w-12 object-contain"
+            height={48}
+            priority
+            src="/LOGO/Logo.png"
+            width={48}
+          />
         </Link>
         <nav className="flex flex-1 flex-col gap-6 text-[12px] font-black uppercase text-white/46">
           {navItems.map((item) => {

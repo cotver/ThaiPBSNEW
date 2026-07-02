@@ -1,4 +1,4 @@
-# Stream+
+# ThaiPBS Parvilions
 
 A Disney+-inspired multi-page movie streaming UI built with Next.js `16.2.9`, React `19.2.4`, TypeScript, and Tailwind CSS `4`.
 

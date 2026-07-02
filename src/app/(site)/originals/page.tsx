@@ -16,12 +16,12 @@ export default async function OriginalsPage() {
         <p className="text-sm font-bold uppercase text-cyan-200">Exclusive stories</p>
         <h1 className="mt-3 text-4xl font-black sm:text-6xl">Originals</h1>
         <p className="mt-4 leading-7 text-white/68">
-          Signature Stream+ originals with premium adventures, animated stories, and cinematic
-          family viewing.
+          Signature ThaiPBS Parvilions originals with premium adventures, animated stories, and
+          cinematic family viewing.
         </p>
       </div>
       <BrandTiles categories={categories} />
-      <ContentRow layout="vertical" title="Stream+ Originals" titles={collections.originals} />
+      <ContentRow layout="vertical" title="ThaiPBS Parvilions Originals" titles={collections.originals} />
       <ContentRow layout="vertical" title="Because You Watched" titles={collections.recommended} />
     </section>
   );
