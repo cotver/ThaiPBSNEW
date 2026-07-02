@@ -1,7 +1,7 @@
 # ThaiPBSNEW - PM2 Makefile
 # ThaiPBSNEW Next.js app (:3008)
 
-.PHONY: install dev build deploy start-current list-releases rollback build-deploy pull pull-build-deploy stop restart restart-prod status logs logs-dev clean delete save
+.PHONY: install dev build deploy start-current rescue-uploads list-releases rollback build-deploy pull pull-build-deploy stop restart restart-prod status logs logs-dev clean delete save
 
 APP_NAME=ThaiPBSNEW
 APP_TEST_NAME=ThaiPBSNEW-test
@@ -18,6 +18,7 @@ RSYNC_EXCLUDES=\
 	--exclude .git \
 	--exclude .next \
 	--exclude node_modules \
+	--exclude payload-uploads \
 	--exclude $(RELEASES_DIR) \
 	--exclude $(CURRENT_LINK) \
 	--exclude $(CURRENT_LINK).tmp
@@ -45,6 +46,7 @@ deploy: pull
 	RELEASE_ID=$$(date +%Y%m%d%H%M%S); \
 	RELEASE_DIR="$(RELEASES_DIR)/$$RELEASE_ID"; \
 	mkdir -p "$(RELEASES_DIR)"; \
+	mkdir -p payload-uploads/media payload-uploads/videos; \
 	rsync -a --delete $(RSYNC_EXCLUDES) ./ "$$RELEASE_DIR"/; \
 	git rev-parse HEAD > "$$RELEASE_DIR/REVISION"; \
 	cd "$$RELEASE_DIR"; \
@@ -61,7 +63,18 @@ deploy: pull
 
 # --- Start/reload the currently active release ---
 start-current:
+	mkdir -p payload-uploads/media payload-uploads/videos
 	THAIPBSNEW_CWD="$$(pwd)/$(CURRENT_LINK)" pm2 startOrReload ecosystem.config.cjs --update-env
+
+# --- Copy uploads stranded inside old release folders back into persistent storage ---
+rescue-uploads:
+	@set -eu; \
+	mkdir -p payload-uploads/media payload-uploads/videos; \
+	if [ -d "$(RELEASES_DIR)" ]; then \
+		find "$(RELEASES_DIR)" -path "*/payload-uploads/media" -type d -exec sh -c 'cp -an "$$1"/. payload-uploads/media/ 2>/dev/null || true' sh {} \; ; \
+		find "$(RELEASES_DIR)" -path "*/payload-uploads/videos" -type d -exec sh -c 'cp -an "$$1"/. payload-uploads/videos/ 2>/dev/null || true' sh {} \; ; \
+	fi; \
+	echo "Recovered uploads into payload-uploads/media and payload-uploads/videos"
 
 # --- Show available releases, newest first ---
 list-releases:
@@ -90,6 +103,7 @@ rollback:
 	fi; \
 	ln -sfn "$$RELEASE_DIR" "$(CURRENT_LINK).tmp"; \
 	mv -Tf "$(CURRENT_LINK).tmp" "$(CURRENT_LINK)"; \
+	mkdir -p payload-uploads/media payload-uploads/videos; \
 	pm2 delete "$(APP_NAME)" 2>/dev/null || true; \
 	THAIPBSNEW_CWD="$$(pwd)/$(CURRENT_LINK)" pm2 start ecosystem.config.cjs --update-env; \
 	pm2 save
