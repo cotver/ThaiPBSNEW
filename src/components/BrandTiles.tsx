@@ -19,6 +19,7 @@ export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
         const isHovered = hoveredId === category.id;
         const hasLoadedImage = loadedImages.has(category.id);
         const hasLoadedVideo = loadedVideos.has(category.id);
+        const isGif = category.videoMimeType === "image/gif";
         const showVideo = isHovered && Boolean(category.videoUrl) && hasLoadedVideo;
         const showOnlyName =
           !hasLoadedImage || (isHovered && Boolean(category.videoUrl) && !hasLoadedVideo);
@@ -49,7 +50,24 @@ export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
               />
             )}
 
-            {isHovered && category.videoUrl && (
+            {isHovered && category.videoUrl && isGif && (
+              <img
+                alt=""
+                className={`absolute inset-0 h-full w-full object-cover transition duration-300 ${
+                  showVideo ? "opacity-100" : "opacity-0"
+                }`}
+                onLoad={() =>
+                  setLoadedVideos((current) => {
+                    const next = new Set(current);
+                    next.add(category.id);
+                    return next;
+                  })
+                }
+                src={category.videoUrl}
+              />
+            )}
+
+            {isHovered && category.videoUrl && !isGif && (
               <video
                 aria-hidden="true"
                 autoPlay

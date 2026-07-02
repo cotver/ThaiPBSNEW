@@ -19,6 +19,7 @@ export type CategoryTile = {
   imageUrl?: string;
   name: string;
   slug: string;
+  videoMimeType?: string;
   videoUrl?: string;
 };
 
@@ -233,8 +234,14 @@ function programToTitle(program: Program): Title | null {
   }
 
   const type = getTitleType(program);
-  const genre = cleanText(program.genre_sub) || cleanText(program.genre) || cleanText(program.type) || "ThaiPBS";
-  const year = program.productionYear?.toString() || dateYear(program.firstRun) || dateYear(program.createdAt) || "New";
+  const genre = [
+    ...relationNames((program as { genre?: unknown }).genre),
+    ...relationNames((program as { genre_sub?: unknown }).genre_sub),
+  ].join(" | ") ||
+    cleanText(program.type) ||
+    "ThaiPBS";
+  const fallbackYear = program.productionYear?.toString() || dateYear(program.firstRun) || dateYear(program.createdAt) || "New";
+  const year = program.comingSoon ? dateYear(program.comingSoonDate) || fallbackYear : fallbackYear;
   const duration = formatDuration(program.duration, type);
   const description =
     cleanText(program.synopsisTh) ||
@@ -343,6 +350,7 @@ function categoryToTile(category: Category): CategoryTile | null {
     imageUrl: mediaUrl(category.image),
     name,
     slug,
+    videoMimeType: videoMimeType(category.video),
     videoUrl: videoUrl(category.video),
   };
 }
@@ -353,6 +361,14 @@ function videoUrl(video: Category["video"]) {
   }
 
   return (video as Video).url || undefined;
+}
+
+function videoMimeType(video: Category["video"]) {
+  if (!video || typeof video === "number") {
+    return undefined;
+  }
+
+  return (video as Video).mimeType || undefined;
 }
 
 function thumbnailPath(path?: string | null) {
@@ -370,22 +386,24 @@ function formatDuration(duration: number | null | undefined, type: Title["type"]
     return type === "Series" ? "Series" : "Movie";
   }
 
-  if (duration < 60) {
-    return `${duration}m`;
+  const minutesTotal = Math.max(0, Math.floor(duration));
+
+  if (minutesTotal < 60) {
+    return `${minutesTotal}m`;
   }
 
-  const hours = Math.floor(duration / 60);
-  const minutes = duration % 60;
+  const hours = Math.floor(minutesTotal / 60);
+  const minutes = minutesTotal % 60;
 
   return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
 }
 
 function getRating(program: Program) {
-  if (program.targetGroup) {
-    return "TV-PG";
+  if (typeof program.targetGroup === "number" && Number.isFinite(program.targetGroup) && program.targetGroup > 0) {
+    return `${Math.floor(program.targetGroup)}+`;
   }
 
-  return program.programContentType === "Movie" ? "PG" : "TV-G";
+  return "ALL Age";
 }
 
 function dateYear(date?: string | null) {
@@ -418,6 +436,21 @@ function dateLabel(date?: string | null) {
 
 function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function relationNames(value: unknown): string[] {
+  const items = Array.isArray(value) ? value : value == null ? [] : [value];
+
+  return items
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return "";
+      }
+
+      const record = item as { name?: unknown; slug?: unknown; title?: unknown };
+      return cleanText(record.name) || cleanText(record.title) || cleanText(record.slug);
+    })
+    .filter(Boolean);
 }
 
 function hashString(value: string) {

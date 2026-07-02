@@ -42,6 +42,21 @@ function getImageUrlForDoc(media: unknown): string | null {
   return null
 }
 
+function formatRelationshipValue(value: unknown): string {
+  const items = Array.isArray(value) ? value : value == null ? [] : [value]
+  return items
+    .map((item) => {
+      if (typeof item === 'number' || typeof item === 'string') return String(item)
+      if (item && typeof item === 'object') {
+        const record = item as { name?: unknown; title?: unknown; slug?: unknown }
+        return String(record.name ?? record.title ?? record.slug ?? '').trim()
+      }
+      return ''
+    })
+    .filter(Boolean)
+    .join(', ')
+}
+
 export type ProgramsManagerListTableProps = {
   programs: ProgramDoc[]
   effectiveColumns: string[]
@@ -268,6 +283,14 @@ export function ProgramsManagerListTable({
       )
     }
     const raw = program[columnId]
+    if (columnId === 'genre' || columnId === 'genre_sub') {
+      const str = formatRelationshipValue(raw)
+      return (
+        <td className="p-3 align-middle text-sm max-w-[220px] truncate" key={columnId} title={str.length > 50 ? str : undefined}>
+          {str || '---'}
+        </td>
+      )
+    }
     if (raw == null || raw === '') return <td className="p-3 align-middle text-sm text-neutral-400" key={columnId}>—</td>
     if (typeof raw === 'boolean') return <td className="p-3 align-middle text-sm" key={columnId}>{raw ? <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700 dark:bg-green-950/50 dark:text-green-300">Yes</span> : <span className="text-neutral-400">—</span>}</td>
     if (raw instanceof Date || (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}/.test(raw))) {

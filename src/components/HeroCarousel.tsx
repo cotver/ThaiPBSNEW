@@ -80,10 +80,13 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
           {current.title}
         </h1>
         <p className="mt-4 text-sm font-bold text-white/72">
-          {current.year} | {current.rating} | {current.duration} | {current.genre}
+          {current.year} | {current.rating} | {current.duration}
         </p>
         <p className="mt-5 max-w-md text-sm leading-7 text-white/74 sm:text-base">
           {current.description}
+        </p>
+        <p className="mt-4 max-w-2xl text-xs font-bold uppercase text-white/58 sm:text-sm">
+          {current.genre}
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link

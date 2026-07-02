@@ -11,7 +11,7 @@ export const Videos: CollectionConfig = {
       },
       upload: {
         staticDir: process.env.PAYLOAD_VIDEOS_DIR || '../payload-uploads/videos',
-        mimeTypes: ['video/*'],
+        mimeTypes: ['video/*', 'image/gif'],
       },
       fields: [
         {

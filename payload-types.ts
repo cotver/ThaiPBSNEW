@@ -80,6 +80,8 @@ export interface Config {
     languages: Language;
     awards: Award;
     categories: Category;
+    genres: Genre;
+    subGenres: SubGenre;
     programs: Program;
     vipaPrograms: VipaProgram;
     seasons: Season;
@@ -104,6 +106,8 @@ export interface Config {
     languages: LanguagesSelect<false> | LanguagesSelect<true>;
     awards: AwardsSelect<false> | AwardsSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
+    genres: GenresSelect<false> | GenresSelect<true>;
+    subGenres: SubGenresSelect<false> | SubGenresSelect<true>;
     programs: ProgramsSelect<false> | ProgramsSelect<true>;
     vipaPrograms: VipaProgramsSelect<false> | VipaProgramsSelect<true>;
     seasons: SeasonsSelect<false> | SeasonsSelect<true>;
@@ -1483,67 +1487,19 @@ export interface Program {
    */
   writer?: string | null;
   /**
-   * Target group
-   */
-  targetGroup?:
-    | (
-        | 'อายุ 3-6 ปี'
-        | 'อายุ 7-12 ปี'
-        | 'อายุ 13-17 ปี'
-        | 'อายุ 18-24 ปี'
-        | 'อายุ 25-34 ปี'
-        | 'อายุ 35-44 ปี'
-        | 'อายุ 45-54 ปี'
-        | 'อายุ 55 ปีขึ้นไป'
-      )
-    | null;
-  /**
    * Program type
    */
   type?:
     | ('Short Clip' | 'Trailer' | 'PodCast' | 'Spot' | 'Filler' | 'Demo' | 'Program' | 'Picture' | 'Poster' | 'Footage')
     | null;
   /**
-   * Genre
+   * Genres
    */
-  genre?:
-    | (
-        | 'Drama&Sitcom'
-        | 'Variety&Lifestyle'
-        | 'Documentary'
-        | 'News&Facture'
-        | 'Music'
-        | 'Special Program'
-        | 'Food&Travel'
-        | 'Kids&Family'
-        | 'Animation'
-      )
-    | null;
+  genre?: (number | Genre)[] | null;
   /**
-   * Sub-genre
+   * Sub-genres
    */
-  genre_sub?:
-    | (
-        | 'Agricultural&Local'
-        | 'Arts&Culture'
-        | 'Knowledge&Education'
-        | 'Entertainment'
-        | 'Lauguage'
-        | 'Inspiration&People'
-        | 'Nature&Environment'
-        | 'Biography'
-        | 'Pets&Animal'
-        | 'Travel&Adventure'
-        | 'Health&Medical&Wellness'
-        | 'Political'
-        | 'History'
-        | 'Crime'
-        | 'Science&Technology'
-        | 'Senior Program'
-        | 'News'
-        | 'Philosophy'
-      )
-    | null;
+  genre_sub?: (number | SubGenre)[] | null;
   /**
    * Tags (comma-separated or free text)
    */
@@ -1746,6 +1702,10 @@ export interface Program {
    */
   rightsTerritoriesAvailable?: string | null;
   /**
+   * Target group age. Enter the minimum viewer age, for example 18 means older than 18.
+   */
+  targetGroup?: number | null;
+  /**
    * Audio channel 1/2
    */
   audioChannel1_2?:
@@ -1915,6 +1875,48 @@ export interface Video {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+}
+/**
+ * Reusable genre names for programs.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "genres".
+ */
+export interface Genre {
+  id: number;
+  /**
+   * Genre name
+   */
+  name: string;
+  /**
+   * URL-safe genre key, e.g. documentary
+   */
+  slug: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Reusable sub-genre names. A sub-genre may optionally belong to a genre.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subGenres".
+ */
+export interface SubGenre {
+  id: number;
+  /**
+   * Sub-genre name
+   */
+  name: string;
+  /**
+   * URL-safe sub-genre key, e.g. science-technology
+   */
+  slug: string;
+  /**
+   * Optional parent genre
+   */
+  genre?: (number | null) | Genre;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * Programs > Seasons
@@ -2691,6 +2693,14 @@ export interface PayloadLockedDocument {
         value: number | Category;
       } | null)
     | ({
+        relationTo: 'genres';
+        value: number | Genre;
+      } | null)
+    | ({
+        relationTo: 'subGenres';
+        value: number | SubGenre;
+      } | null)
+    | ({
         relationTo: 'programs';
         value: number | Program;
       } | null)
@@ -3049,6 +3059,27 @@ export interface CategoriesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "genres_select".
+ */
+export interface GenresSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subGenres_select".
+ */
+export interface SubGenresSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  genre?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "programs_select".
  */
 export interface ProgramsSelect<T extends boolean = true> {
@@ -3067,7 +3098,6 @@ export interface ProgramsSelect<T extends boolean = true> {
   producer?: T;
   artist?: T;
   writer?: T;
-  targetGroup?: T;
   type?: T;
   genre?: T;
   genre_sub?: T;
@@ -3123,6 +3153,7 @@ export interface ProgramsSelect<T extends boolean = true> {
   productionCountry?: T;
   productionYear?: T;
   rightsTerritoriesAvailable?: T;
+  targetGroup?: T;
   audioChannel1_2?: T;
   audioChannel3_4?: T;
   closeCaption1?: T;

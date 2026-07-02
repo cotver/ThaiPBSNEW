@@ -50,30 +50,9 @@ import {
   TOGGLE_LINK_COMMAND,
 } from '@payloadcms/richtext-lexical/client'
 
-const TARGET_GROUP_OPTIONS = [
-  'อายุ 3-6 ปี', 'อายุ 7-12 ปี', 'อายุ 13-17 ปี', 'อายุ 18-24 ปี',
-  'อายุ 25-34 ปี', 'อายุ 35-44 ปี', 'อายุ 45-54 ปี', 'อายุ 55 ปีขึ้นไป',
-]
 const TYPE_OPTIONS = [
   'Short Clip', 'Trailer', 'PodCast', 'Spot', 'Filler', 'Demo',
   'Program', 'Picture', 'Poster', 'Footage',
-]
-const GENRE_OPTIONS: { label: string; value: string }[] = [
-  { label: 'ละคร ซีรีส์', value: 'Drama&Sitcom' },
-  { label: 'วาไรตี้', value: 'Variety&Lifestyle' },
-  { label: 'สารคดี', value: 'Documentary' },
-  { label: 'รายการข่าว', value: 'News&Facture' },
-  { label: 'รายการเพลง', value: 'Music' },
-  { label: 'รายการพิเศษ', value: 'Special Program' },
-  { label: 'อาหาร สุขภาพ ท่องเที่ยว', value: 'Food&Travel' },
-  { label: 'เด็กและการเรียนรู้', value: 'Kids&Family' },
-  { label: 'แอนิเมชัน', value: 'Animation' },
-]
-const GENRE_SUB_OPTIONS = [
-  'Agricultural&Local', 'Arts&Culture', 'Knowledge&Education', 'Entertainment', 'Lauguage',
-  'Inspiration&People', 'Nature&Environment', 'Biography', 'Pets&Animal', 'Travel&Adventure',
-  'Health&Medical&Wellness', 'Political', 'History', 'Crime', 'Science&Technology',
-  'Senior Program', 'News', 'Philosophy',
 ]
 const FORMAT_OPTIONS = ['', 'HD', 'UHD 4K']
 const SELL_FORMAT_OPTIONS = ['HD', 'UHD 4K'] as const
@@ -938,6 +917,19 @@ type CategoryDoc = {
   slug?: string
 }
 
+type GenreDoc = {
+  id: number
+  name?: string
+  slug?: string
+}
+
+type SubGenreDoc = {
+  id: number
+  name?: string
+  slug?: string
+  genre?: number | GenreDoc | null
+}
+
 export type AwardOption = {
   id: number
   name: string
@@ -1070,6 +1062,86 @@ function CategoryMultiDropdown({
         <div className="absolute z-20 mt-2 w-full max-h-64 overflow-auto rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-2">
           {options.length === 0 ? (
             <div className="text-sm text-gray-500 dark:text-gray-400 px-2 py-1">No categories yet</div>
+          ) : (
+            <div className="space-y-1">
+              {options.map((option) => {
+                const checked = selectedSet.has(option.id)
+                const label = option.name || option.slug || `#${option.id}`
+                return (
+                  <label
+                    key={option.id}
+                    className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) => {
+                        const next = event.target.checked
+                          ? Array.from(new Set([...value, option.id]))
+                          : value.filter((id) => id !== option.id)
+                        onChange(next)
+                      }}
+                    />
+                    <span className="text-sm">{label}</span>
+                  </label>
+                )
+              })}
+            </div>
+          )}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="w-full rounded border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 px-3 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TaxonomyMultiDropdown({
+  emptyLabel,
+  noOptionsLabel,
+  options,
+  value,
+  onChange,
+}: {
+  emptyLabel: string
+  noOptionsLabel: string
+  options: Array<{ id: number; name?: string; slug?: string }>
+  value: number[]
+  onChange: (next: number[]) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const selectedSet = React.useMemo(() => new Set(value), [value])
+  const selectedLabels = React.useMemo(() => {
+    const byId = new Map(options.map((option) => [option.id, option] as const))
+    return value
+      .map((id) => {
+        const option = byId.get(id)
+        if (!option) return null
+        return option.name || option.slug || `#${option.id}`
+      })
+      .filter(Boolean) as string[]
+  }, [options, value])
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="w-full text-left rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
+      >
+        {selectedLabels.length > 0 ? selectedLabels.join(', ') : emptyLabel}
+      </button>
+      {open && (
+        <div className="absolute z-20 mt-2 w-full max-h-64 overflow-auto rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-2">
+          {options.length === 0 ? (
+            <div className="text-sm text-gray-500 dark:text-gray-400 px-2 py-1">{noOptionsLabel}</div>
           ) : (
             <div className="space-y-1">
               {options.map((option) => {
@@ -2615,8 +2687,8 @@ export function ProgramsManagerAddForm(props?: {
   const [writer, setWriter] = useState('')
   const [targetGroup, setTargetGroup] = useState('')
   const [type, setType] = useState('')
-  const [genre, setGenre] = useState('')
-  const [genre_sub, setGenre_sub] = useState('')
+  const [genre, setGenre] = useState<number[]>([])
+  const [genre_sub, setGenre_sub] = useState<number[]>([])
   const [tags, setTags] = useState('')
   const [comment, setComment] = useState('')
   const [TrailerAirflowProxyPath, setTrailerAirflowProxyPath] = useState('')
@@ -2673,6 +2745,8 @@ export function ProgramsManagerAddForm(props?: {
   const [loadedEdit, setLoadedEdit] = useState(false)
   const [languageOptions, setLanguageOptions] = useState<LanguageDoc[]>([])
   const [categoryOptions, setCategoryOptions] = useState<CategoryDoc[]>([])
+  const [genreOptions, setGenreOptions] = useState<GenreDoc[]>([])
+  const [subGenreOptions, setSubGenreOptions] = useState<SubGenreDoc[]>([])
   const [awardOptions, setAwardOptions] = useState<AwardOption[]>(initialAwardOptions)
   const [viewsHelperOpen, setViewsHelperOpen] = useState(false)
 
@@ -2711,6 +2785,49 @@ export function ProgramsManagerAddForm(props?: {
               id: Number((d as { id?: unknown }).id),
               name: (d as { name?: unknown }).name as string | undefined,
               slug: (d as { slug?: unknown }).slug as string | undefined,
+            }))
+            .filter((d) => Number.isFinite(d.id) && d.id > 0)
+        )
+      })
+      .catch(() => {})
+  }, [])
+
+  React.useEffect(() => {
+    const base = getApiBase()
+    if (!base) return
+    fetch(`${base}/genres?limit=500&depth=0&sort=name`, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const docs = (data?.docs ?? []) as unknown
+        if (!Array.isArray(docs)) return
+        setGenreOptions(
+          docs
+            .map((d) => ({
+              id: Number((d as { id?: unknown }).id),
+              name: (d as { name?: unknown }).name as string | undefined,
+              slug: (d as { slug?: unknown }).slug as string | undefined,
+            }))
+            .filter((d) => Number.isFinite(d.id) && d.id > 0)
+        )
+      })
+      .catch(() => {})
+  }, [])
+
+  React.useEffect(() => {
+    const base = getApiBase()
+    if (!base) return
+    fetch(`${base}/subGenres?limit=500&depth=1&sort=name`, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const docs = (data?.docs ?? []) as unknown
+        if (!Array.isArray(docs)) return
+        setSubGenreOptions(
+          docs
+            .map((d) => ({
+              id: Number((d as { id?: unknown }).id),
+              name: (d as { name?: unknown }).name as string | undefined,
+              slug: (d as { slug?: unknown }).slug as string | undefined,
+              genre: (d as { genre?: unknown }).genre as number | GenreDoc | null | undefined,
             }))
             .filter((d) => Number.isFinite(d.id) && d.id > 0)
         )
@@ -2802,8 +2919,8 @@ export function ProgramsManagerAddForm(props?: {
     setWriter(String(p.writer ?? ''))
     setTargetGroup(String(p.targetGroup ?? ''))
     setType(String(p.type ?? ''))
-    setGenre(String(p.genre ?? ''))
-    setGenre_sub(String(p.genre_sub ?? ''))
+    setGenre(relationIds((p as { genre?: unknown }).genre))
+    setGenre_sub(relationIds((p as { genre_sub?: unknown }).genre_sub))
     setTags(String(p.tags ?? ''))
     setComment(String(p.comment ?? ''))
     setTrailerAirflowProxyPath(String(p.TrailerAirflowProxyPath ?? ''))
@@ -3174,6 +3291,14 @@ export function ProgramsManagerAddForm(props?: {
       setMessage({ type: 'error', text: 'Slug is required.' })
       return
     }
+    const targetGroupAge = targetGroup.trim() === '' ? null : Number(targetGroup)
+    if (
+      targetGroupAge != null &&
+      (!Number.isFinite(targetGroupAge) || targetGroupAge < 0)
+    ) {
+      setMessage({ type: 'error', text: 'Target group age must be a non-negative number.' })
+      return
+    }
     const invalidAwardSeason = (programContentType === 'Series' ? seasons : []).find(
       (season) =>
         season.is_Award &&
@@ -3208,10 +3333,10 @@ export function ProgramsManagerAddForm(props?: {
             producer: producer.trim() || null,
             artist: artist.trim() || null,
             writer: writer.trim() || null,
-            targetGroup: targetGroup || null,
+            targetGroup: targetGroupAge,
             type: type || null,
-            genre: genre || null,
-            genre_sub: genre_sub || null,
+            genre,
+            genre_sub,
             tags: tags.trim() || null,
             comment: comment.trim() || null,
             TrailerAirflowProxyPath: TrailerAirflowProxyPath.trim() || null,
@@ -3469,10 +3594,10 @@ export function ProgramsManagerAddForm(props?: {
           producer: producer.trim() || null,
           artist: artist.trim() || null,
           writer: writer.trim() || null,
-          targetGroup: targetGroup || null,
+          targetGroup: targetGroupAge,
           type: type || null,
-          genre: genre || null,
-          genre_sub: genre_sub || null,
+          genre,
+          genre_sub,
           tags: tags.trim() || null,
           comment: comment.trim() || null,
           TrailerAirflowProxyPath: TrailerAirflowProxyPath.trim() || null,
@@ -3657,8 +3782,8 @@ export function ProgramsManagerAddForm(props?: {
       setCategories([])
       setTargetGroup('')
       setType('')
-      setGenre('')
-      setGenre_sub('')
+      setGenre([])
+      setGenre_sub([])
       setTags('')
       setComment('')
       setTrailerAirflowProxyPath('')
@@ -4041,17 +4166,24 @@ export function ProgramsManagerAddForm(props?: {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{L('genre', 'Genre')}</label>
-                <select
+                <label className="block text-sm font-medium mb-1">{L('genre', 'Genres')}</label>
+                <TaxonomyMultiDropdown
+                  emptyLabel="Select genres..."
+                  noOptionsLabel="No genres yet"
+                  options={genreOptions}
                   value={genre}
-                  onChange={(e) => setGenre(e.target.value)}
-                  className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
-                >
-                  <option value="">—</option>
-                  {GENRE_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
+                  onChange={setGenre}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{L('genre_sub', 'Sub-genres')}</label>
+                <TaxonomyMultiDropdown
+                  emptyLabel="Select sub-genres..."
+                  noOptionsLabel="No sub-genres yet"
+                  options={subGenreOptions}
+                  value={genre_sub}
+                  onChange={setGenre_sub}
+                />
               </div>
             </>
           )}
@@ -4166,17 +4298,24 @@ export function ProgramsManagerAddForm(props?: {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{L('genre', 'Genre')}</label>
-                <select
+                <label className="block text-sm font-medium mb-1">{L('genre', 'Genres')}</label>
+                <TaxonomyMultiDropdown
+                  emptyLabel="Select genres..."
+                  noOptionsLabel="No genres yet"
+                  options={genreOptions}
                   value={genre}
-                  onChange={(e) => setGenre(e.target.value)}
-                  className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
-                >
-                  <option value="">—</option>
-                  {GENRE_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
+                  onChange={setGenre}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{L('genre_sub', 'Sub-genres')}</label>
+                <TaxonomyMultiDropdown
+                  emptyLabel="Select sub-genres..."
+                  noOptionsLabel="No sub-genres yet"
+                  options={subGenreOptions}
+                  value={genre_sub}
+                  onChange={setGenre_sub}
+                />
               </div>
               </>)}
               <div className="sm:col-span-2 grid gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:grid-cols-2 lg:grid-cols-3 dark:border-gray-800 dark:bg-gray-900">
@@ -4600,6 +4739,19 @@ export function ProgramsManagerAddForm(props?: {
                     onChange={(e) => setDuration(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
                   />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{L('targetGroup', 'Older than age')}</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={120}
+                  step={1}
+                  value={targetGroup}
+                  onChange={(e) => setTargetGroup(e.target.value)}
+                  className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
+                  placeholder="18"
+                />
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium mb-1">Platforms</label>
