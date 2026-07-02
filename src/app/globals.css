@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+:root {
+  --background: #030714;
+  --foreground: #f8fbff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: "Courier New", Courier, monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: #67e8f9;
+  color: #030714;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.disney-sidebar {
+  transition: width 300ms ease;
+}
+
+.disney-sidebar:hover,
+.disney-sidebar:focus-within {
+  width: 292px;
+}
+
+.disney-sidebar:hover .disney-nav-label,
+.disney-sidebar:focus-within .disney-nav-label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@keyframes previewFloatIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scaleX(var(--preview-scale-x, 0.82)) scaleY(var(--preview-scale-y, 0.78));
+    transform-origin: var(--preview-origin-x, 50%) 0%;
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-6px) scaleX(1) scaleY(1);
+    transform-origin: var(--preview-origin-x, 50%) 0%;
+  }
+}

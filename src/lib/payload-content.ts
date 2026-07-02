@@ -1,0 +1,425 @@
+import type { Category, Episode, Landing, Media, Program, Season, Video } from "../../payload-types";
+import type { Title } from "@/lib/content";
+import { getPayloadClient } from "@/lib/payload-client";
+
+type TitleCollections = {
+  continueWatching: Title[];
+  heroes: Title[];
+  movies: Title[];
+  originals: Title[];
+  posterMockups: Title[];
+  recommended: Title[];
+  series: Title[];
+  trending: Title[];
+  watchlist: Title[];
+};
+
+export type CategoryTile = {
+  id: number;
+  imageUrl?: string;
+  name: string;
+  slug: string;
+  videoUrl?: string;
+};
+
+const emptyCollections: TitleCollections = {
+  recommended: [],
+  continueWatching: [],
+  trending: [],
+  originals: [],
+  movies: [],
+  posterMockups: [],
+  series: [],
+  watchlist: [],
+  heroes: [],
+};
+
+const tones = [
+  "from-indigo-950 via-sky-700 to-amber-300",
+  "from-slate-950 via-violet-700 to-cyan-300",
+  "from-orange-600 via-rose-400 to-yellow-200",
+  "from-teal-900 via-emerald-600 to-sky-300",
+  "from-zinc-950 via-red-800 to-stone-300",
+  "from-cyan-700 via-blue-500 to-lime-200",
+  "from-blue-950 via-fuchsia-700 to-pink-300",
+  "from-sky-800 via-cyan-500 to-amber-200",
+];
+
+export async function getCatalogCollections(): Promise<TitleCollections> {
+  const titles = await getPayloadTitles();
+
+  if (titles.length === 0) {
+    return emptyCollections;
+  }
+
+  return buildCollections(titles);
+}
+
+export async function getCatalogTitles(): Promise<Title[]> {
+  const titles = await getPayloadTitles();
+
+  return titles;
+}
+
+export async function getCatalogTitle(slug: string): Promise<Title | undefined> {
+  try {
+    const payload = await getPayloadClient();
+    const result = await payload.find({
+      collection: "programs",
+      depth: 3,
+      limit: 1,
+      overrideAccess: true,
+      where: {
+        slug: {
+          equals: slug,
+        },
+      },
+    });
+
+    const program = result.docs[0];
+    const title = program ? (programToTitle(program) ?? undefined) : undefined;
+
+    if (!title) {
+      return undefined;
+    }
+
+    return title;
+  } catch (error) {
+    console.warn(`Unable to load Payload program "${slug}"`, error);
+    return undefined;
+  }
+}
+
+export async function getLandingImageUrls(): Promise<string[]> {
+  try {
+    const payload = await getPayloadClient();
+    const result = await payload.find({
+      collection: "landing",
+      depth: 1,
+      limit: 20,
+      overrideAccess: true,
+      sort: "createdAt",
+    });
+
+    return result.docs
+      .map((item) => mediaUrl(item.heroImage))
+      .filter((url): url is string => Boolean(url));
+  } catch (error) {
+    console.warn("Unable to load Payload landing images", error);
+    return [];
+  }
+}
+
+export async function getCategoryTiles(): Promise<CategoryTile[]> {
+  try {
+    const payload = await getPayloadClient();
+    const result = await payload.find({
+      collection: "categories",
+      depth: 2,
+      limit: 6,
+      overrideAccess: true,
+      sort: "_order",
+      where: {
+        isActive: {
+          equals: true,
+        },
+      },
+    });
+
+    return result.docs.map(categoryToTile).filter((tile): tile is CategoryTile => Boolean(tile));
+  } catch (error) {
+    console.warn("Unable to load Payload categories for brand tiles", error);
+    return [];
+  }
+}
+
+export async function getCategoryPage(slug: string): Promise<{ category: CategoryTile; titles: Title[] } | null> {
+  try {
+    const payload = await getPayloadClient();
+    const categoryResult = await payload.find({
+      collection: "categories",
+      depth: 2,
+      limit: 1,
+      overrideAccess: true,
+      where: {
+        and: [
+          {
+            slug: {
+              equals: slug,
+            },
+          },
+          {
+            isActive: {
+              equals: true,
+            },
+          },
+        ],
+      },
+    });
+    const category = categoryResult.docs[0];
+    const tile = category ? categoryToTile(category) : null;
+
+    if (!category || !tile) {
+      return null;
+    }
+
+    const programsResult = await payload.find({
+      collection: "programs",
+      depth: 3,
+      limit: 80,
+      overrideAccess: true,
+      sort: "-updatedAt",
+      where: {
+        categories: {
+          contains: category.id,
+        },
+      },
+    });
+
+    return {
+      category: tile,
+      titles: programsResult.docs.map(programToTitle).filter((title): title is Title => Boolean(title)),
+    };
+  } catch (error) {
+    console.warn(`Unable to load Payload category "${slug}"`, error);
+    return null;
+  }
+}
+
+async function getPayloadTitles(): Promise<Title[]> {
+  try {
+    const payload = await getPayloadClient();
+    const result = await payload.find({
+      collection: "programs",
+      depth: 3,
+      limit: 80,
+      overrideAccess: true,
+      sort: "-updatedAt",
+    });
+
+    return result.docs.map(programToTitle).filter((title): title is Title => Boolean(title));
+  } catch (error) {
+    console.warn("Unable to load Payload programs for catalog", error);
+    return [];
+  }
+}
+
+function buildCollections(titles: Title[]): TitleCollections {
+  const featured = titles.filter((title) => title.featured);
+  const originals = titles.filter((title) => title.type === "Original");
+  const movies = titles.filter((title) => title.type === "Movie" || title.type === "Original");
+  const series = titles.filter((title) => title.type === "Series");
+  const continueWatching = titles.filter((title) => title.progress);
+  const watchlist = titles.filter((title) => title.inWatchlist);
+
+  return {
+    recommended: titles.slice(0, 12),
+    continueWatching: continueWatching.length > 0 ? continueWatching : titles.slice(0, 8),
+    trending: titles.filter((title) => title.featured || title.inWatchlist).slice(0, 12),
+    originals: originals.length > 0 ? originals : featured,
+    movies: movies.length > 0 ? movies : titles,
+    posterMockups: titles.slice(0, 14),
+    series,
+    watchlist: watchlist.length > 0 ? watchlist : featured.slice(0, 8),
+    heroes: (featured.length > 0 ? featured : titles).slice(0, 6),
+  };
+}
+
+function programToTitle(program: Program): Title | null {
+  const title = cleanText(program.titleTh) || cleanText(program.titleEn) || cleanText(program._displayTitle);
+
+  if (!title || !program.slug) {
+    return null;
+  }
+
+  const type = getTitleType(program);
+  const genre = cleanText(program.genre_sub) || cleanText(program.genre) || cleanText(program.type) || "ThaiPBS";
+  const year = program.productionYear?.toString() || dateYear(program.firstRun) || dateYear(program.createdAt) || "New";
+  const duration = formatDuration(program.duration, type);
+  const description =
+    cleanText(program.synopsisTh) ||
+    cleanText(program.synopsisEn) ||
+    cleanText(program.tags) ||
+    "Watch this title from the ThaiPBS catalog.";
+
+  return {
+    slug: program.slug,
+    title,
+    type,
+    genre,
+    year,
+    rating: getRating(program),
+    duration,
+    description,
+    progress: program.isNewHits ? "38%" : undefined,
+    inWatchlist: Boolean(program.is_Feature || program.is_NEW),
+    featured: Boolean(program.is_Feature || program.isNewHits),
+    heroImage: getProgramBackdropImage(program),
+    posterImage: getProgramPosterImage(program),
+    seasons: getProgramSeasons(program),
+    tone: tones[Math.abs(hashString(program.slug)) % tones.length],
+  };
+}
+
+function getTitleType(program: Program): Title["type"] {
+  if (program.is_Feature || program.is_IP || program.is_global_programs) {
+    return "Original";
+  }
+
+  return program.programContentType === "Movie" ? "Movie" : "Series";
+}
+
+function getProgramBackdropImage(program: Program) {
+  return mediaUrl(program.image) || thumbnailPath(program.videoThumbnailAirflowProxyPath) || mediaUrl(program.coverImage);
+}
+
+function getProgramPosterImage(program: Program) {
+  return mediaUrl(program.coverImage) || mediaUrl(program.image) || thumbnailPath(program.videoThumbnailAirflowProxyPath);
+}
+
+function getProgramSeasons(program: Program): Title["seasons"] {
+  const seasons = Array.isArray(program.seasons)
+    ? program.seasons.filter((season): season is Season => typeof season === "object" && season !== null)
+    : [];
+
+  return seasons
+    .map(seasonToTitleSeason)
+    .sort((a, b) => (a.seasonNumber ?? 9999) - (b.seasonNumber ?? 9999));
+}
+
+function seasonToTitleSeason(season: Season): NonNullable<Title["seasons"]>[number] {
+  const seasonNumber = typeof season.season === "number" ? season.season : undefined;
+  const fallbackTitle = seasonNumber ? `Season ${seasonNumber}` : "Season";
+  const episodes = Array.isArray(season.episodes)
+    ? season.episodes.filter((episode): episode is Episode => typeof episode === "object" && episode !== null)
+    : [];
+
+  return {
+    id: String(season.id),
+    description: cleanText(season.synopsisTh) || cleanText(season.synopsisEn) || undefined,
+    episodes: episodes.map(episodeToTitleEpisode).sort((a, b) => (a.episodeNumber ?? 9999) - (b.episodeNumber ?? 9999)),
+    image: mediaUrl(season.coverImage) || thumbnailPath(season.videoThumbnailAirflowProxyPath),
+    seasonNumber,
+    title: cleanText(season.seasonName) || cleanText(season.seasonNameEn) || fallbackTitle,
+  };
+}
+
+function episodeToTitleEpisode(episode: Episode): NonNullable<Title["seasons"]>[number]["episodes"][number] {
+  const episodeNumber = typeof episode.ep === "number" ? episode.ep : undefined;
+  const fallbackTitle = episodeNumber ? `Episode ${episodeNumber}` : "Episode";
+
+  return {
+    id: String(episode.id),
+    description:
+      cleanText(episode.synopsisEpTh) ||
+      cleanText(episode.synopsisEpEn) ||
+      "Episode details will be available soon.",
+    duration: "Episode",
+    episodeNumber,
+    image: mediaUrl(episode.coverImage) || thumbnailPath(episode.videoThumbnailAirflowProxyPath),
+    releaseDate: dateLabel(episode.firstRun),
+    title: cleanText(episode.epNameTh) || cleanText(episode.epNameEn) || fallbackTitle,
+  };
+}
+
+function mediaUrl(media: Program["coverImage"] | Season["coverImage"] | Episode["coverImage"] | Category["image"] | Landing["heroImage"]) {
+  if (!media || typeof media === "number") {
+    return undefined;
+  }
+
+  return (media as Media).url || undefined;
+}
+
+function categoryToTile(category: Category): CategoryTile | null {
+  const name = cleanText(category.name);
+  const slug = cleanText(category.slug);
+
+  if (!name || !slug) {
+    return null;
+  }
+
+  return {
+    id: category.id,
+    imageUrl: mediaUrl(category.image),
+    name,
+    slug,
+    videoUrl: videoUrl(category.video),
+  };
+}
+
+function videoUrl(video: Category["video"]) {
+  if (!video || typeof video === "number") {
+    return undefined;
+  }
+
+  return (video as Video).url || undefined;
+}
+
+function thumbnailPath(path?: string | null) {
+  const cleanPath = cleanText(path);
+
+  if (!cleanPath) {
+    return undefined;
+  }
+
+  return cleanPath.startsWith("http") || cleanPath.startsWith("/") ? cleanPath : undefined;
+}
+
+function formatDuration(duration: number | null | undefined, type: Title["type"]) {
+  if (!duration) {
+    return type === "Series" ? "Series" : "Movie";
+  }
+
+  if (duration < 60) {
+    return `${duration}m`;
+  }
+
+  const hours = Math.floor(duration / 60);
+  const minutes = duration % 60;
+
+  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
+function getRating(program: Program) {
+  if (program.targetGroup) {
+    return "TV-PG";
+  }
+
+  return program.programContentType === "Movie" ? "PG" : "TV-G";
+}
+
+function dateYear(date?: string | null) {
+  if (!date) {
+    return undefined;
+  }
+
+  const parsed = new Date(date);
+
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.getFullYear().toString();
+}
+
+function dateLabel(date?: string | null) {
+  if (!date) {
+    return undefined;
+  }
+
+  const parsed = new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(parsed);
+}
+
+function cleanText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function hashString(value: string) {
+  return [...value].reduce((hash, char) => hash + char.charCodeAt(0), 0);
+}

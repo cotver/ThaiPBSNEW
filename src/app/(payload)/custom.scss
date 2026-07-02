@@ -1,0 +1,18 @@
+/* Custom Payload admin styles */
+.login__brand {
+  display: none;
+}
+
+.template-default__wrap:has([data-view="programs-manager-add"]),
+.template-default__wrap:has([data-view="programs-manager"]),
+.template-default__wrap:has([data-view="programs-manager-edit"]) {
+  max-width: none;
+  width: 100%;
+}
+
+body:has([data-view="programs-manager-add"]),
+body:has([data-view="programs-manager"]),
+body:has([data-view="programs-manager-edit"]) {
+  background: var(--theme-bg);
+  color: var(--theme-text);
+}
