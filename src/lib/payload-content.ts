@@ -25,6 +25,7 @@ export type CategoryTile = {
 
 export type TypeTile = CategoryTile & {
   icon?: string;
+  link?: string;
 };
 
 type TypeDoc = {
@@ -32,7 +33,7 @@ type TypeDoc = {
   icon?: string | null;
   image?: Category["image"];
   isActive?: boolean | null;
-  link?: unknown;
+  link?: string | null;
   name?: string | null;
   slug?: string | null;
   video?: Category["video"];
@@ -179,7 +180,7 @@ export async function getTypeNavItems(): Promise<NavItem[]> {
       .map((item) => typeToTile(item as TypeDoc))
       .filter((type): type is TypeTile => Boolean(type))
       .map((type) => ({
-        href: `/type/${encodeURIComponent(type.slug)}`,
+        href: type.link || `/type/${encodeURIComponent(type.slug)}`,
         icon: type.icon || "film",
         label: type.name,
       }));
@@ -248,7 +249,7 @@ export async function getTypePage(slug: string): Promise<{ type: TypeTile; title
     const cleanSlug = normalizeTitleLookupKey(slug);
     const typeResult = await payload.find({
       collection: "types",
-      depth: 3,
+      depth: 2,
       limit: 1,
       overrideAccess: true,
       where: {
@@ -273,12 +274,6 @@ export async function getTypePage(slug: string): Promise<{ type: TypeTile; title
       return null;
     }
 
-    const programIds = relationIds(typeDoc.link);
-
-    if (programIds.length === 0) {
-      return { type: tile, titles: [] };
-    }
-
     const programsResult = await payload.find({
       collection: "programs",
       depth: 3,
@@ -286,8 +281,8 @@ export async function getTypePage(slug: string): Promise<{ type: TypeTile; title
       overrideAccess: true,
       sort: "-updatedAt",
       where: {
-        id: {
-          in: programIds,
+        programsType: {
+          contains: typeDoc.id,
         },
       },
     });
@@ -482,6 +477,7 @@ function typeToTile(type: TypeDoc): TypeTile | null {
     id: type.id,
     icon: cleanText(type.icon) || undefined,
     imageUrl: mediaUrl(type.image),
+    link: cleanUrl(type.link),
     name,
     slug,
     videoMimeType: videoMimeType(type.video),
@@ -572,31 +568,22 @@ function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function relationIds(value: unknown): Array<number | string> {
-  const items = Array.isArray(value) ? value : value == null ? [] : [value];
-
-  return items
-    .map((item) => {
-      if (typeof item === "number" || typeof item === "string") {
-        return item;
-      }
-
-      if (item && typeof item === "object") {
-        const id = (item as { id?: unknown }).id;
-        return typeof id === "number" || typeof id === "string" ? id : null;
-      }
-
-      return null;
-    })
-    .filter((id): id is number | string => id !== null);
-}
-
 function normalizeTitleLookupKey(value: string) {
   try {
     return decodeURIComponent(value).trim().replace(/\s+/g, " ");
   } catch {
     return value.trim().replace(/\s+/g, " ");
   }
+}
+
+function cleanUrl(value: unknown) {
+  const url = cleanText(value);
+
+  if (!url) {
+    return undefined;
+  }
+
+  return url.startsWith("/") || /^https?:\/\//i.test(url) ? url : undefined;
 }
 
 function relationNames(value: unknown): string[] {

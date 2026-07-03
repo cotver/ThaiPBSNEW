@@ -20,7 +20,7 @@ export const Types: CollectionConfig = {
   orderable: true,
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'slug', 'icon', 'image', 'video', 'link', 'updatedAt'],
+    defaultColumns: ['name', 'slug', 'icon', 'link', 'image', 'video', 'updatedAt'],
     listSearchableFields: ['name'],
     pagination: {
       defaultLimit: 1000,
@@ -74,10 +74,8 @@ export const Types: CollectionConfig = {
     },
     {
       name: 'link',
-      type: 'relationship',
-      relationTo: 'programs',
-      hasMany: true,
-      admin: { description: 'Programs connected to this type' },
+      type: 'text',
+      admin: { description: 'Optional URL. If set, navigation opens this link instead of the type filter page.' },
     },
     {
       name: 'order',

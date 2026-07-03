@@ -1499,6 +1499,10 @@ export interface Program {
    */
   genre?: (number | Genre)[] | null;
   /**
+   * Programs Type
+   */
+  programsType?: (number | Type)[] | null;
+  /**
    * Sub-genres
    */
   genre_sub?: (number | SubGenre)[] | null;
@@ -1894,6 +1898,63 @@ export interface Genre {
    * URL-safe genre key, e.g. documentary
    */
   slug: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "types".
+ */
+export interface Type {
+  id: number;
+  _order?: string | null;
+  /**
+   * Type name
+   */
+  name: string;
+  /**
+   * URL-safe type key, e.g. documentary, kids, drama
+   */
+  slug: string;
+  /**
+   * Optional icon shown in navigation
+   */
+  icon?:
+    | (
+        | 'home'
+        | 'search'
+        | 'plus'
+        | 'spark'
+        | 'film'
+        | 'screen'
+        | 'news'
+        | 'music'
+        | 'food'
+        | 'travel'
+        | 'kids'
+        | 'education'
+      )
+    | null;
+  /**
+   * Type image / poster / thumbnail
+   */
+  image?: (number | null) | Media;
+  /**
+   * Short video or GIF-style loop from Videos collection
+   */
+  video?: (number | null) | Video;
+  /**
+   * Optional URL. If set, navigation opens this link instead of the type filter page.
+   */
+  link?: string | null;
+  /**
+   * Legacy numeric order. Use drag-and-drop on the Types list to change display order.
+   */
+  order?: number | null;
+  /**
+   * Show this type on the website navigation
+   */
+  isActive?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2620,63 +2681,6 @@ export interface Footer {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "types".
- */
-export interface Type {
-  id: number;
-  _order?: string | null;
-  /**
-   * Type name
-   */
-  name: string;
-  /**
-   * URL-safe type key, e.g. documentary, kids, drama
-   */
-  slug: string;
-  /**
-   * Optional icon shown in navigation
-   */
-  icon?:
-    | (
-        | 'home'
-        | 'search'
-        | 'plus'
-        | 'spark'
-        | 'film'
-        | 'screen'
-        | 'news'
-        | 'music'
-        | 'food'
-        | 'travel'
-        | 'kids'
-        | 'education'
-      )
-    | null;
-  /**
-   * Type image / poster / thumbnail
-   */
-  image?: (number | null) | Media;
-  /**
-   * Short video or GIF-style loop from Videos collection
-   */
-  video?: (number | null) | Video;
-  /**
-   * Programs connected to this type
-   */
-  link?: (number | Program)[] | null;
-  /**
-   * Legacy numeric order. Use drag-and-drop on the Types list to change display order.
-   */
-  order?: number | null;
-  /**
-   * Show this type on the website navigation
-   */
-  isActive?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -3180,6 +3184,7 @@ export interface ProgramsSelect<T extends boolean = true> {
   writer?: T;
   type?: T;
   genre?: T;
+  programsType?: T;
   genre_sub?: T;
   tags?: T;
   comment?: T;

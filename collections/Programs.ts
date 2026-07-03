@@ -164,6 +164,13 @@ export const Programs: CollectionConfig = {
           admin: { description: 'Genres' },
         },
         {
+          name: 'programsType',
+          type: 'relationship',
+          relationTo: 'types',
+          hasMany: true,
+          admin: { description: 'Programs Type' },
+        },
+        {
           name: 'genre_sub',
           type: 'relationship',
           relationTo: 'subGenres',
