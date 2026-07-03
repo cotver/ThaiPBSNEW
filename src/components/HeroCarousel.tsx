@@ -105,6 +105,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         const hasTrailer = title.source === "program" && Boolean(title.trailerUrl);
         const isGifTrailer = title.trailerMimeType === "image/gif";
         const showImageFade = title.showHeroDetails !== false;
+        const useFullImage = title.source === "heroImage" && title.showHeroDetails === false;
 
         return (
           <div
@@ -135,8 +136,8 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                 />
               )
             ) : heroAsset ? (
-              <div className="absolute inset-0 flex items-center justify-end">
-                <div className="relative aspect-video w-[min(100%,calc(100vh*16/9))] max-h-full">
+              <div className={useFullImage ? "absolute inset-0" : "absolute inset-0 flex items-center justify-end"}>
+                <div className={useFullImage ? "absolute inset-0" : "relative aspect-video w-[min(100%,calc(100vh*16/9))] max-h-full"}>
                   <Image
                     alt=""
                     className="object-fill"

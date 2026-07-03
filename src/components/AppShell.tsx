@@ -66,7 +66,7 @@ export function AppShell({
       >
         <Link
           aria-label="ThaiPBS Parvilions home"
-          className="ml-5 flex h-12 w-12 shrink-0 items-center justify-center"
+          className="ml-5 flex w-12 shrink-0 flex-col items-center justify-start"
           href="/"
           onClick={(event) => event.currentTarget.blur()}
         >
@@ -78,6 +78,16 @@ export function AppShell({
             src="/LOGO/Logo.png"
             width={48}
           />
+          <span aria-hidden className="relative -mt-1 block h-[15px] w-16 overflow-hidden">
+            <Image
+              alt=""
+              className="absolute left-0 top-0 h-16 w-16 max-w-none -translate-y-[25px] object-contain"
+              height={1772}
+              priority
+              src="/LOGO/tagline.png"
+              width={1772}
+            />
+          </span>
         </Link>
         <nav className="absolute left-5 top-1/2 flex -translate-y-1/2 flex-col gap-6 text-[12px] font-black uppercase text-white/46">
           {appNavItems.map((item) => {
