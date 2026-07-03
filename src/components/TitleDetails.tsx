@@ -111,8 +111,13 @@ function EpisodesPanel({
         <div>
           <h2 className={compact ? "text-xl font-black" : "text-2xl font-black"}>Episodes</h2>
           <p className="mt-1 text-sm font-semibold text-white/52">
-            {seasons.length} season{seasons.length === 1 ? "" : "s"} available
+            {seasons.length} season available
           </p>
+          {selectedSeason ? (
+            <p className="mt-1 text-sm font-semibold text-white/52">
+              {seasonSummaryLabel(selectedSeason)} | {selectedSeason.episodes.length} episode
+            </p>
+          ) : null}
         </div>
         <select
           aria-label="Select season"
@@ -206,6 +211,14 @@ function seasonLabel(season: TitleSeason) {
   }
 
   return season.title;
+}
+
+function seasonSummaryLabel(season: TitleSeason) {
+  if (season.seasonNumber) {
+    return `season ${season.seasonNumber}`;
+  }
+
+  return season.title.toLowerCase();
 }
 
 function Meta({ label, value }: { label: string; value: string }) {
