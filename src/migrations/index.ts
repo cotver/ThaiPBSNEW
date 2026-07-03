@@ -12,6 +12,7 @@ import * as migration_20260703_030120_simplify_home_hero_images from './20260703
 import * as migration_20260703_090000_merge_types_into_categories from './20260703_090000_merge_types_into_categories';
 import * as migration_20260703_091000_add_programs_is_discontinued from './20260703_091000_add_programs_is_discontinued';
 import * as migration_20260703_092000_resync_episodes_id_sequence from './20260703_092000_resync_episodes_id_sequence';
+import * as migration_20260703_093000_add_programs_is_continue from './20260703_093000_add_programs_is_continue';
 
 export const migrations = [
   {
@@ -83,5 +84,10 @@ export const migrations = [
     up: migration_20260703_092000_resync_episodes_id_sequence.up,
     down: migration_20260703_092000_resync_episodes_id_sequence.down,
     name: '20260703_092000_resync_episodes_id_sequence'
+  },
+  {
+    up: migration_20260703_093000_add_programs_is_continue.up,
+    down: migration_20260703_093000_add_programs_is_continue.down,
+    name: '20260703_093000_add_programs_is_continue'
   },
 ];

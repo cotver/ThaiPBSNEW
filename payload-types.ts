@@ -366,6 +366,7 @@ export interface User {
               | 'is_Award'
               | 'is_special_programs'
               | 'is_old_series'
+              | 'is_continue'
               | 'is_global_programs'
               | 'is_global_international'
               | 'is_global_thai_dub'
@@ -789,6 +790,7 @@ export interface RoleProfile {
               | 'is_Award'
               | 'is_special_programs'
               | 'is_old_series'
+              | 'is_continue'
               | 'is_global_programs'
               | 'is_global_international'
               | 'is_global_thai_dub'
@@ -1211,6 +1213,7 @@ export interface UserGroup {
               | 'is_Award'
               | 'is_special_programs'
               | 'is_old_series'
+              | 'is_continue'
               | 'is_global_programs'
               | 'is_global_international'
               | 'is_global_thai_dub'
@@ -1559,7 +1562,7 @@ export interface Program {
    */
   is_Feature?: boolean | null;
   /**
-   * Is NEW
+   * Recommended
    */
   is_NEW?: boolean | null;
   /**
@@ -1582,6 +1585,10 @@ export interface Program {
    * Is old series
    */
   is_old_series?: boolean | null;
+  /**
+   * Is continue
+   */
+  is_continue?: boolean | null;
   /**
    * Is discontinued
    */
@@ -3217,6 +3224,7 @@ export interface ProgramsSelect<T extends boolean = true> {
   is_Award?: T;
   is_special_programs?: T;
   is_old_series?: T;
+  is_continue?: T;
   is_discontinued?: T;
   is_global_programs?: T;
   is_global_international?: T;

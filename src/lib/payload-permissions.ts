@@ -156,6 +156,7 @@ export const collectionFields: Record<ManagedCollection, string[]> = {
     'is_Award',
     'is_special_programs',
     'is_old_series',
+    'is_continue',
     'is_global_programs',
     'is_global_international',
     'is_global_thai_dub',

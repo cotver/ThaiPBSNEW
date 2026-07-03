@@ -2778,12 +2778,13 @@ export function ProgramsManagerAddForm(props?: {
   const [trailerLink, setTrailerLink] = useState('')
   const [is_IP, setIs_IP] = useState(false)
   const [is_Feature, setIs_Feature] = useState(false)
-  const [is_NEW, setIs_NEW] = useState(false)
+  const [recommended, setRecommended] = useState(false)
   const [is_Schedule, setIs_Schedule] = useState(false)
   const [isNewHits, setIsNewHits] = useState(false)
   const [is_Detail, setIs_Detail] = useState(false)
   const [is_special_programs, setIs_special_programs] = useState(false)
   const [is_old_series, setIs_old_series] = useState(false)
+  const [is_continue, setIs_continue] = useState(false)
   const [is_discontinued, setIs_discontinued] = useState(false)
   const [is_global_programs, setIs_global_programs] = useState(false)
   const [is_global_international, setIs_global_international] = useState(false)
@@ -3011,12 +3012,13 @@ export function ProgramsManagerAddForm(props?: {
     setTrailerLink(String(p.trailerLink ?? ''))
     setIs_IP(Boolean(p.is_IP))
     setIs_Feature(Boolean(p.is_Feature))
-    setIs_NEW(Boolean((p as { is_NEW?: boolean }).is_NEW))
+    setRecommended(Boolean((p as { is_NEW?: boolean }).is_NEW))
     setIs_Schedule(Boolean((p as { is_Schedule?: boolean }).is_Schedule))
     setIsNewHits(Boolean((p as { isNewHits?: boolean }).isNewHits))
     setIs_Detail(Boolean((p as { is_Detail?: boolean }).is_Detail))
     setIs_special_programs(Boolean((p as { is_special_programs?: boolean }).is_special_programs))
     setIs_old_series(Boolean((p as { is_old_series?: boolean }).is_old_series))
+    setIs_continue(Boolean((p as { is_continue?: boolean }).is_continue))
     setIs_discontinued(Boolean((p as { is_discontinued?: boolean }).is_discontinued))
     setIs_global_programs(Boolean((p as { is_global_programs?: boolean }).is_global_programs))
     setIs_global_international(Boolean((p as { is_global_international?: boolean }).is_global_international))
@@ -3362,11 +3364,11 @@ export function ProgramsManagerAddForm(props?: {
   }
 
   const showFull =
-    is_IP || is_NEW || is_Detail || is_special_programs || is_old_series || is_discontinued || is_global_programs
+    is_IP || recommended || is_Detail || is_special_programs || is_old_series || is_continue || is_discontinued || is_global_programs
   const showScheduleOrFull = is_Schedule || showFull
   const showNewHitsOrFull = isNewHits || showFull
   const showAny = is_Feature || showScheduleOrFull || showNewHitsOrFull || showFull
-  const is_normal_programs = !is_special_programs && !is_old_series && !is_discontinued && !is_global_programs
+  const is_normal_programs = !is_special_programs && !is_old_series && !is_continue && !is_discontinued && !is_global_programs
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!slug.trim()) {
@@ -3429,12 +3431,13 @@ export function ProgramsManagerAddForm(props?: {
             trailerLink: trailerLink.trim() || null,
             is_IP,
             is_Feature,
-            is_NEW,
+            is_NEW: recommended,
             is_Schedule,
             isNewHits,
             is_Detail,
             is_special_programs,
             is_old_series,
+            is_continue,
             is_discontinued,
             is_global_programs,
             is_global_international: is_global_programs && is_global_international,
@@ -3691,12 +3694,13 @@ export function ProgramsManagerAddForm(props?: {
           trailerLink: trailerLink.trim() || null,
           is_IP,
           is_Feature,
-          is_NEW,
+          is_NEW: recommended,
           is_Schedule,
           isNewHits,
           is_Detail,
           is_special_programs,
           is_old_series,
+          is_continue,
           is_discontinued,
           is_global_programs,
           is_global_international: is_global_programs && is_global_international,
@@ -3880,12 +3884,13 @@ export function ProgramsManagerAddForm(props?: {
       setTrailerLink('')
       setIs_IP(false)
       setIs_Feature(false)
-      setIs_NEW(false)
+      setRecommended(false)
       setIs_Schedule(false)
       setIsNewHits(false)
       setIs_Detail(false)
       setIs_special_programs(false)
       setIs_old_series(false)
+      setIs_continue(false)
       setIs_discontinued(false)
       setFirstRun('')
       setRerunDates([''])
@@ -3929,12 +3934,13 @@ export function ProgramsManagerAddForm(props?: {
   const enabledFlags = [
     is_IP,
     is_Feature,
-    is_NEW,
+    recommended,
     is_Schedule,
     isNewHits,
     is_Detail,
     is_special_programs,
     is_old_series,
+    is_continue,
     is_discontinued,
     is_global_programs,
   ].filter(Boolean).length
@@ -4292,8 +4298,8 @@ export function ProgramsManagerAddForm(props?: {
               <span className="text-sm">Is Feature</span>
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" checked={is_NEW} onChange={(e) => setIs_NEW(e.target.checked)} />
-              <span className="text-sm">Is NEW</span>
+              <input type="checkbox" checked={recommended} onChange={(e) => setRecommended(e.target.checked)} />
+              <span className="text-sm">Recommended</span>
             </label>
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={is_Schedule} onChange={(e) => setIs_Schedule(e.target.checked)} />
@@ -4322,6 +4328,14 @@ export function ProgramsManagerAddForm(props?: {
                 onChange={(e) => setIs_old_series(e.target.checked)}
               />
               <span className="text-sm">Is Old Series</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={is_continue}
+                onChange={(e) => setIs_continue(e.target.checked)}
+              />
+              <span className="text-sm">Is Continue</span>
             </label>
             <label className="flex items-center gap-2">
               <input

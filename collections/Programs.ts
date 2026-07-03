@@ -236,7 +236,7 @@ export const Programs: CollectionConfig = {
           type: 'checkbox',
           admin: { description: 'Is Feature' },
         },
-        { name: 'is_NEW', type: 'checkbox', admin: { description: 'Is NEW' } },
+        { name: 'is_NEW', label: 'Recommended', type: 'checkbox', admin: { description: 'Recommended' } },
         { name: 'is_Schedule', type: 'checkbox', admin: { description: 'Is Schedule' } },
         { name: 'isNewHits', type: 'checkbox', admin: { description: 'Is New Hits' } },
         {
@@ -246,6 +246,7 @@ export const Programs: CollectionConfig = {
         },
         { name: 'is_special_programs', type: 'checkbox', admin: { description: 'Is special programs' } },
         { name: 'is_old_series', type: 'checkbox', admin: { description: 'Is old series' } },
+        { name: 'is_continue', type: 'checkbox', admin: { description: 'Is continue' } },
         { name: 'is_discontinued', type: 'checkbox', admin: { description: 'Is discontinued' } },
         { name: 'is_global_programs', type: 'checkbox', admin: { description: 'Is global programs' } },
         {
