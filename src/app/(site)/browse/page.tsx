@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { PosterCard } from "@/components/PosterCard";
 import type { Title } from "@/lib/content";
 import { getCatalogTitles } from "@/lib/payload-content";
+import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
 import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +26,13 @@ export default async function BrowsePage({
     getCatalogTitles(),
   ]);
   const watchedSlugs = parseWatchHistoryCookie(cookieStore.get(watchHistoryCookieName)?.value);
-  const filteredTitles = filterBrowseTitles(titles, params ?? {}, watchedSlugs);
+  const savedSlugs = parseSavedTitlesCookie(cookieStore.get(savedTitlesCookieName)?.value);
+  const savedSlugSet = new Set(savedSlugs);
+  const titlesWithSavedState = titles.map((title) => ({
+    ...title,
+    inWatchlist: savedSlugSet.has(title.slug),
+  }));
+  const filteredTitles = filterBrowseTitles(titlesWithSavedState, params ?? {}, watchedSlugs);
   const heading = getBrowseHeading(params ?? {});
 
   return (

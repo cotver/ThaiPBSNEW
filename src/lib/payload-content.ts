@@ -85,13 +85,16 @@ const tones = [
   "from-sky-800 via-cyan-500 to-amber-200",
 ];
 
-export async function getCatalogCollections(continueWatchingSlugs: string[] = []): Promise<TitleCollections> {
+export async function getCatalogCollections(
+  continueWatchingSlugs: string[] = [],
+  savedTitleSlugs: string[] = [],
+): Promise<TitleCollections> {
   const [titles, heroImages, typeRows] = await Promise.all([
     getPayloadTitles(),
     getHeroImageTitles(),
     getHomeTypeRows(),
   ]);
-  const collections = buildTitleCollections(titles, continueWatchingSlugs);
+  const collections = buildTitleCollections(titles, continueWatchingSlugs, savedTitleSlugs);
 
   return {
     ...collections,
@@ -485,41 +488,53 @@ function heroImageToTitle(hero: HeroImage): Title | null {
   };
 }
 
-export function buildTitleCollections(titles: Title[], continueWatchingSlugs: string[] = []): TitleCollections {
+export function buildTitleCollections(
+  titles: Title[],
+  continueWatchingSlugs: string[] = [],
+  savedTitleSlugs: string[] = [],
+): TitleCollections {
   if (titles.length === 0) {
     return emptyCollections;
   }
 
-  const featured = titles.filter((title) => title.featured);
-  const originals = titles.filter((title) => title.type === "Original");
-  const movies = titles.filter((title) => title.type === "Movie" || title.type === "Original");
-  const series = titles.filter((title) => title.type === "Series");
-  const titlesBySlug = new Map(titles.map((title) => [title.slug, title]));
+  const savedTitleSet = new Set(savedTitleSlugs);
+  const collectionTitles: Title[] = titles.map((title) => ({
+    ...title,
+    inWatchlist: savedTitleSet.has(title.slug),
+  }));
+
+  const featured = collectionTitles.filter((title) => title.featured);
+  const originals = collectionTitles.filter((title) => title.type === "Original");
+  const movies = collectionTitles.filter((title) => title.type === "Movie" || title.type === "Original");
+  const series = collectionTitles.filter((title) => title.type === "Series");
+  const titlesBySlug = new Map(collectionTitles.map((title) => [title.slug, title]));
   const continueWatching = continueWatchingSlugs
     .map((slug) => titlesBySlug.get(slug))
     .filter((title): title is Title => Boolean(title));
-  const watchlist = titles.filter((title) => title.inWatchlist);
+  const watchlist = savedTitleSlugs
+    .map((slug) => titlesBySlug.get(slug))
+    .filter((title): title is Title => Boolean(title));
   const currentYear = new Date().getFullYear();
   const homeYears = [currentYear, currentYear + 1];
 
   return {
-    continuePrograms: titles.filter((title) => title.isContinue).slice(0, 12),
-    recommended: titles.filter((title) => title.isNew).slice(0, 12),
+    continuePrograms: collectionTitles.filter((title) => title.isContinue).slice(0, 12),
+    recommended: collectionTitles.filter((title) => title.isNew).slice(0, 12),
     continueWatching,
-    discontinuedPrograms: titles.filter((title) => title.isDiscontinued).slice(0, 12),
-    trending: titles.filter((title) => title.featured || title.inWatchlist).slice(0, 12),
+    discontinuedPrograms: collectionTitles.filter((title) => title.isDiscontinued).slice(0, 12),
+    trending: collectionTitles.filter((title) => title.featured || title.inWatchlist).slice(0, 12),
     typeRows: [],
     originals: originals.length > 0 ? originals : featured,
-    movies: movies.length > 0 ? movies : titles,
-    posterMockups: titles.slice(0, 14),
+    movies: movies.length > 0 ? movies : collectionTitles,
+    posterMockups: collectionTitles.slice(0, 14),
     series,
-    thaiPrograms: titles.filter((title) => !title.isGlobalProgram).slice(0, 12),
-    internationalPrograms: titles.filter((title) => title.isGlobalProgram).slice(0, 12),
-    watchlist: watchlist.length > 0 ? watchlist : featured.slice(0, 8),
+    thaiPrograms: collectionTitles.filter((title) => !title.isGlobalProgram).slice(0, 12),
+    internationalPrograms: collectionTitles.filter((title) => title.isGlobalProgram).slice(0, 12),
+    watchlist,
     heroes: featured,
     yearRows: homeYears.map((year) => ({
       year,
-      titles: titles.filter((title) => title.homeYear === year).slice(0, 12),
+      titles: collectionTitles.filter((title) => title.homeYear === year).slice(0, 12),
     })),
   };
 }
@@ -562,7 +577,7 @@ function programToTitle(program: Program): Title | null {
     categoryNames: relationNames((program as { categories?: unknown }).categories),
     categorySlugs: relationSlugs((program as { categories?: unknown }).categories),
     progress: program.isNewHits ? "38%" : undefined,
-    inWatchlist: Boolean(program.is_Feature || program.is_NEW),
+    inWatchlist: false,
     featured: Boolean(program.is_Feature),
     heroImage: getProgramBackdropImage(program),
     heroTitleLines: heroTitleLines.length > 0 ? heroTitleLines : undefined,

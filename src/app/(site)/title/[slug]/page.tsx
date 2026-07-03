@@ -1,10 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { SaveForLaterButton } from "@/components/SaveForLaterButton";
 import { TitleDetails } from "@/components/TitleDetails";
 import { WatchHistoryMarker } from "@/components/WatchHistoryMarker";
 import { titleEyebrow, titleHref } from "@/lib/content";
 import { getCatalogTitle } from "@/lib/payload-content";
+import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -14,11 +17,17 @@ export default async function TitlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const title = await getCatalogTitle(slug);
+  const [loadedTitle, cookieStore] = await Promise.all([getCatalogTitle(slug), cookies()]);
 
-  if (!title) {
+  if (!loadedTitle) {
     notFound();
   }
+
+  const savedTitleSlugs = parseSavedTitlesCookie(cookieStore.get(savedTitlesCookieName)?.value);
+  const title = {
+    ...loadedTitle,
+    inWatchlist: savedTitleSlugs.includes(loadedTitle.slug),
+  };
 
   const heroAsset = title.heroImage || title.posterImage;
   const hasTrailer = title.source === "program" && Boolean(title.trailerUrl);
@@ -126,13 +135,11 @@ export default async function TitlePage({
                 >
                   Details
                 </Link>
-                <Link
-                  aria-label="Open watchlist"
+                <SaveForLaterButton
                   className="grid size-12 place-items-center rounded-full border border-white/18 bg-black/35 text-2xl font-light transition hover:bg-white/18"
-                  href="/watchlist"
-                >
-                  +
-                </Link>
+                  savedClassName="grid size-12 place-items-center rounded-full border border-cyan-200/40 bg-cyan-200 text-lg font-black text-[#030714] transition hover:bg-white"
+                  title={title}
+                />
               </div>
             ) : null}
           </div>

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { ContentRow } from "@/components/ContentRow";
 import { buildTitleCollections, getCategoryPage } from "@/lib/payload-content";
+import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
 import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
 import { cookies } from "next/headers";
 
@@ -14,6 +15,7 @@ export default async function CategoryPage({
   const { slug } = await params;
   const cookieStore = await cookies();
   const continueWatchingSlugs = parseWatchHistoryCookie(cookieStore.get(watchHistoryCookieName)?.value);
+  const savedTitleSlugs = parseSavedTitlesCookie(cookieStore.get(savedTitlesCookieName)?.value);
   const categoryPage = await getCategoryPage(slug);
 
   if (!categoryPage) {
@@ -21,7 +23,7 @@ export default async function CategoryPage({
   }
 
   const { category, titles } = categoryPage;
-  const collections = buildTitleCollections(titles, continueWatchingSlugs);
+  const collections = buildTitleCollections(titles, continueWatchingSlugs, savedTitleSlugs);
   const heroMedia = category.videoUrl || category.imageUrl;
 
   return (

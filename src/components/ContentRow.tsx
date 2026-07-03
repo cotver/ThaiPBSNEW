@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { titleEyebrow, titleHref, type Title } from "@/lib/content";
 import { serializeWatchHistory, watchHistoryCookieName } from "@/lib/watch-history";
 import { PosterCard, WideCard } from "./PosterCard";
+import { SaveForLaterButton } from "./SaveForLaterButton";
 import { TitlePreviewModal } from "./TitlePreviewModal";
 
 export type ActivePreview = {
@@ -513,13 +514,11 @@ export function RowFloatingPreview({
             >
               <InfoIcon />
             </Link>
-            <Link
-              aria-label="Open watchlist"
+            <SaveForLaterButton
               className="ml-auto grid size-10 place-items-center rounded-full border border-white/20 bg-white/10 text-2xl font-light text-white transition hover:bg-white/20"
-              href="/watchlist"
-            >
-              +
-            </Link>
+              savedClassName="ml-auto grid size-10 place-items-center rounded-full border border-cyan-200/40 bg-cyan-200 text-lg font-black text-[#030714] transition hover:bg-white"
+              title={title}
+            />
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] font-bold text-white/66">
             <span className="text-emerald-300">98% Match</span>

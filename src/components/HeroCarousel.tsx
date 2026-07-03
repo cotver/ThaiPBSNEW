@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { titleEyebrow, titleHref, type Title } from "@/lib/content";
+import { SaveForLaterButton } from "./SaveForLaterButton";
 
 export function HeroCarousel({ titles }: { titles: Title[] }) {
   const [active, setActive] = useState(0);
@@ -219,13 +220,11 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
               >
                 Details
               </Link>
-              <Link
-                aria-label="Open watchlist"
+              <SaveForLaterButton
                 className="grid size-12 place-items-center rounded-full border border-white/18 bg-black/35 text-2xl transition hover:bg-white/18"
-                href="/watchlist"
-              >
-                +
-              </Link>
+                savedClassName="grid size-12 place-items-center rounded-full border border-cyan-200/40 bg-cyan-200 text-lg font-black text-[#030714] transition hover:bg-white"
+                title={current}
+              />
             </div>
           )}
           <div className="mt-8 flex items-center gap-2 lg:hidden">

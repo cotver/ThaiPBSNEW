@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { titleEyebrow, titleHref, type Title } from "@/lib/content";
+import { SaveForLaterButton } from "./SaveForLaterButton";
 import { TitleDetails } from "./TitleDetails";
 
 export function TitlePreviewModal({
@@ -169,14 +170,11 @@ export function TitlePreviewModal({
                   >
                     Details
                   </Link>
-                  <Link
-                    aria-label="Open watchlist"
+                  <SaveForLaterButton
                     className="grid size-12 place-items-center rounded-full border border-white/18 bg-black/35 text-2xl font-light transition hover:bg-white/18"
-                    href="/watchlist"
-                    onClick={onClose}
-                  >
-                    +
-                  </Link>
+                    savedClassName="grid size-12 place-items-center rounded-full border border-cyan-200/40 bg-cyan-200 text-lg font-black text-[#030714] transition hover:bg-white"
+                    title={title}
+                  />
                 </div>
               ) : null}
             </div>

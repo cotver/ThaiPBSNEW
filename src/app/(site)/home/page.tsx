@@ -2,6 +2,7 @@ import { BrandTiles } from "@/components/BrandTiles";
 import { ContentRow } from "@/components/ContentRow";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { getCatalogCollections, getCategoryTiles } from "@/lib/payload-content";
+import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
 import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
 import { cookies } from "next/headers";
 
@@ -10,8 +11,9 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const cookieStore = await cookies();
   const continueWatchingSlugs = parseWatchHistoryCookie(cookieStore.get(watchHistoryCookieName)?.value);
+  const savedTitleSlugs = parseSavedTitlesCookie(cookieStore.get(savedTitlesCookieName)?.value);
   const [collections, categories] = await Promise.all([
-    getCatalogCollections(continueWatchingSlugs),
+    getCatalogCollections(continueWatchingSlugs, savedTitleSlugs),
     getCategoryTiles(),
   ]);
 
