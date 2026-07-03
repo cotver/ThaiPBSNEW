@@ -46,7 +46,6 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
     dragStartXRef.current = event.clientX;
     dragStartScrollRef.current = rail.scrollLeft;
     setIsDraggingThumbs(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
   }
 
   function moveThumbDrag(event: React.PointerEvent<HTMLDivElement>) {
@@ -68,10 +67,6 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   function stopThumbDrag(event: React.PointerEvent<HTMLDivElement>) {
     if (isDraggingThumbs) {
       setIsDraggingThumbs(false);
-    }
-
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
     }
   }
 
