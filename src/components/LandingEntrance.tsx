@@ -162,10 +162,10 @@ export function LandingEntrance({ imageUrls }: { imageUrls: string[] }) {
 
       <Image
         alt=""
-        className="absolute bottom-5 left-5 z-10 h-auto w-[min(24vw,112px)] opacity-90 drop-shadow-[0_8px_22px_rgba(0,0,0,0.72)] sm:bottom-7 sm:left-8 sm:w-[min(13vw,142px)]"
+        className="absolute bottom-5 left-5 z-10 h-auto w-[min(24vw,312px)] opacity-90 drop-shadow-[0_8px_22px_rgba(0,0,0,0.72)] sm:bottom-0 sm:left-0 sm:w-[min(20vw,342px)]"
         height={1772}
         priority
-        src="/LOGO/สำนักสร้าง.png"
+        src="/LOGO/สำนักสร้างสรรค์เนื้อหา สีขาว.png"
         width={1772}
       />
     </main>
