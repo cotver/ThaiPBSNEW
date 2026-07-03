@@ -139,7 +139,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                 <div className="relative aspect-video w-[min(100%,calc(100vh*16/9))] max-h-full">
                   <Image
                     alt=""
-                    className="object-contain object-right"
+                    className="object-fill"
                     fill
                     priority={index === 0}
                     sizes="100vw"

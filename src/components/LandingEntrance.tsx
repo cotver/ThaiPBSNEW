@@ -140,7 +140,7 @@ export function LandingEntrance({ imageUrls }: { imageUrls: string[] }) {
             <Image
               alt=""
               aria-hidden
-              className="pointer-events-none absolute left-[76%] top-1/2 z-20 h-auto w-[min(42vw,250px)] -translate-x-8 -translate-y-1/2 opacity-0 drop-shadow-[0_10px_24px_rgba(0,0,0,0.74)] transition duration-500 ease-out group-hover:translate-x-5 group-hover:opacity-100"
+              className="pointer-events-none absolute left-[65%] top-1/2 z-20 h-auto w-[min(42vw,250px)] -translate-x-6 -translate-y-1/2 opacity-0 drop-shadow-[0_10px_24px_rgba(0,0,0,0.74)] transition duration-500 ease-out group-hover:translate-x-1 group-hover:opacity-100"
               height={1772}
               priority
               src="/LOGO/tagline.png"
@@ -149,7 +149,7 @@ export function LandingEntrance({ imageUrls }: { imageUrls: string[] }) {
             <span className="relative grid size-full place-items-center transition duration-300">
               <Image
                 alt=""
-                className="h-full w-full object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.72)] transition duration-300 group-hover:drop-shadow-[0_0_30px_rgba(255,128,31,0.72)]"
+                className="h-full w-full object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.72)] z-30 transition duration-300 group-hover:drop-shadow-[0_0_30px_rgba(255,128,31,0.72)]"
                 height={1772}
                 priority
                 src="/LOGO/Logo.png"
