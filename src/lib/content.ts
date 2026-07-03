@@ -8,6 +8,7 @@ export type Title = {
   duration: string;
   eyebrow?: string;
   description: string;
+  categorySlugs?: string[];
   progress?: string;
   inWatchlist?: boolean;
   featured?: boolean;
@@ -24,6 +25,7 @@ export type Title = {
   tone: string;
   trailerMimeType?: string;
   trailerUrl?: string;
+  typeSlugs?: string[];
 };
 
 export type TitleEpisode = {

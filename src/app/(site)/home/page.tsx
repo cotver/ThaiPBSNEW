@@ -23,28 +23,28 @@ export default async function HomePage() {
 
       <section className="relative z-10 space-y-8 px-5 pb-16 sm:px-8 lg:px-10">
         <BrandTiles categories={categories} />
-        <ContentRow layout="poster" title="Recommended For You" titles={collections.recommended} viewAllHref="/search?q=New" />
+        <ContentRow layout="poster" title="Recommended For You" titles={collections.recommended} viewAllHref="/browse?section=recommended&label=Recommended%20For%20You" />
         {collections.typeRows.map((row) => (
           <ContentRow
             key={row.type.id}
             layout="vertical"
             title={row.type.name}
             titles={row.titles}
-            viewAllHref={row.type.link || `/type/${encodeURIComponent(row.type.slug)}`}
+            viewAllHref={`/browse?section=type&type=${encodeURIComponent(row.type.slug)}&label=${encodeURIComponent(row.type.name)}`}
           />
         ))}
-        <ContentRow layout="wide" title="Continue Watching" titles={collections.continueWatching} viewAllHref="/watchlist" />
+        <ContentRow layout="wide" title="Continue Watching" titles={collections.continueWatching} viewAllHref="/browse?section=continue-watching&label=Continue%20Watching" />
         {collections.yearRows.map((row) => (
           <ContentRow
             key={row.year}
             layout="vertical"
             title={`ThaiPBS Year ${row.year}`}
             titles={row.titles}
-            viewAllHref={`/search?q=${encodeURIComponent(String(row.year))}`}
+            viewAllHref={`/browse?section=year&year=${encodeURIComponent(String(row.year))}&label=${encodeURIComponent(`ThaiPBS Year ${row.year}`)}`}
           />
         ))}
-        <ContentRow layout="vertical" title="Thai Programs" titles={collections.thaiPrograms} viewAllHref="/search?q=Thai" />
-        <ContentRow layout="vertical" title="International Programs" titles={collections.internationalPrograms} viewAllHref="/search?q=International" />
+        <ContentRow layout="vertical" title="Thai Programs" titles={collections.thaiPrograms} viewAllHref="/browse?section=thai&label=Thai%20Programs" />
+        <ContentRow layout="vertical" title="International Programs" titles={collections.internationalPrograms} viewAllHref="/browse?section=international&label=International%20Programs" />
       </section>
     </>
   );

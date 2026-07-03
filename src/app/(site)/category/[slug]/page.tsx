@@ -61,7 +61,7 @@ export default async function CategoryPage({
             layout="vertical"
             title={`${category.name} Programs`}
             titles={titles}
-            viewAllHref={`/category/${encodeURIComponent(category.slug)}`}
+            viewAllHref={`/browse?category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Programs`)}`}
           />
         ) : (
           <div className="rounded-[8px] border border-white/10 bg-white/6 p-8 text-white/70">
@@ -72,13 +72,13 @@ export default async function CategoryPage({
           layout="poster"
           title="Recommended For You"
           titles={collections.recommended}
-          viewAllHref={`/category/${encodeURIComponent(category.slug)}`}
+          viewAllHref={`/browse?section=recommended&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Recommended For You`)}`}
         />
         <ContentRow
           layout="wide"
           title="Continue Watching"
           titles={collections.continueWatching}
-          viewAllHref="/watchlist"
+          viewAllHref={`/browse?section=continue-watching&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Continue Watching`)}`}
         />
         {collections.yearRows.map((row) => (
           <ContentRow
@@ -86,20 +86,20 @@ export default async function CategoryPage({
             layout="vertical"
             title={`ThaiPBS Year ${row.year}`}
             titles={row.titles}
-            viewAllHref={`/search?q=${encodeURIComponent(`${category.name} ${row.year}`)}`}
+            viewAllHref={`/browse?section=year&year=${encodeURIComponent(String(row.year))}&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} ThaiPBS Year ${row.year}`)}`}
           />
         ))}
         <ContentRow
           layout="vertical"
           title="Thai Programs"
           titles={collections.thaiPrograms}
-          viewAllHref={`/category/${encodeURIComponent(category.slug)}`}
+          viewAllHref={`/browse?section=thai&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Thai Programs`)}`}
         />
         <ContentRow
           layout="vertical"
           title="International Programs"
           titles={collections.internationalPrograms}
-          viewAllHref={`/category/${encodeURIComponent(category.slug)}`}
+          viewAllHref={`/browse?section=international&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} International Programs`)}`}
         />
       </section>
     </>

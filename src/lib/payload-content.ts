@@ -534,6 +534,7 @@ function programToTitle(program: Program): Title | null {
     rating: getRating(program),
     duration,
     description,
+    categorySlugs: relationSlugs((program as { categories?: unknown }).categories),
     progress: program.isNewHits ? "38%" : undefined,
     inWatchlist: Boolean(program.is_Feature || program.is_NEW),
     featured: Boolean(program.is_Feature),
@@ -548,6 +549,7 @@ function programToTitle(program: Program): Title | null {
     tone: tones[Math.abs(hashString(program.slug)) % tones.length],
     trailerMimeType: videoMimeType(program.trailer),
     trailerUrl: getProgramTrailerUrl(program),
+    typeSlugs: relationSlugs((program as { programsType?: unknown }).programsType),
   };
 }
 
@@ -826,6 +828,20 @@ function relationNames(value: unknown): string[] {
 
       const record = item as { name?: unknown; slug?: unknown; title?: unknown };
       return cleanText(record.name) || cleanText(record.title) || cleanText(record.slug);
+    })
+    .filter(Boolean);
+}
+
+function relationSlugs(value: unknown): string[] {
+  const items = Array.isArray(value) ? value : value == null ? [] : [value];
+
+  return items
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return "";
+      }
+
+      return cleanText((item as { slug?: unknown }).slug);
     })
     .filter(Boolean);
 }
