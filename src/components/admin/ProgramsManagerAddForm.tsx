@@ -930,6 +930,12 @@ type SubGenreDoc = {
   genre?: number | GenreDoc | null
 }
 
+type ProgramTypeDoc = {
+  id: number
+  name?: string
+  slug?: string
+}
+
 export type AwardOption = {
   id: number
   name: string
@@ -2688,6 +2694,7 @@ export function ProgramsManagerAddForm(props?: {
   const [targetGroup, setTargetGroup] = useState('')
   const [type, setType] = useState('')
   const [genre, setGenre] = useState<number[]>([])
+  const [programsType, setProgramsType] = useState<number[]>([])
   const [genre_sub, setGenre_sub] = useState<number[]>([])
   const [tags, setTags] = useState('')
   const [comment, setComment] = useState('')
@@ -2746,6 +2753,7 @@ export function ProgramsManagerAddForm(props?: {
   const [languageOptions, setLanguageOptions] = useState<LanguageDoc[]>([])
   const [categoryOptions, setCategoryOptions] = useState<CategoryDoc[]>([])
   const [genreOptions, setGenreOptions] = useState<GenreDoc[]>([])
+  const [programsTypeOptions, setProgramsTypeOptions] = useState<ProgramTypeDoc[]>([])
   const [subGenreOptions, setSubGenreOptions] = useState<SubGenreDoc[]>([])
   const [awardOptions, setAwardOptions] = useState<AwardOption[]>(initialAwardOptions)
   const [viewsHelperOpen, setViewsHelperOpen] = useState(false)
@@ -2828,6 +2836,27 @@ export function ProgramsManagerAddForm(props?: {
               name: (d as { name?: unknown }).name as string | undefined,
               slug: (d as { slug?: unknown }).slug as string | undefined,
               genre: (d as { genre?: unknown }).genre as number | GenreDoc | null | undefined,
+            }))
+            .filter((d) => Number.isFinite(d.id) && d.id > 0)
+        )
+      })
+      .catch(() => {})
+  }, [])
+
+  React.useEffect(() => {
+    const base = getApiBase()
+    if (!base) return
+    fetch(`${base}/types?limit=500&depth=0&sort=_order`, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const docs = (data?.docs ?? []) as unknown
+        if (!Array.isArray(docs)) return
+        setProgramsTypeOptions(
+          docs
+            .map((d) => ({
+              id: Number((d as { id?: unknown }).id),
+              name: (d as { name?: unknown }).name as string | undefined,
+              slug: (d as { slug?: unknown }).slug as string | undefined,
             }))
             .filter((d) => Number.isFinite(d.id) && d.id > 0)
         )
@@ -2920,6 +2949,7 @@ export function ProgramsManagerAddForm(props?: {
     setTargetGroup(String(p.targetGroup ?? ''))
     setType(String(p.type ?? ''))
     setGenre(relationIds((p as { genre?: unknown }).genre))
+    setProgramsType(relationIds((p as { programsType?: unknown }).programsType))
     setGenre_sub(relationIds((p as { genre_sub?: unknown }).genre_sub))
     setTags(String(p.tags ?? ''))
     setComment(String(p.comment ?? ''))
@@ -3336,6 +3366,7 @@ export function ProgramsManagerAddForm(props?: {
             targetGroup: targetGroupAge,
             type: type || null,
             genre,
+            programsType,
             genre_sub,
             tags: tags.trim() || null,
             comment: comment.trim() || null,
@@ -3597,6 +3628,7 @@ export function ProgramsManagerAddForm(props?: {
           targetGroup: targetGroupAge,
           type: type || null,
           genre,
+          programsType,
           genre_sub,
           tags: tags.trim() || null,
           comment: comment.trim() || null,
@@ -3783,6 +3815,7 @@ export function ProgramsManagerAddForm(props?: {
       setTargetGroup('')
       setType('')
       setGenre([])
+      setProgramsType([])
       setGenre_sub([])
       setTags('')
       setComment('')
@@ -3836,6 +3869,7 @@ export function ProgramsManagerAddForm(props?: {
     titleTh,
     titleEn,
     genre,
+    programsType,
     type,
     firstRun,
   ].filter((value) => String(value ?? '').trim() !== '').length
@@ -4176,6 +4210,16 @@ export function ProgramsManagerAddForm(props?: {
                 />
               </div>
               <div>
+                <label className="block text-sm font-medium mb-1">{L('programsType', 'Programs Type')}</label>
+                <TaxonomyMultiDropdown
+                  emptyLabel="Select programs type..."
+                  noOptionsLabel="No programs type yet"
+                  options={programsTypeOptions}
+                  value={programsType}
+                  onChange={setProgramsType}
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium mb-1">{L('genre_sub', 'Sub-genres')}</label>
                 <TaxonomyMultiDropdown
                   emptyLabel="Select sub-genres..."
@@ -4305,6 +4349,16 @@ export function ProgramsManagerAddForm(props?: {
                   options={genreOptions}
                   value={genre}
                   onChange={setGenre}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{L('programsType', 'Programs Type')}</label>
+                <TaxonomyMultiDropdown
+                  emptyLabel="Select programs type..."
+                  noOptionsLabel="No programs type yet"
+                  options={programsTypeOptions}
+                  value={programsType}
+                  onChange={setProgramsType}
                 />
               </div>
               <div>

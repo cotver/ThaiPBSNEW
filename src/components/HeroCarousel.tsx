@@ -40,7 +40,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   }
 
   return (
-    <section className="relative h-[clamp(620px,56.25vw,1080px)] px-5 pb-24 sm:px-8 lg:px-10">
+    <section className="relative h-[clamp(620px,min(56.25vw,100vh),2160px)] overflow-hidden px-5 pb-24 sm:px-8 lg:px-10">
       {titles.map((title, index) => (
         <div
           aria-hidden={index !== active}
@@ -50,7 +50,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
           key={title.slug}
         >
           {title.heroImage || title.posterImage ? (
-            <div className="absolute inset-x-0 top-0 aspect-video w-full">
+            <div className="absolute inset-0">
               <Image
                 alt=""
                 className="object-cover object-center"
@@ -125,7 +125,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         </div>
       </div>
 
-      <div className="no-scrollbar absolute right-8 top-[clamp(26rem,calc(56.25vw-8rem),52rem)] z-20 hidden max-w-[34vw] gap-2 overflow-x-auto pb-1 lg:flex">
+      <div className="no-scrollbar absolute bottom-10 right-8 z-20 hidden max-w-[34vw] gap-2 overflow-x-auto pb-1 lg:flex">
         {titles.map((title, index) => (
           <button
             aria-label={`Show ${title.title}`}
