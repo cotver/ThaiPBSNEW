@@ -103,14 +103,7 @@ export function LandingEntrance({ imageUrls }: { imageUrls: string[] }) {
       <div className="absolute inset-x-0 bottom-0 top-[40%] z-10 flex items-center justify-center px-5">
         <div className="flex flex-col items-center">
           <span className="relative mb-3 block aspect-[1641/691] w-[min(72vw,430px)]">
-            <Image
-              alt=""
-              className="absolute left-[-1.9%] top-[-79%] h-auto w-[108%] max-w-none object-contain drop-shadow-[0_12px_30px_rgba(0,0,0,0.78)]"
-              height={1772}
-              priority
-              src="/LOGO/Logo with tagline h.png"
-              width={1772}
-            />
+
           </span>
           <Link
             aria-label="Enter website"
@@ -140,12 +133,14 @@ export function LandingEntrance({ imageUrls }: { imageUrls: string[] }) {
             <Image
               alt=""
               aria-hidden
-              className="pointer-events-none absolute left-[65%] top-1/2 z-20 h-auto w-[min(42vw,250px)] -translate-x-6 -translate-y-1/2 opacity-0 drop-shadow-[0_10px_24px_rgba(0,0,0,0.74)] transition duration-500 ease-out group-hover:translate-x-1 group-hover:opacity-100"
+              className="pointer-events-none absolute left-[65%] top-1/2 z-20 h-auto max-w-[200%] w-[min(42vw,250px)] -translate-x-6 -translate-y-1/2 opacity-0 drop-shadow-[0_10px_24px_rgba(0,0,0,0.74)] transition duration-500 ease-out group-hover:translate-x-1 group-hover:opacity-100"
               height={1772}
               priority
               src="/LOGO/tagline.png"
               width={1772}
             />
+
+
             <span className="relative grid size-full place-items-center transition duration-300">
               <Image
                 alt=""
@@ -159,6 +154,15 @@ export function LandingEntrance({ imageUrls }: { imageUrls: string[] }) {
           </Link>
         </div>
       </div>
+
+      <Image
+        alt=""
+        className="absolute top-0 left-5 z-10 h-auto w-[min(14vw,312px)] opacity-90 drop-shadow-[0_8px_22px_rgba(0,0,0,0.72)] sm:top-0 sm:left-10 sm:w-[min(10vw,342px)]"
+        height={1772}
+        priority
+        src="/LOGO/Logo with tagline h.png"
+        width={1772}
+      />
 
       <Image
         alt=""
