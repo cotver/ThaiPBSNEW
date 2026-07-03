@@ -105,6 +105,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         const hasTrailer = title.source === "program" && Boolean(title.trailerUrl);
         const isGifTrailer = title.trailerMimeType === "image/gif";
         const isHeroImage = title.source === "heroImage";
+        const isProgramImage = title.source === "program" && !hasTrailer;
 
         return (
           <div
@@ -139,7 +140,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                 className={
                   isHeroImage
                     ? "absolute inset-0"
-                    : "absolute inset-y-0 right-0 w-[min(86rem,78vw)] max-w-full"
+                    : "absolute right-0 top-1/2 aspect-video h-[100%] max-h-full -translate-y-1/2"
                 }
               >
                 <Image
@@ -147,9 +148,10 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                   className="object-cover object-center"
                   fill
                   priority={index === 0}
-                  sizes={isHeroImage ? "100vw" : "78vw"}
+                  sizes={isHeroImage ? "100vw" : "100vh"}
                   src={heroAsset}
                 />
+               
               </div>
             ) : (
               <div className={`absolute inset-0 bg-gradient-to-br ${title.tone}`} />
@@ -163,7 +165,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
           </div>
         );
       })}
-      <div className="absolute inset-x-0 bottom-0 h-50 bg-gradient-to-t from-[#030714] via-[#030714]/88 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-50 bg-gradient-to-t from-[#030714] via-[#030714]/40 to-transparent" />
 
       {current.showHeroDetails !== false && (
         <div className="absolute bottom-20 left-5 z-10 max-w-3xl sm:left-8 lg:bottom-24 lg:left-10">
@@ -292,5 +294,5 @@ function getHeroDetailShadowClass(title: Title) {
     return "bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_19%,rgba(3,7,20,0.7)_23%,rgba(3,7,20,0.22)_30%,transparent_78%)]";
   }
 
-  return "bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_20%,rgba(3,7,20,0.7)_25%,rgba(3,7,20,0.22)_40%,transparent_78%)]";
+  return "bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_19%,rgba(3,7,20,0.7)_23%,rgba(3,7,20,0.22)_30%,transparent_78%)]";
 }
