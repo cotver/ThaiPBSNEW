@@ -104,9 +104,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         const heroAsset = title.heroImage || title.posterImage;
         const hasTrailer = title.source === "program" && Boolean(title.trailerUrl);
         const isGifTrailer = title.trailerMimeType === "image/gif";
-        const isHeroImage = title.source === "heroImage";
-        const useSideImage = (title.source === "program" && !hasTrailer) || (isHeroImage && title.showHeroDetails !== false);
-        const useFullImage = isHeroImage && title.showHeroDetails === false;
+        const showImageFade = title.showHeroDetails !== false;
 
         return (
           <div
@@ -137,22 +135,23 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                 />
               )
             ) : heroAsset ? (
-              <div
-                className={
-                  useFullImage
-                    ? "absolute inset-0"
-                    : "absolute right-0 top-1/2 aspect-video h-[100%] max-h-full -translate-y-1/2"
-                }
-              >
-                <Image
-                  alt=""
-                  className={useFullImage ? "object-cover object-center" : "object-contain object-right"}
-                  fill
-                  priority={index === 0}
-                  sizes={useFullImage ? "100vw" : "100vh"}
-                  src={heroAsset}
-                />
-               
+              <div className="absolute inset-0 flex items-center justify-end">
+                <div className="relative aspect-video w-[min(100%,calc(100vh*16/9))] max-h-full">
+                  <Image
+                    alt=""
+                    className="object-contain object-right"
+                    fill
+                    priority={index === 0}
+                    sizes="100vw"
+                    src={heroAsset}
+                  />
+                  {showImageFade && (
+                    <>
+                      <div className="absolute inset-y-0 left-0 w-[10%] bg-gradient-to-r from-[#030714] via-[#030714]/70 to-transparent" />
+                      <div className="absolute inset-x-0 bottom-0 h-[20%] bg-gradient-to-t from-[#030714]/90 via-[#030714]/45 to-transparent" />
+                    </>
+                  )}
+                </div>
               </div>
             ) : (
               <div className={`absolute inset-0 bg-gradient-to-br ${title.tone}`} />
@@ -288,12 +287,12 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
 
 function getHeroDetailShadowClass(title: Title) {
   if (title.source === "program" && title.trailerUrl) {
-    return "bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_19%,rgba(3,7,20,0.7)_23%,rgba(3,7,20,0.22)_30%,transparent_78%)]";
+    return "bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_10%,rgba(3,7,20,0.7)_20%,rgba(3,7,20,0.22)_30%,transparent_78%)]";
   }
 
   if (title.source === "heroImage") {
-    return "bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_19%,rgba(3,7,20,0.7)_23%,rgba(3,7,20,0.22)_30%,transparent_78%)]";
+    return "bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_10%,rgba(3,7,20,0.7)_20%,rgba(3,7,20,0.22)_30%,transparent_78%)]";
   }
 
-  return "bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_19%,rgba(3,7,20,0.7)_23%,rgba(3,7,20,0.22)_30%,transparent_78%)]";
+  return "bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_10%,rgba(3,7,20,0.7)_20%,rgba(3,7,20,0.22)_30%,transparent_78%)]";
 }
