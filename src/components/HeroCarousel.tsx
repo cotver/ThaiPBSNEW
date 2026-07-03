@@ -100,38 +100,70 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
 
   return (
     <section className="relative h-[clamp(620px,min(56.25vw,100vh),2160px)] overflow-hidden px-5 pb-24 sm:px-8 lg:px-10">
-      {titles.map((title, index) => (
-        <div
-          aria-hidden={index !== active}
-          className={`absolute inset-0 transition-opacity duration-700 ${
-            index === active ? "opacity-100" : "opacity-0"
-          }`}
-          key={title.slug}
-        >
-          {title.heroImage || title.posterImage ? (
-            <div className="absolute inset-0">
-              <Image
-                alt=""
-                className="object-cover object-center"
-                fill
-                priority={index === 0}
-                sizes="100vw"
-                src={title.heroImage || title.posterImage || ""}
-              />
-            </div>
-          ) : (
-            <div className={`absolute inset-0 bg-gradient-to-br ${title.tone}`} />
-          )}
-          {!title.heroImage && !title.posterImage && (
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_76%_28%,rgba(255,255,255,0.22),transparent_22%),radial-gradient(circle_at_55%_68%,rgba(34,211,238,0.18),transparent_28%)]" />
-          )}
-        </div>
-      ))}
+      {titles.map((title, index) => {
+        const heroAsset = title.heroImage || title.posterImage;
+        const hasTrailer = title.source === "program" && Boolean(title.trailerUrl);
+        const isGifTrailer = title.trailerMimeType === "image/gif";
+        const isHeroImage = title.source === "heroImage";
 
-      {current.showHeroDetails !== false && (
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,7,20,0.74)_0%,rgba(3,7,20,0.58)_30%,rgba(3,7,20,0.22)_52%,transparent_74%)]" />
-      )}
-      <div className="absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-[#030714] via-[#030714]/88 to-transparent" />
+        return (
+          <div
+            aria-hidden={index !== active}
+            className={`absolute inset-0 bg-[#030714] transition-opacity duration-700 ${
+              index === active ? "opacity-100" : "opacity-0"
+            }`}
+            key={title.slug}
+          >
+            {hasTrailer && title.trailerUrl ? (
+              isGifTrailer ? (
+                <img
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover object-center"
+                  src={title.trailerUrl}
+                />
+              ) : (
+                <video
+                  aria-hidden="true"
+                  autoPlay
+                  className="absolute inset-0 h-full w-full object-cover object-center"
+                  loop
+                  muted
+                  playsInline
+                  poster={heroAsset}
+                  preload="metadata"
+                  src={title.trailerUrl}
+                />
+              )
+            ) : heroAsset ? (
+              <div
+                className={
+                  isHeroImage
+                    ? "absolute inset-0"
+                    : "absolute inset-y-0 right-0 w-[min(86rem,78vw)] max-w-full"
+                }
+              >
+                <Image
+                  alt=""
+                  className="object-cover object-center"
+                  fill
+                  priority={index === 0}
+                  sizes={isHeroImage ? "100vw" : "78vw"}
+                  src={heroAsset}
+                />
+              </div>
+            ) : (
+              <div className={`absolute inset-0 bg-gradient-to-br ${title.tone}`} />
+            )}
+            {!heroAsset && !hasTrailer && (
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_76%_28%,rgba(255,255,255,0.22),transparent_22%),radial-gradient(circle_at_55%_68%,rgba(34,211,238,0.18),transparent_28%)]" />
+            )}
+            {title.showHeroDetails !== false && (
+              <div className={`absolute inset-0 ${getHeroDetailShadowClass(title)}`} />
+            )}
+          </div>
+        );
+      })}
+      <div className="absolute inset-x-0 bottom-0 h-50 bg-gradient-to-t from-[#030714] via-[#030714]/88 to-transparent" />
 
       {current.showHeroDetails !== false && (
         <div className="absolute bottom-20 left-5 z-10 max-w-3xl sm:left-8 lg:bottom-24 lg:left-10">
@@ -249,4 +281,16 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
       </div>
     </section>
   );
+}
+
+function getHeroDetailShadowClass(title: Title) {
+  if (title.source === "program" && title.trailerUrl) {
+    return "bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_19%,rgba(3,7,20,0.7)_23%,rgba(3,7,20,0.22)_30%,transparent_78%)]";
+  }
+
+  if (title.source === "heroImage") {
+    return "bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_19%,rgba(3,7,20,0.7)_23%,rgba(3,7,20,0.22)_30%,transparent_78%)]";
+  }
+
+  return "bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_20%,rgba(3,7,20,0.7)_25%,rgba(3,7,20,0.22)_40%,transparent_78%)]";
 }

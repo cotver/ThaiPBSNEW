@@ -446,6 +446,7 @@ function heroImageToTitle(hero: HeroImage): Title | null {
     heroImage: image,
     showHeroActions: false,
     showHeroDetails: hero.showDetails !== false,
+    source: "heroImage",
     tone: tones[Math.abs(hashString(slug)) % tones.length],
   };
 }
@@ -510,7 +511,10 @@ function programToTitle(program: Program): Title | null {
     heroImage: getProgramBackdropImage(program),
     posterImage: getProgramPosterImage(program),
     seasons: getProgramSeasons(program),
+    source: "program",
     tone: tones[Math.abs(hashString(program.slug)) % tones.length],
+    trailerMimeType: videoMimeType(program.trailer),
+    trailerUrl: getProgramTrailerUrl(program),
   };
 }
 
@@ -528,6 +532,10 @@ function getProgramBackdropImage(program: Program) {
 
 function getProgramPosterImage(program: Program) {
   return mediaUrl(program.coverImage) || mediaUrl(program.image) || thumbnailPath(program.videoThumbnailAirflowProxyPath);
+}
+
+function getProgramTrailerUrl(program: Program) {
+  return videoUrl(program.trailer) || cleanUrl(program.trailerLink) || thumbnailPath(program.TrailerAirflowProxyPath);
 }
 
 function getProgramSeasons(program: Program): Title["seasons"] {
@@ -629,7 +637,7 @@ function typeToTile(type: TypeDoc): TypeTile | null {
   };
 }
 
-function videoUrl(video: Category["video"]) {
+function videoUrl(video: unknown) {
   if (!video || typeof video === "number") {
     return undefined;
   }
@@ -637,7 +645,7 @@ function videoUrl(video: Category["video"]) {
   return (video as Video).url || undefined;
 }
 
-function videoMimeType(video: Category["video"]) {
+function videoMimeType(video: unknown) {
   if (!video || typeof video === "number") {
     return undefined;
   }

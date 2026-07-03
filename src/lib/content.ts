@@ -16,7 +16,10 @@ export type Title = {
   seasons?: TitleSeason[];
   showHeroActions?: boolean;
   showHeroDetails?: boolean;
+  source?: "program" | "heroImage";
   tone: string;
+  trailerMimeType?: string;
+  trailerUrl?: string;
 };
 
 export type TitleEpisode = {
