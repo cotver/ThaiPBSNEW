@@ -174,7 +174,11 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
             {current.eyebrow || (current.type === "Original" ? "ThaiPBS Parvilions Original" : current.type)}
           </p>
           <h1 className="max-w-3xl text-5xl font-black leading-[0.98] sm:text-6xl lg:text-7xl">
-            {current.title}
+            {(current.heroTitleLines?.length ? current.heroTitleLines : [current.title]).map((line) => (
+              <span className="block" key={line}>
+                {line}
+              </span>
+            ))}
           </h1>
           {[current.year, current.rating, current.duration].filter(Boolean).length > 0 && (
             <p className="mt-4 text-sm font-bold text-white/72">

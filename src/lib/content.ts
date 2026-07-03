@@ -12,6 +12,7 @@ export type Title = {
   inWatchlist?: boolean;
   featured?: boolean;
   heroImage?: string;
+  heroTitleLines?: string[];
   posterImage?: string;
   seasons?: TitleSeason[];
   showHeroActions?: boolean;

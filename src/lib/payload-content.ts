@@ -474,7 +474,10 @@ function buildCollections(titles: Title[]): TitleCollections {
 }
 
 function programToTitle(program: Program): Title | null {
-  const title = cleanText(program.titleTh) || cleanText(program.titleEn) || cleanText(program._displayTitle);
+  const titleTh = cleanText(program.titleTh);
+  const titleEn = cleanText(program.titleEn);
+  const title = titleTh || titleEn || cleanText(program._displayTitle);
+  const heroTitleLines = uniqueTextLines([titleTh, titleEn]);
 
   if (!title || !program.slug) {
     return null;
@@ -509,6 +512,7 @@ function programToTitle(program: Program): Title | null {
     inWatchlist: Boolean(program.is_Feature || program.is_NEW),
     featured: Boolean(program.is_Feature || program.isNewHits),
     heroImage: getProgramBackdropImage(program),
+    heroTitleLines: heroTitleLines.length > 0 ? heroTitleLines : undefined,
     posterImage: getProgramPosterImage(program),
     seasons: getProgramSeasons(program),
     source: "program",
@@ -718,6 +722,10 @@ function dateLabel(date?: string | null) {
 
 function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function uniqueTextLines(values: string[]) {
+  return values.filter((value, index, lines) => Boolean(value) && lines.indexOf(value) === index);
 }
 
 function normalizeSlugLookupKey(value: string) {

@@ -6,7 +6,6 @@ import type { CategoryTile } from "@/lib/payload-content";
 
 export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
   const [hoveredId, setHoveredId] = useState<number | null>(null);
-  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   const [loadedVideos, setLoadedVideos] = useState<Set<number>>(new Set());
 
   if (categories.length === 0) {
@@ -18,12 +17,10 @@ export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
       {categories.map((category) => {
         const isHovered = hoveredId === category.id;
         const hasImage = Boolean(category.imageUrl);
-        const hasLoadedImage = loadedImages.has(category.id);
         const hasLoadedVideo = loadedVideos.has(category.id);
         const isGif = category.videoMimeType === "image/gif";
         const showVideo = isHovered && Boolean(category.videoUrl) && hasLoadedVideo;
-        const showOnlyName =
-          !hasImage && (!hasLoadedImage || (isHovered && Boolean(category.videoUrl) && !hasLoadedVideo));
+        const showOnlyName = !hasImage && (!isHovered || !category.videoUrl || !hasLoadedVideo);
 
         return (
           <Link
@@ -39,16 +36,7 @@ export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
             {category.imageUrl && (
               <img
                 alt=""
-                className={`absolute inset-0 z-10 h-full w-full object-cover transition duration-300 ${
-                  hasLoadedImage ? "opacity-100" : "opacity-0"
-                }`}
-                onLoad={() =>
-                  setLoadedImages((current) => {
-                    const next = new Set(current);
-                    next.add(category.id);
-                    return next;
-                  })
-                }
+                className="absolute inset-0 z-10 h-full w-full object-cover"
                 src={category.imageUrl}
               />
             )}
