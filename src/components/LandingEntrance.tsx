@@ -119,28 +119,37 @@ export function LandingEntrance({ imageUrls }: { imageUrls: string[] }) {
           >
             <span
               aria-hidden
-              className="absolute -bottom-16 left-1/2 h-24 w-[235%] rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(255,159,49,0.48)_0%,rgba(255,132,26,0.30)_30%,rgba(112,67,25,0.16)_52%,transparent_76%)] blur-xl transition duration-300 [transform:translateX(-50%)_perspective(260px)_rotateX(64deg)] group-hover:h-28 group-hover:w-[260%] group-hover:bg-[radial-gradient(ellipse_at_center,rgba(255,178,66,0.70)_0%,rgba(255,119,24,0.42)_32%,rgba(124,69,22,0.20)_56%,transparent_78%)]"
+              className="absolute -bottom-9 left-1/2 h-24 w-[235%] rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(255,159,49,0.48)_0%,rgba(255,132,26,0.30)_30%,rgba(112,67,25,0.16)_52%,transparent_76%)] blur-xl transition duration-300 [transform:translateX(-50%)_perspective(260px)_rotateX(64deg)] group-hover:-bottom-10 group-hover:h-28 group-hover:w-[260%] group-hover:bg-[radial-gradient(ellipse_at_center,rgba(255,178,66,0.70)_0%,rgba(255,119,24,0.42)_32%,rgba(124,69,22,0.20)_56%,transparent_78%)]"
             />
             <span
               aria-hidden
-              className="absolute -bottom-8 left-1/2 h-12 w-[150%] rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.74)_0%,rgba(0,0,0,0.42)_42%,transparent_76%)] blur-md transition duration-300 [transform:translateX(-50%)_perspective(220px)_rotateX(60deg)] group-hover:w-[170%] group-hover:bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.70)_0%,rgba(255,102,24,0.20)_48%,transparent_78%)]"
+              className="absolute -bottom-4 left-1/2 h-12 w-[150%] rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.74)_0%,rgba(0,0,0,0.42)_42%,transparent_76%)] blur-md transition duration-300 [transform:translateX(-50%)_perspective(220px)_rotateX(60deg)] group-hover:w-[170%] group-hover:bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.70)_0%,rgba(255,102,24,0.20)_48%,transparent_78%)]"
             />
             <span
               aria-hidden
-              className="absolute -bottom-3 left-1/2 h-5 w-[96%] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,230,164,0.50)_0%,rgba(255,147,45,0.26)_44%,transparent_78%)] blur-sm transition duration-300 group-hover:w-[116%] group-hover:bg-[radial-gradient(ellipse_at_center,rgba(255,235,181,0.76)_0%,rgba(255,137,31,0.36)_46%,transparent_80%)]"
+              className="absolute -bottom-1 left-1/2 h-5 w-[96%] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,230,164,0.50)_0%,rgba(255,147,45,0.26)_44%,transparent_78%)] blur-sm transition duration-300 group-hover:w-[116%] group-hover:bg-[radial-gradient(ellipse_at_center,rgba(255,235,181,0.76)_0%,rgba(255,137,31,0.36)_46%,transparent_80%)]"
             />
             <span
               aria-hidden
-              className="absolute -bottom-9 left-[-34%] h-8 w-[58%] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,205,113,0.34)_0%,rgba(255,138,38,0.17)_38%,transparent_74%)] blur-md transition duration-300 group-hover:left-[-42%] group-hover:w-[70%] group-hover:bg-[radial-gradient(ellipse_at_center,rgba(255,218,139,0.58)_0%,rgba(255,128,31,0.30)_42%,transparent_78%)]"
+              className="absolute -bottom-4 left-[-34%] h-8 w-[58%] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,205,113,0.34)_0%,rgba(255,138,38,0.17)_38%,transparent_74%)] blur-md transition duration-300 group-hover:left-[-42%] group-hover:w-[70%] group-hover:bg-[radial-gradient(ellipse_at_center,rgba(255,218,139,0.58)_0%,rgba(255,128,31,0.30)_42%,transparent_78%)]"
             />
             <span
               aria-hidden
-              className="absolute -bottom-9 right-[-34%] h-8 w-[58%] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,205,113,0.34)_0%,rgba(255,138,38,0.17)_38%,transparent_74%)] blur-md transition duration-300 group-hover:right-[-42%] group-hover:w-[70%] group-hover:bg-[radial-gradient(ellipse_at_center,rgba(255,218,139,0.58)_0%,rgba(255,128,31,0.30)_42%,transparent_78%)]"
+              className="absolute -bottom-4 right-[-34%] h-8 w-[58%] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,205,113,0.34)_0%,rgba(255,138,38,0.17)_38%,transparent_74%)] blur-md transition duration-300 group-hover:right-[-42%] group-hover:w-[70%] group-hover:bg-[radial-gradient(ellipse_at_center,rgba(255,218,139,0.58)_0%,rgba(255,128,31,0.30)_42%,transparent_78%)]"
+            />
+            <Image
+              alt=""
+              aria-hidden
+              className="pointer-events-none absolute left-[76%] top-1/2 z-20 h-auto w-[min(42vw,250px)] -translate-x-8 -translate-y-1/2 opacity-0 drop-shadow-[0_10px_24px_rgba(0,0,0,0.74)] transition duration-500 ease-out group-hover:translate-x-5 group-hover:opacity-100"
+              height={1772}
+              priority
+              src="/LOGO/tagline.png"
+              width={1772}
             />
             <span className="relative grid size-full place-items-center transition duration-300">
               <Image
                 alt=""
-                className="h-full w-full object-contain drop-shadow-[0_22px_34px_rgba(0,0,0,0.78)] transition duration-300 group-hover:drop-shadow-[0_0_30px_rgba(255,128,31,0.72)]"
+                className="h-full w-full object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.72)] transition duration-300 group-hover:drop-shadow-[0_0_30px_rgba(255,128,31,0.72)]"
                 height={1772}
                 priority
                 src="/LOGO/Logo.png"
@@ -153,7 +162,7 @@ export function LandingEntrance({ imageUrls }: { imageUrls: string[] }) {
 
       <Image
         alt=""
-        className="absolute bottom-5 right-5 z-10 h-auto w-[min(24vw,112px)] opacity-90 drop-shadow-[0_8px_22px_rgba(0,0,0,0.72)] sm:bottom-7 sm:right-8 sm:w-[min(13vw,142px)]"
+        className="absolute bottom-5 left-5 z-10 h-auto w-[min(24vw,112px)] opacity-90 drop-shadow-[0_8px_22px_rgba(0,0,0,0.72)] sm:bottom-7 sm:left-8 sm:w-[min(13vw,142px)]"
         height={1772}
         priority
         src="/LOGO/สำนักสร้าง.png"

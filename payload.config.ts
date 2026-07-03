@@ -18,6 +18,7 @@ import { Footer } from './collections/Footer.ts'
 import { Languages } from './collections/Languages.ts'
 import { Awards } from './collections/Awards.ts'
 import { Categories } from './collections/Categories.ts'
+import { Types } from './collections/Types.ts'
 import { Genres } from './collections/Genres.ts'
 import { SubGenres } from './collections/SubGenres.ts'
 import { Programs } from './collections/Programs.ts'
@@ -97,6 +98,7 @@ export default buildConfig({
     Languages,
     Awards,
     Categories,
+    Types,
     Genres,
     SubGenres,
     Programs,

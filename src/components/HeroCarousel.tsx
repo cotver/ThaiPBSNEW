@@ -40,7 +40,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   }
 
   return (
-    <section className="relative min-h-[1080px] px-5 pb-24 sm:px-8 lg:min-h-[1080px] lg:px-10">
+    <section className="relative h-[clamp(620px,56.25vw,1080px)] px-5 pb-24 sm:px-8 lg:px-10">
       {titles.map((title, index) => (
         <div
           aria-hidden={index !== active}
@@ -125,7 +125,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         </div>
       </div>
 
-      <div className="no-scrollbar absolute bottom-28 right-8 z-20 hidden max-w-[34vw] gap-2 overflow-x-auto pb-1 lg:flex">
+      <div className="no-scrollbar absolute right-8 top-[clamp(26rem,calc(56.25vw-8rem),52rem)] z-20 hidden max-w-[34vw] gap-2 overflow-x-auto pb-1 lg:flex">
         {titles.map((title, index) => (
           <button
             aria-label={`Show ${title.title}`}

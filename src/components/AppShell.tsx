@@ -3,12 +3,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
-import { navItems } from "@/lib/content";
+import { useEffect, useRef, useState } from "react";
+import { navItems, type NavItem } from "@/lib/content";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  typeNavItems = [],
+}: {
+  children: React.ReactNode;
+  typeNavItems?: NavItem[];
+}) {
   const pathname = usePathname();
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
+  const appNavItems = [...navItems, ...typeNavItems];
 
   useEffect(() => {
     const activeElement = document.activeElement;
@@ -16,6 +24,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (activeElement instanceof HTMLElement && sidebarRef.current?.contains(activeElement)) {
       activeElement.blur();
     }
+
+    setSidebarExpanded(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -48,12 +58,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <main className="min-h-screen overflow-hidden bg-[#030714] text-white">
       <aside
-        className="disney-sidebar fixed left-0 top-0 z-40 hidden h-screen w-[92px] flex-col bg-gradient-to-r from-[#030714] via-[#030714]/98 to-transparent px-5 py-7 lg:flex"
+        className={`disney-sidebar fixed left-0 top-0 z-40 hidden h-screen flex-col bg-gradient-to-r from-[#030714] via-[#030714]/98 to-transparent py-7 lg:flex ${
+          sidebarExpanded ? "w-[292px]" : "w-[92px]"
+        }`}
+        onPointerLeave={() => setSidebarExpanded(false)}
         ref={sidebarRef}
       >
         <Link
           aria-label="ThaiPBS Parvilions home"
-          className="mb-16 flex h-12 w-12 shrink-0 items-center justify-center"
+          className="ml-5 flex h-12 w-12 shrink-0 items-center justify-center"
           href="/"
           onClick={(event) => event.currentTarget.blur()}
         >
@@ -66,23 +79,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             width={48}
           />
         </Link>
-        <nav className="flex flex-1 flex-col gap-6 text-[12px] font-black uppercase text-white/46">
-          {navItems.map((item) => {
+        <nav className="absolute left-5 top-1/2 flex -translate-y-1/2 flex-col gap-6 text-[12px] font-black uppercase text-white/46">
+          {appNavItems.map((item) => {
             const active =
               item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
 
             return (
               <Link
                 aria-current={active ? "page" : undefined}
-                className={`group/item flex h-8 items-center gap-7 whitespace-nowrap transition duration-200 hover:text-white ${
+                className={`group/item flex h-10 items-center gap-7 whitespace-nowrap transition duration-200 hover:text-white ${
+                  sidebarExpanded ? "w-[248px] overflow-visible" : "w-12 overflow-hidden"
+                } ${
                   active ? "text-white" : ""
                 }`}
                 href={item.href}
                 key={item.href}
                 onClick={(event) => event.currentTarget.blur()}
+                onFocus={() => setSidebarExpanded(true)}
               >
-                <Icon name={item.icon} active={active} />
-                <span className="disney-nav-label translate-x-2 overflow-hidden opacity-0 transition duration-300">
+                <span
+                  className="flex h-10 w-12 shrink-0 items-center justify-center"
+                  onPointerEnter={() => setSidebarExpanded(true)}
+                >
+                  <Icon name={item.icon} active={active} />
+                </span>
+                <span className="disney-nav-label block min-w-max translate-x-2 opacity-0 transition duration-300">
                   {item.label}
                 </span>
               </Link>
@@ -93,8 +114,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="relative pb-20 lg:pl-[92px]">{children}</div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid h-16 grid-cols-6 border-t border-white/10 bg-[#030714]/95 px-1 backdrop-blur-xl lg:hidden">
-        {navItems.map((item) => {
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 grid h-16 border-t border-white/10 bg-[#030714]/95 px-1 backdrop-blur-xl lg:hidden"
+        style={{ gridTemplateColumns: `repeat(${appNavItems.length}, minmax(0, 1fr))` }}
+      >
+        {appNavItems.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
 
           return (
@@ -144,6 +168,12 @@ function Icon({
       {name === "spark" && <path d="M12 3l1.9 5.4L20 10l-6.1 1.6L12 17l-1.9-5.4L4 10l6.1-1.6L12 3ZM18 16l.8 2.2L21 19l-2.2.8L18 22l-.8-2.2L15 19l2.2-.8L18 16Z" />}
       {name === "film" && <path d="M5 4h14v16H5V4ZM8 4v16M16 4v16M5 8h3M5 16h3M16 8h3M16 16h3" />}
       {name === "screen" && <path d="M4 6h16v10H4V6ZM9 20h6M12 16v4" />}
+      {name === "news" && <path d="M5 5h14v14H5V5ZM8 9h8M8 13h8M8 17h5" />}
+      {name === "music" && <path d="M9 18V6l10-2v12M9 18a3 3 0 1 1-2-2.83M19 16a3 3 0 1 1-2-2.83" />}
+      {name === "food" && <path d="M7 4v7M4 4v7a3 3 0 0 0 6 0V4M7 14v6M17 4v16M14 4h6" />}
+      {name === "travel" && <path d="M4 16 20 8M7 7l10 10M9 5l2 12M13 7l4 8" />}
+      {name === "kids" && <path d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM4 20a4 4 0 0 1 8 0M12 20a4 4 0 0 1 8 0" />}
+      {name === "education" && <path d="m3 8 9-4 9 4-9 4-9-4ZM6 10v5c2 2 10 2 12 0v-5M21 8v6" />}
     </svg>
   );
 }

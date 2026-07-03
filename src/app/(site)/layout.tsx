@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/AppShell";
+import { getTypeNavItems } from "@/lib/payload-content";
 import "../globals.css";
 
 export const metadata: Metadata = {
@@ -8,15 +9,17 @@ export const metadata: Metadata = {
     "A ThaiPBS Parvilions streaming homepage built with Next.js 16 and Tailwind CSS.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const typeNavItems = await getTypeNavItems();
+
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
-        <AppShell>{children}</AppShell>
+        <AppShell typeNavItems={typeNavItems}>{children}</AppShell>
       </body>
     </html>
   );

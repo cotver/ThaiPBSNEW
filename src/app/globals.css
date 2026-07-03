@@ -40,13 +40,8 @@ a {
   transition: width 300ms ease;
 }
 
-.disney-sidebar:hover,
-.disney-sidebar:focus-within {
-  width: 292px;
-}
-
-.disney-sidebar:hover .disney-nav-label,
-.disney-sidebar:focus-within .disney-nav-label {
+.disney-sidebar:focus-within .disney-nav-label,
+.disney-sidebar.w-\[292px\] .disney-nav-label {
   opacity: 1;
   transform: translateX(0);
 }

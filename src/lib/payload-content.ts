@@ -1,5 +1,5 @@
 import type { Category, Episode, Landing, Media, Program, Season, Video } from "../../payload-types";
-import type { Title } from "@/lib/content";
+import type { NavItem, Title } from "@/lib/content";
 import { getPayloadClient } from "@/lib/payload-client";
 
 type TitleCollections = {
@@ -21,6 +21,21 @@ export type CategoryTile = {
   slug: string;
   videoMimeType?: string;
   videoUrl?: string;
+};
+
+export type TypeTile = CategoryTile & {
+  icon?: string;
+};
+
+type TypeDoc = {
+  id: number;
+  icon?: string | null;
+  image?: Category["image"];
+  isActive?: boolean | null;
+  link?: unknown;
+  name?: string | null;
+  slug?: string | null;
+  video?: Category["video"];
 };
 
 const emptyCollections: TitleCollections = {
@@ -144,6 +159,36 @@ export async function getCategoryTiles(): Promise<CategoryTile[]> {
   }
 }
 
+export async function getTypeNavItems(): Promise<NavItem[]> {
+  try {
+    const payload = await getPayloadClient();
+    const result = await payload.find({
+      collection: "types",
+      depth: 0,
+      limit: 20,
+      overrideAccess: true,
+      sort: "_order",
+      where: {
+        isActive: {
+          equals: true,
+        },
+      },
+    });
+
+    return result.docs
+      .map((item) => typeToTile(item as TypeDoc))
+      .filter((type): type is TypeTile => Boolean(type))
+      .map((type) => ({
+        href: `/type/${encodeURIComponent(type.slug)}`,
+        icon: type.icon || "film",
+        label: type.name,
+      }));
+  } catch (error) {
+    console.warn("Unable to load Payload types for navigation", error);
+    return [];
+  }
+}
+
 export async function getCategoryPage(slug: string): Promise<{ category: CategoryTile; titles: Title[] } | null> {
   try {
     const payload = await getPayloadClient();
@@ -193,6 +238,66 @@ export async function getCategoryPage(slug: string): Promise<{ category: Categor
     };
   } catch (error) {
     console.warn(`Unable to load Payload category "${slug}"`, error);
+    return null;
+  }
+}
+
+export async function getTypePage(slug: string): Promise<{ type: TypeTile; titles: Title[] } | null> {
+  try {
+    const payload = await getPayloadClient();
+    const cleanSlug = normalizeTitleLookupKey(slug);
+    const typeResult = await payload.find({
+      collection: "types",
+      depth: 3,
+      limit: 1,
+      overrideAccess: true,
+      where: {
+        and: [
+          {
+            slug: {
+              equals: cleanSlug,
+            },
+          },
+          {
+            isActive: {
+              equals: true,
+            },
+          },
+        ],
+      },
+    });
+    const typeDoc = typeResult.docs[0] as TypeDoc | undefined;
+    const tile = typeDoc ? typeToTile(typeDoc) : null;
+
+    if (!typeDoc || !tile) {
+      return null;
+    }
+
+    const programIds = relationIds(typeDoc.link);
+
+    if (programIds.length === 0) {
+      return { type: tile, titles: [] };
+    }
+
+    const programsResult = await payload.find({
+      collection: "programs",
+      depth: 3,
+      limit: 80,
+      overrideAccess: true,
+      sort: "-updatedAt",
+      where: {
+        id: {
+          in: programIds,
+        },
+      },
+    });
+
+    return {
+      type: tile,
+      titles: programsResult.docs.map(programToTitle).filter((title): title is Title => Boolean(title)),
+    };
+  } catch (error) {
+    console.warn(`Unable to load Payload type "${slug}"`, error);
     return null;
   }
 }
@@ -365,6 +470,25 @@ function categoryToTile(category: Category): CategoryTile | null {
   };
 }
 
+function typeToTile(type: TypeDoc): TypeTile | null {
+  const name = cleanText(type.name);
+  const slug = cleanText(type.slug);
+
+  if (!name || !slug) {
+    return null;
+  }
+
+  return {
+    id: type.id,
+    icon: cleanText(type.icon) || undefined,
+    imageUrl: mediaUrl(type.image),
+    name,
+    slug,
+    videoMimeType: videoMimeType(type.video),
+    videoUrl: videoUrl(type.video),
+  };
+}
+
 function videoUrl(video: Category["video"]) {
   if (!video || typeof video === "number") {
     return undefined;
@@ -446,6 +570,25 @@ function dateLabel(date?: string | null) {
 
 function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function relationIds(value: unknown): Array<number | string> {
+  const items = Array.isArray(value) ? value : value == null ? [] : [value];
+
+  return items
+    .map((item) => {
+      if (typeof item === "number" || typeof item === "string") {
+        return item;
+      }
+
+      if (item && typeof item === "object") {
+        const id = (item as { id?: unknown }).id;
+        return typeof id === "number" || typeof id === "string" ? id : null;
+      }
+
+      return null;
+    })
+    .filter((id): id is number | string => id !== null);
 }
 
 function normalizeTitleLookupKey(value: string) {

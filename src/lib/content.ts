@@ -35,14 +35,17 @@ export type TitleSeason = {
   title: string;
 };
 
+export type NavItem = {
+  href: string;
+  icon: string;
+  label: string;
+};
+
 export const navItems = [
   { label: "Home", href: "/home", icon: "home" },
   { label: "Search", href: "/search", icon: "search" },
   { label: "Watchlist", href: "/watchlist", icon: "plus" },
-  { label: "Originals", href: "/originals", icon: "spark" },
-  { label: "Movies", href: "/movies", icon: "film" },
-  { label: "Series", href: "/series", icon: "screen" },
-];
+] satisfies NavItem[];
 
 export function titleHref(slug: string) {
   return `/title/${encodeURIComponent(slug)}`;

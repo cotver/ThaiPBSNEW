@@ -5,6 +5,7 @@ import * as migration_20260702_052617 from './20260702_052617';
 import * as migration_20260702_053645 from './20260702_053645';
 import * as migration_20260702_091033_target_group_age_number from './20260702_091033_target_group_age_number';
 import * as migration_20260702_093019_genres_and_subgenres from './20260702_093019_genres_and_subgenres';
+import * as migration_20260702_165928_add_types_collection from './20260702_165928_add_types_collection';
 
 export const migrations = [
   {
@@ -40,6 +41,11 @@ export const migrations = [
   {
     up: migration_20260702_093019_genres_and_subgenres.up,
     down: migration_20260702_093019_genres_and_subgenres.down,
-    name: '20260702_093019_genres_and_subgenres'
+    name: '20260702_093019_genres_and_subgenres',
+  },
+  {
+    up: migration_20260702_165928_add_types_collection.up,
+    down: migration_20260702_165928_add_types_collection.down,
+    name: '20260702_165928_add_types_collection'
   },
 ];

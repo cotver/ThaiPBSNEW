@@ -17,7 +17,7 @@ export default async function HomePage() {
 
       <HeroCarousel titles={collections.heroes} />
 
-      <section className="relative z-10 -mt-16 space-y-8 px-5 pb-16 sm:px-8 lg:px-10">
+      <section className="relative z-10 space-y-8 px-5 pb-16 sm:px-8 lg:px-10">
         <BrandTiles categories={categories} />
         <ContentRow layout="poster" title="Recommended For You" titles={collections.recommended} />
         <ContentRow layout="vertical" title="New Poster Mockups" titles={collections.posterMockups} />
