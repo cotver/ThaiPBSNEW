@@ -6,10 +6,10 @@ import { PosterCard } from "@/components/PosterCard";
 import { TitlePreviewModal } from "@/components/TitlePreviewModal";
 import type { Title } from "@/lib/content";
 
-export function SearchExperience({ titles }: { titles: Title[] }) {
+export function SearchExperience({ initialQuery = "", titles }: { initialQuery?: string; titles: Title[] }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const closePreviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [activePreview, setActivePreview] = useState<ActivePreview | null>(null);
   const [modalTitle, setModalTitle] = useState<Title | null>(null);
 

@@ -2,7 +2,7 @@ import type { Category, Episode, HeroImage, Landing, Media, Program, Season, Vid
 import type { NavItem, Title } from "@/lib/content";
 import { getPayloadClient } from "@/lib/payload-client";
 
-type TitleCollections = {
+export type TitleCollections = {
   continueWatching: Title[];
   heroes: Title[];
   internationalPrograms: Title[];
@@ -86,7 +86,7 @@ export async function getCatalogCollections(continueWatchingSlugs: string[] = []
     getHeroImageTitles(),
     getHomeTypeRows(),
   ]);
-  const collections = titles.length === 0 ? emptyCollections : buildCollections(titles, continueWatchingSlugs);
+  const collections = buildTitleCollections(titles, continueWatchingSlugs);
 
   return {
     ...collections,
@@ -462,7 +462,11 @@ function heroImageToTitle(hero: HeroImage): Title | null {
   };
 }
 
-function buildCollections(titles: Title[], continueWatchingSlugs: string[]): TitleCollections {
+export function buildTitleCollections(titles: Title[], continueWatchingSlugs: string[] = []): TitleCollections {
+  if (titles.length === 0) {
+    return emptyCollections;
+  }
+
   const featured = titles.filter((title) => title.featured);
   const originals = titles.filter((title) => title.type === "Original");
   const movies = titles.filter((title) => title.type === "Movie" || title.type === "Original");

@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { ContentRow } from "@/components/ContentRow";
-import { getCatalogCollections, getCategoryPage } from "@/lib/payload-content";
+import { buildTitleCollections, getCategoryPage } from "@/lib/payload-content";
+import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -10,16 +12,16 @@ export default async function CategoryPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [categoryPage, collections] = await Promise.all([
-    getCategoryPage(slug),
-    getCatalogCollections(),
-  ]);
+  const cookieStore = await cookies();
+  const continueWatchingSlugs = parseWatchHistoryCookie(cookieStore.get(watchHistoryCookieName)?.value);
+  const categoryPage = await getCategoryPage(slug);
 
   if (!categoryPage) {
     notFound();
   }
 
   const { category, titles } = categoryPage;
+  const collections = buildTitleCollections(titles, continueWatchingSlugs);
   const heroMedia = category.videoUrl || category.imageUrl;
 
   return (
@@ -55,13 +57,50 @@ export default async function CategoryPage({
 
       <section className="-mt-20 space-y-9 px-5 pb-16 sm:px-8 lg:px-10">
         {titles.length > 0 ? (
-          <ContentRow layout="vertical" title={`${category.name} Programs`} titles={titles} />
+          <ContentRow
+            layout="vertical"
+            title={`${category.name} Programs`}
+            titles={titles}
+            viewAllHref={`/category/${encodeURIComponent(category.slug)}`}
+          />
         ) : (
           <div className="rounded-[8px] border border-white/10 bg-white/6 p-8 text-white/70">
             No programs are connected to this category yet.
           </div>
         )}
-        <ContentRow layout="poster" title="Recommended For You" titles={collections.recommended} />
+        <ContentRow
+          layout="poster"
+          title="Recommended For You"
+          titles={collections.recommended}
+          viewAllHref={`/category/${encodeURIComponent(category.slug)}`}
+        />
+        <ContentRow
+          layout="wide"
+          title="Continue Watching"
+          titles={collections.continueWatching}
+          viewAllHref="/watchlist"
+        />
+        {collections.yearRows.map((row) => (
+          <ContentRow
+            key={row.year}
+            layout="vertical"
+            title={`ThaiPBS Year ${row.year}`}
+            titles={row.titles}
+            viewAllHref={`/search?q=${encodeURIComponent(`${category.name} ${row.year}`)}`}
+          />
+        ))}
+        <ContentRow
+          layout="vertical"
+          title="Thai Programs"
+          titles={collections.thaiPrograms}
+          viewAllHref={`/category/${encodeURIComponent(category.slug)}`}
+        />
+        <ContentRow
+          layout="vertical"
+          title="International Programs"
+          titles={collections.internationalPrograms}
+          viewAllHref={`/category/${encodeURIComponent(category.slug)}`}
+        />
       </section>
     </>
   );

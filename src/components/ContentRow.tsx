@@ -23,10 +23,14 @@ export function ContentRow({
   layout = "vertical",
   titles,
   title,
+  viewAllHref,
+  viewAllLabel = "View All",
 }: {
   layout?: "poster" | "vertical" | "wide";
   titles: Title[];
   title: string;
+  viewAllHref?: string;
+  viewAllLabel?: string;
 }) {
   if (titles.length === 0) {
     return null;
@@ -286,8 +290,17 @@ export function ContentRow({
 
   return (
     <section className="relative">
-      <div className="mb-4">
+      <div className="mb-4 flex items-center justify-between gap-4">
         <h2 className="text-lg font-black md:text-xl">{title}</h2>
+        {viewAllHref ? (
+          <Link
+            className="group inline-flex shrink-0 items-center gap-1 text-xs font-black uppercase text-white/58 transition hover:text-white md:text-sm"
+            href={viewAllHref}
+          >
+            {viewAllLabel}
+            <span className="translate-y-px text-base leading-none transition group-hover:translate-x-0.5">›</span>
+          </Link>
+        ) : null}
       </div>
       <div className="group/rail relative overflow-visible" ref={rootRef}>
         {canScrollLeft ? (
