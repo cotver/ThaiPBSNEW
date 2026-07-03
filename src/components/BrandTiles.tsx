@@ -39,8 +39,8 @@ export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
             {category.imageUrl && (
               <img
                 alt=""
-                className={`absolute inset-0 h-full w-full object-cover transition duration-300 ${
-                  hasLoadedImage && !showVideo ? "opacity-100" : "opacity-0"
+                className={`absolute inset-0 z-10 h-full w-full object-cover transition duration-300 ${
+                  hasLoadedImage ? "opacity-100" : "opacity-0"
                 }`}
                 onLoad={() =>
                   setLoadedImages((current) => {
