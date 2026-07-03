@@ -129,70 +129,70 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
       ))}
 
       {current.showHeroDetails !== false && (
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.94)_28%,rgba(3,7,20,0.38)_48%,transparent_68%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,7,20,0.74)_0%,rgba(3,7,20,0.58)_30%,rgba(3,7,20,0.22)_52%,transparent_74%)]" />
       )}
-      <div className="absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-[#030714] via-[#030714]/92 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-[#030714] via-[#030714]/88 to-transparent" />
 
       {current.showHeroDetails !== false && (
-      <div className="relative z-10 flex min-h-[560px] max-w-3xl flex-col justify-end lg:min-h-[590px]">
-        <p className="mb-3 text-xs font-black uppercase text-cyan-200">
-          {current.eyebrow || (current.type === "Original" ? "ThaiPBS Parvilions Original" : current.type)}
-        </p>
-        <h1 className="max-w-3xl text-5xl font-black leading-[0.98] sm:text-6xl lg:text-7xl">
-          {current.title}
-        </h1>
-        {[current.year, current.rating, current.duration].filter(Boolean).length > 0 && (
-          <p className="mt-4 text-sm font-bold text-white/72">
-            {[current.year, current.rating, current.duration].filter(Boolean).join(" | ")}
+        <div className="absolute bottom-20 left-5 z-10 max-w-3xl sm:left-8 lg:bottom-24 lg:left-10">
+          <p className="mb-3 text-xs font-black uppercase text-cyan-200">
+            {current.eyebrow || (current.type === "Original" ? "ThaiPBS Parvilions Original" : current.type)}
           </p>
-        )}
-        {current.description && (
-          <p className="mt-5 max-w-md text-sm leading-7 text-white/74 sm:text-base">
-            {current.description}
-          </p>
-        )}
-        {current.genre && (
-          <p className="mt-4 max-w-2xl text-xs font-bold uppercase text-white/58 sm:text-sm">
-            {current.genre}
-          </p>
-        )}
-        {current.showHeroActions !== false && (
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              className="rounded-[6px] bg-white px-9 py-3 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
-              href={titleHref(current.slug)}
-            >
-              Play
-            </Link>
-            <Link
-              className="rounded-[6px] border border-white/16 bg-white/12 px-8 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
-              href={titleHref(current.slug)}
-            >
-              Details
-            </Link>
-            <Link
-              aria-label="Open watchlist"
-              className="grid size-12 place-items-center rounded-full border border-white/18 bg-black/35 text-2xl transition hover:bg-white/18"
-              href="/watchlist"
-            >
-              +
-            </Link>
+          <h1 className="max-w-3xl text-5xl font-black leading-[0.98] sm:text-6xl lg:text-7xl">
+            {current.title}
+          </h1>
+          {[current.year, current.rating, current.duration].filter(Boolean).length > 0 && (
+            <p className="mt-4 text-sm font-bold text-white/72">
+              {[current.year, current.rating, current.duration].filter(Boolean).join(" | ")}
+            </p>
+          )}
+          {current.description && (
+            <p className="mt-5 max-w-md text-sm leading-7 text-white/74 sm:text-base">
+              {current.description}
+            </p>
+          )}
+          {current.genre && (
+            <p className="mt-4 max-w-2xl text-xs font-bold uppercase text-white/58 sm:text-sm">
+              {current.genre}
+            </p>
+          )}
+          {current.showHeroActions !== false && (
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                className="rounded-[6px] bg-white px-9 py-3 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
+                href={titleHref(current.slug)}
+              >
+                Play
+              </Link>
+              <Link
+                className="rounded-[6px] border border-white/16 bg-white/12 px-8 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
+                href={titleHref(current.slug)}
+              >
+                Details
+              </Link>
+              <Link
+                aria-label="Open watchlist"
+                className="grid size-12 place-items-center rounded-full border border-white/18 bg-black/35 text-2xl transition hover:bg-white/18"
+                href="/watchlist"
+              >
+                +
+              </Link>
+            </div>
+          )}
+          <div className="mt-8 flex items-center gap-2 lg:hidden">
+            {titles.map((title, index) => (
+              <button
+                aria-label={`Show ${title.title}`}
+                className={`h-1.5 rounded-full transition-all ${
+                  index === active ? "w-9 bg-white" : "w-4 bg-white/34 hover:bg-white/70"
+                }`}
+                key={title.slug}
+                onClick={() => setActive(index)}
+                type="button"
+              />
+            ))}
           </div>
-        )}
-        <div className="mt-8 flex items-center gap-2 lg:hidden">
-          {titles.map((title, index) => (
-            <button
-              aria-label={`Show ${title.title}`}
-              className={`h-1.5 rounded-full transition-all ${
-                index === active ? "w-9 bg-white" : "w-4 bg-white/34 hover:bg-white/70"
-              }`}
-              key={title.slug}
-              onClick={() => setActive(index)}
-              type="button"
-            />
-          ))}
         </div>
-      </div>
       )}
 
       <div className="absolute bottom-10 right-8 z-20 hidden w-[min(34rem,38vw)] lg:block">
