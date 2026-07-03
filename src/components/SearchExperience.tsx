@@ -44,6 +44,7 @@ export function SearchExperience({ initialQuery = "", titles }: { initialQuery?:
 
   const openPreview = useCallback(
     (item: Title, element: HTMLElement) => {
+      if (item.isDiscontinued) return;
       if (!rootRef.current) return;
 
       clearPreviewTimer();

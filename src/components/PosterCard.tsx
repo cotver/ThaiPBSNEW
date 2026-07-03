@@ -27,10 +27,12 @@ export function PosterCard({
   const [modalOpen, setModalOpen] = useState(false);
   const imageSrc = orientation === "portrait" ? title.posterImage || title.heroImage : title.heroImage || title.posterImage;
   const imageClassName = title.isDiscontinued ? "object-cover grayscale" : "object-cover";
+  const isDisabled = title.isDiscontinued;
   const openModal = useCallback(() => {
+    if (isDisabled) return;
     if (onOpenTitle) onOpenTitle(title);
     else setModalOpen(true);
-  }, [onOpenTitle, title]);
+  }, [isDisabled, onOpenTitle, title]);
 
   return (
     <>
@@ -45,13 +47,16 @@ export function PosterCard({
       >
         <button
           aria-label={`Open details for ${title.title}`}
-          className="block w-full overflow-hidden rounded-[6px] border border-white/10 bg-[#101827] text-left shadow-xl shadow-black/25 outline-none transition duration-300 hover:border-white/45 focus-visible:ring-2 focus-visible:ring-cyan-200"
+          className={`block w-full overflow-hidden rounded-[6px] border border-white/10 bg-[#101827] text-left shadow-xl shadow-black/25 outline-none transition duration-300 focus-visible:ring-2 focus-visible:ring-cyan-200 ${
+            isDisabled ? "cursor-not-allowed opacity-82" : "hover:border-white/45"
+          }`}
+          disabled={isDisabled}
           draggable={false}
           onClick={openModal}
-          onMouseEnter={(event) => onPreviewStart?.(title, event.currentTarget)}
-          onMouseLeave={onPreviewEnd}
-          onPointerEnter={(event) => onPreviewStart?.(title, event.currentTarget)}
-          onPointerLeave={onPreviewEnd}
+          onMouseEnter={isDisabled ? undefined : (event) => onPreviewStart?.(title, event.currentTarget)}
+          onMouseLeave={isDisabled ? undefined : onPreviewEnd}
+          onPointerEnter={isDisabled ? undefined : (event) => onPreviewStart?.(title, event.currentTarget)}
+          onPointerLeave={isDisabled ? undefined : onPreviewEnd}
           type="button"
         >
           <div
@@ -110,23 +115,28 @@ export function WideCard({ onOpenTitle, onPreviewEnd, onPreviewStart, onRemoveTi
   const [modalOpen, setModalOpen] = useState(false);
   const imageSrc = title.heroImage || title.posterImage;
   const imageClassName = title.isDiscontinued ? "object-cover grayscale" : "object-cover";
+  const isDisabled = title.isDiscontinued;
   const openModal = useCallback(() => {
+    if (isDisabled) return;
     if (onOpenTitle) onOpenTitle(title);
     else setModalOpen(true);
-  }, [onOpenTitle, title]);
+  }, [isDisabled, onOpenTitle, title]);
 
   return (
     <>
       <article className="group relative w-[calc((100%_-_16px)_*_0.5)] shrink-0 snap-start rounded-[6px] lg:w-[calc((100%_-_32px)_*_0.333333)] 2xl:w-[calc((100%_-_48px)_*_0.25)]">
         <button
           aria-label={`Open details for ${title.title}`}
-          className="block w-full overflow-hidden rounded-[6px] border border-white/10 bg-[#101827] text-left shadow-xl shadow-black/25 outline-none transition duration-300 hover:border-white/45 focus-visible:ring-2 focus-visible:ring-cyan-200"
+          className={`block w-full overflow-hidden rounded-[6px] border border-white/10 bg-[#101827] text-left shadow-xl shadow-black/25 outline-none transition duration-300 focus-visible:ring-2 focus-visible:ring-cyan-200 ${
+            isDisabled ? "cursor-not-allowed opacity-82" : "hover:border-white/45"
+          }`}
+          disabled={isDisabled}
           draggable={false}
           onClick={openModal}
-          onMouseEnter={(event) => onPreviewStart?.(title, event.currentTarget)}
-          onMouseLeave={onPreviewEnd}
-          onPointerEnter={(event) => onPreviewStart?.(title, event.currentTarget)}
-          onPointerLeave={onPreviewEnd}
+          onMouseEnter={isDisabled ? undefined : (event) => onPreviewStart?.(title, event.currentTarget)}
+          onMouseLeave={isDisabled ? undefined : onPreviewEnd}
+          onPointerEnter={isDisabled ? undefined : (event) => onPreviewStart?.(title, event.currentTarget)}
+          onPointerLeave={isDisabled ? undefined : onPreviewEnd}
           type="button"
         >
           <div className={`relative aspect-video bg-gradient-to-br ${title.tone}`}>

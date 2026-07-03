@@ -107,6 +107,8 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
     );
   }
 
+  const currentIsDisabled = current.isDiscontinued;
+
   return (
     <section className="relative h-[clamp(620px,min(56.25vw,100vh),2160px)] overflow-hidden px-5 pb-24 sm:px-8 lg:px-10">
       {titles.map((title, index) => {
@@ -208,18 +210,37 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
           )}
           {current.showHeroActions !== false && (
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                className="rounded-[6px] bg-white px-9 py-3 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
-                href={titleHref(current.slug)}
-              >
-                Play
-              </Link>
-              <Link
-                className="rounded-[6px] border border-white/16 bg-white/12 px-8 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
-                href={titleHref(current.slug)}
-              >
-                Details
-              </Link>
+              {currentIsDisabled ? (
+                <>
+                  <span
+                    aria-disabled="true"
+                    className="cursor-not-allowed rounded-[6px] bg-white/45 px-9 py-3 text-sm font-black uppercase text-[#030714]/62"
+                  >
+                    Play
+                  </span>
+                  <span
+                    aria-disabled="true"
+                    className="cursor-not-allowed rounded-[6px] border border-white/12 bg-white/8 px-8 py-3 text-sm font-black uppercase text-white/42 backdrop-blur"
+                  >
+                    Details
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Link
+                    className="rounded-[6px] bg-white px-9 py-3 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
+                    href={titleHref(current.slug)}
+                  >
+                    Play
+                  </Link>
+                  <Link
+                    className="rounded-[6px] border border-white/16 bg-white/12 px-8 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
+                    href={titleHref(current.slug)}
+                  >
+                    Details
+                  </Link>
+                </>
+              )}
               <SaveForLaterButton
                 className="grid size-12 place-items-center rounded-full border border-white/18 bg-black/35 text-2xl transition hover:bg-white/18"
                 savedClassName="grid size-12 place-items-center rounded-full border border-cyan-200/40 bg-cyan-200 text-lg font-black text-[#030714] transition hover:bg-white"

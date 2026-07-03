@@ -67,6 +67,7 @@ export function ContentRow({
 
   const openPreview = useCallback(
     (item: Title, element: HTMLElement) => {
+      if (item.isDiscontinued) return;
       if (!rootRef.current || !railRef.current) return;
 
       clearPreviewTimer();

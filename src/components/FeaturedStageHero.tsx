@@ -26,6 +26,9 @@ export function FeaturedStageHero({ titles }: { titles: Title[] }) {
   const current = titles[active] ?? titles[0];
   const imageSrc = current?.heroImage || current?.posterImage;
   const hasMultiple = titles.length > 1;
+  const imageClassName = current?.isDiscontinued
+    ? "object-cover object-center grayscale transition duration-500"
+    : "object-cover object-center transition duration-500";
 
   if (!current) {
     return (
@@ -45,15 +48,35 @@ export function FeaturedStageHero({ titles }: { titles: Title[] }) {
 
   return (
     <section className="relative w-full overflow-hidden bg-black">
-      <Link
-        aria-label={`Open ${current.title}`}
-        className="relative block aspect-video w-full"
-        href={titleHref(current.slug)}
-      >
+      {current.isDiscontinued ? (
+        <div aria-disabled="true" className="relative block aspect-video w-full cursor-not-allowed">
+          {imageSrc ? (
+            <Image
+              alt=""
+              className={`${imageClassName} ${
+                loadedImage === imageSrc ? "opacity-100" : "opacity-0"
+              } [mask-image:linear-gradient(to_bottom,black_0%,black_78%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_0%,black_78%,transparent_100%)]`}
+              fill
+              onLoad={() => setLoadedImage(imageSrc)}
+              priority
+              sizes="100vw"
+              src={imageSrc}
+            />
+          ) : (
+            <div className={`absolute inset-0 bg-gradient-to-br ${current.tone}`} />
+          )}
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.54)_0%,rgba(0,0,0,0.05)_18%,rgba(0,0,0,0.04)_70%,rgba(3,7,20,0.55)_100%)]" />
+        </div>
+      ) : (
+        <Link
+          aria-label={`Open ${current.title}`}
+          className="relative block aspect-video w-full"
+          href={titleHref(current.slug)}
+        >
         {imageSrc ? (
           <Image
             alt=""
-            className={`object-cover object-center transition duration-500 ${
+            className={`${imageClassName} ${
               loadedImage === imageSrc ? "opacity-100" : "opacity-0"
             } [mask-image:linear-gradient(to_bottom,black_0%,black_78%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_0%,black_78%,transparent_100%)]`}
             fill
@@ -66,7 +89,8 @@ export function FeaturedStageHero({ titles }: { titles: Title[] }) {
           <div className={`absolute inset-0 bg-gradient-to-br ${current.tone}`} />
         )}
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.54)_0%,rgba(0,0,0,0.05)_18%,rgba(0,0,0,0.04)_70%,rgba(3,7,20,0.55)_100%)]" />
-      </Link>
+        </Link>
+      )}
 
       {hasMultiple ? (
         <>
