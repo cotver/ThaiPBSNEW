@@ -510,7 +510,7 @@ function programToTitle(program: Program): Title | null {
     description,
     progress: program.isNewHits ? "38%" : undefined,
     inWatchlist: Boolean(program.is_Feature || program.is_NEW),
-    featured: Boolean(program.is_Feature || program.isNewHits),
+    featured: Boolean(program.is_Feature),
     heroImage: getProgramBackdropImage(program),
     heroTitleLines: heroTitleLines.length > 0 ? heroTitleLines : undefined,
     posterImage: getProgramPosterImage(program),
