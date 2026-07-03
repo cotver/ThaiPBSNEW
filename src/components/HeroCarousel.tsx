@@ -136,11 +136,14 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
       </div>
       )}
 
-      <div className="no-scrollbar absolute bottom-10 right-8 z-20 hidden max-w-[34vw] gap-2 overflow-x-auto pb-1 lg:flex">
+      <div className="absolute bottom-10 right-8 z-20 hidden w-[min(34rem,38vw)] lg:block">
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-5 bg-gradient-to-r from-[#030714]/55 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-5 bg-gradient-to-l from-[#030714]/55 to-transparent" />
+        <div className="no-scrollbar flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain scroll-smooth pb-1">
         {titles.map((title, index) => (
           <button
             aria-label={`Show ${title.title}`}
-            className={`group w-20 shrink-0 overflow-hidden rounded-[5px] border bg-black/35 shadow-2xl shadow-black/30 backdrop-blur transition duration-300 hover:-translate-y-0.5 hover:border-white/70 xl:w-24 ${
+            className={`group w-20 shrink-0 snap-end overflow-hidden rounded-[5px] border bg-black/35 shadow-2xl shadow-black/30 backdrop-blur transition duration-300 hover:-translate-y-0.5 hover:border-white/70 xl:w-24 ${
               index === active ? "border-white/80" : "border-white/14"
             }`}
             key={title.slug}
@@ -170,6 +173,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
             </div>
           </button>
         ))}
+        </div>
       </div>
     </section>
   );

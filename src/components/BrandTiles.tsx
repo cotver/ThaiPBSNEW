@@ -94,13 +94,15 @@ export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
 
             {!hasImage && (
               <>
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br from-slate-950 via-sky-900 to-cyan-500 transition duration-300 ${
-                    showOnlyName ? "opacity-70" : "opacity-24 group-hover:opacity-12"
-                  }`}
-                />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(255,255,255,0.34),transparent_35%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.46))]" />
-                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/64 to-transparent" />
+                {!showVideo && (
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br from-slate-950 via-sky-900 to-cyan-500 transition duration-300 ${
+                      showOnlyName ? "opacity-70" : "opacity-24 group-hover:opacity-12"
+                    }`}
+                  />
+                )}
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.38))]" />
+                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/58 to-transparent" />
                 <div className="relative flex h-full items-center justify-center text-center text-2xl font-black text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.65)]">
                   {category.name}
                 </div>
