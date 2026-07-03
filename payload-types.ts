@@ -80,10 +80,10 @@ export interface Config {
     languages: Language;
     awards: Award;
     categories: Category;
-    heroImages: HeroImage;
     types: Type;
     genres: Genre;
     subGenres: SubGenre;
+    heroImages: HeroImage;
     programs: Program;
     vipaPrograms: VipaProgram;
     seasons: Season;
@@ -108,10 +108,10 @@ export interface Config {
     languages: LanguagesSelect<false> | LanguagesSelect<true>;
     awards: AwardsSelect<false> | AwardsSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
-    heroImages: HeroImagesSelect<false> | HeroImagesSelect<true>;
     types: TypesSelect<false> | TypesSelect<true>;
     genres: GenresSelect<false> | GenresSelect<true>;
     subGenres: SubGenresSelect<false> | SubGenresSelect<true>;
+    heroImages: HeroImagesSelect<false> | HeroImagesSelect<true>;
     programs: ProgramsSelect<false> | ProgramsSelect<true>;
     vipaPrograms: VipaProgramsSelect<false> | VipaProgramsSelect<true>;
     seasons: SeasonsSelect<false> | SeasonsSelect<true>;
@@ -2697,7 +2697,7 @@ export interface HeroImage {
   /**
    * Small label above the title, e.g. ThaiPBS Parvilions Original
    */
-  eyebrow: string;
+  eyebrow?: string | null;
   /**
    * Hero background image
    */
@@ -2705,41 +2705,29 @@ export interface HeroImage {
   /**
    * Year or short date label shown in the metadata line
    */
-  year: string;
+  year?: string | null;
   /**
    * Rating label, e.g. ALL Age, 13+, 18+
    */
-  rating: string;
+  rating?: string | null;
   /**
    * Duration label, e.g. 48m, Series, Movie
    */
-  duration: string;
+  duration?: string | null;
   /**
    * Hero synopsis text
    */
-  description: string;
+  description?: string | null;
   /**
-   * Genre or category line shown below synopsis
+   * Genres shown below synopsis
    */
-  genre: string;
+  genre?: (number | Genre)[] | null;
   /**
-   * Primary button label
+   * Sub-genres shown below synopsis
    */
-  primaryLabel?: string | null;
+  subGenre?: (number | SubGenre)[] | null;
   /**
-   * Primary button URL. Use /title/example or https://...
-   */
-  primaryLink?: string | null;
-  /**
-   * Secondary button label
-   */
-  secondaryLabel?: string | null;
-  /**
-   * Secondary button URL. Use /title/example or https://...
-   */
-  secondaryLink?: string | null;
-  /**
-   * Show left side shadow, text details, and buttons
+   * Show left side shadow and text details
    */
   showDetails?: boolean | null;
   /**
@@ -2826,10 +2814,6 @@ export interface PayloadLockedDocument {
         value: number | Category;
       } | null)
     | ({
-        relationTo: 'heroImages';
-        value: number | HeroImage;
-      } | null)
-    | ({
         relationTo: 'types';
         value: number | Type;
       } | null)
@@ -2840,6 +2824,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'subGenres';
         value: number | SubGenre;
+      } | null)
+    | ({
+        relationTo: 'heroImages';
+        value: number | HeroImage;
       } | null)
     | ({
         relationTo: 'programs';
@@ -3200,29 +3188,6 @@ export interface CategoriesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "heroImages_select".
- */
-export interface HeroImagesSelect<T extends boolean = true> {
-  _order?: T;
-  title?: T;
-  eyebrow?: T;
-  image?: T;
-  year?: T;
-  rating?: T;
-  duration?: T;
-  description?: T;
-  genre?: T;
-  primaryLabel?: T;
-  primaryLink?: T;
-  secondaryLabel?: T;
-  secondaryLink?: T;
-  showDetails?: T;
-  isActive?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "types_select".
  */
 export interface TypesSelect<T extends boolean = true> {
@@ -3256,6 +3221,26 @@ export interface SubGenresSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   genre?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "heroImages_select".
+ */
+export interface HeroImagesSelect<T extends boolean = true> {
+  _order?: T;
+  title?: T;
+  eyebrow?: T;
+  image?: T;
+  year?: T;
+  rating?: T;
+  duration?: T;
+  description?: T;
+  genre?: T;
+  subGenre?: T;
+  showDetails?: T;
+  isActive?: T;
   updatedAt?: T;
   createdAt?: T;
 }

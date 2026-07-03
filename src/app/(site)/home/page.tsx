@@ -20,7 +20,14 @@ export default async function HomePage() {
       <section className="relative z-10 space-y-8 px-5 pb-16 sm:px-8 lg:px-10">
         <BrandTiles categories={categories} />
         <ContentRow layout="poster" title="Recommended For You" titles={collections.recommended} />
-        <ContentRow layout="vertical" title="New Poster Mockups" titles={collections.posterMockups} />
+        {collections.typeRows.map((row) => (
+          <ContentRow
+            key={row.type.id}
+            layout="vertical"
+            title={row.type.name}
+            titles={row.titles}
+          />
+        ))}
         <ContentRow layout="wide" title="Continue Watching" titles={collections.continueWatching} />
         <ContentRow layout="vertical" title="Trending Movies" titles={collections.trending} />
         <ContentRow layout="vertical" title="ThaiPBS Parvilions Originals" titles={collections.originals} />

@@ -8,6 +8,7 @@ import * as migration_20260702_093019_genres_and_subgenres from './20260702_0930
 import * as migration_20260702_165928_add_types_collection from './20260702_165928_add_types_collection';
 import * as migration_20260703_022140_move_type_program_links from './20260703_022140_move_type_program_links';
 import * as migration_20260703_024740_add_home_hero_images from './20260703_024740_add_home_hero_images';
+import * as migration_20260703_030120_simplify_home_hero_images from './20260703_030120_simplify_home_hero_images';
 
 export const migrations = [
   {
@@ -58,6 +59,11 @@ export const migrations = [
   {
     up: migration_20260703_024740_add_home_hero_images.up,
     down: migration_20260703_024740_add_home_hero_images.down,
-    name: '20260703_024740_add_home_hero_images'
+    name: '20260703_024740_add_home_hero_images',
+  },
+  {
+    up: migration_20260703_030120_simplify_home_hero_images.up,
+    down: migration_20260703_030120_simplify_home_hero_images.down,
+    name: '20260703_030120_simplify_home_hero_images'
   },
 ];

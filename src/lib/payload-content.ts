@@ -11,7 +11,13 @@ type TitleCollections = {
   recommended: Title[];
   series: Title[];
   trending: Title[];
+  typeRows: TypeProgramRow[];
   watchlist: Title[];
+};
+
+export type TypeProgramRow = {
+  titles: Title[];
+  type: TypeTile;
 };
 
 export type CategoryTile = {
@@ -49,6 +55,7 @@ const emptyCollections: TitleCollections = {
   series: [],
   watchlist: [],
   heroes: [],
+  typeRows: [],
 };
 
 const tones = [
@@ -63,12 +70,17 @@ const tones = [
 ];
 
 export async function getCatalogCollections(): Promise<TitleCollections> {
-  const [titles, heroImages] = await Promise.all([getPayloadTitles(), getHeroImageTitles()]);
+  const [titles, heroImages, typeRows] = await Promise.all([
+    getPayloadTitles(),
+    getHeroImageTitles(),
+    getHomeTypeRows(),
+  ]);
   const collections = titles.length === 0 ? emptyCollections : buildCollections(titles);
 
   return {
     ...collections,
-    heroes: heroImages.length > 0 ? heroImages : collections.heroes,
+    heroes: [...heroImages, ...collections.heroes],
+    typeRows,
   };
 }
 
@@ -80,7 +92,7 @@ export async function getCatalogTitles(): Promise<Title[]> {
 
 export async function getCatalogTitle(slug: string): Promise<Title | undefined> {
   try {
-    const titleKey = normalizeTitleLookupKey(slug);
+    const titleKey = normalizeSlugLookupKey(slug);
     const payload = await getPayloadClient();
     const result = await payload.find({
       collection: "programs",
@@ -193,6 +205,7 @@ export async function getTypeNavItems(): Promise<NavItem[]> {
 export async function getCategoryPage(slug: string): Promise<{ category: CategoryTile; titles: Title[] } | null> {
   try {
     const payload = await getPayloadClient();
+    const cleanSlug = normalizeSlugLookupKey(slug);
     const categoryResult = await payload.find({
       collection: "categories",
       depth: 2,
@@ -201,9 +214,18 @@ export async function getCategoryPage(slug: string): Promise<{ category: Categor
       where: {
         and: [
           {
-            slug: {
-              equals: slug,
-            },
+            or: [
+              {
+                slug: {
+                  equals: slug,
+                },
+              },
+              {
+                slug: {
+                  equals: cleanSlug,
+                },
+              },
+            ],
           },
           {
             isActive: {
@@ -246,7 +268,7 @@ export async function getCategoryPage(slug: string): Promise<{ category: Categor
 export async function getTypePage(slug: string): Promise<{ type: TypeTile; titles: Title[] } | null> {
   try {
     const payload = await getPayloadClient();
-    const cleanSlug = normalizeTitleLookupKey(slug);
+    const cleanSlug = normalizeSlugLookupKey(slug);
     const typeResult = await payload.find({
       collection: "types",
       depth: 2,
@@ -255,9 +277,18 @@ export async function getTypePage(slug: string): Promise<{ type: TypeTile; title
       where: {
         and: [
           {
-            slug: {
-              equals: cleanSlug,
-            },
+            or: [
+              {
+                slug: {
+                  equals: slug,
+                },
+              },
+              {
+                slug: {
+                  equals: cleanSlug,
+                },
+              },
+            ],
           },
           {
             isActive: {
@@ -303,7 +334,7 @@ async function getPayloadTitles(): Promise<Title[]> {
     const result = await payload.find({
       collection: "programs",
       depth: 3,
-      limit: 80,
+      limit: 1000,
       overrideAccess: true,
       sort: "-updatedAt",
     });
@@ -321,9 +352,9 @@ async function getHeroImageTitles(): Promise<Title[]> {
     const result = await payload.find({
       collection: "heroImages",
       depth: 1,
-      limit: 12,
+      limit: 1000,
       overrideAccess: true,
-      sort: "_order",
+      sort: "-updatedAt",
       where: {
         isActive: {
           equals: true,
@@ -334,6 +365,56 @@ async function getHeroImageTitles(): Promise<Title[]> {
     return result.docs.map(heroImageToTitle).filter((title): title is Title => Boolean(title));
   } catch (error) {
     console.warn("Unable to load Payload hero images for homepage", error);
+    return [];
+  }
+}
+
+async function getHomeTypeRows(): Promise<TypeProgramRow[]> {
+  try {
+    const payload = await getPayloadClient();
+    const typesResult = await payload.find({
+      collection: "types",
+      depth: 2,
+      limit: 1000,
+      overrideAccess: true,
+      sort: "_order",
+      where: {
+        isActive: {
+          equals: true,
+        },
+      },
+    });
+
+    const rows = await Promise.all(
+      typesResult.docs.map(async (typeDoc) => {
+        const tile = typeToTile(typeDoc as TypeDoc);
+
+        if (!tile) {
+          return null;
+        }
+
+        const programsResult = await payload.find({
+          collection: "programs",
+          depth: 3,
+          limit: 80,
+          overrideAccess: true,
+          sort: "-updatedAt",
+          where: {
+            programsType: {
+              contains: typeDoc.id,
+            },
+          },
+        });
+
+        const titles = programsResult.docs.map(programToTitle).filter((title): title is Title => Boolean(title));
+
+        return titles.length > 0 ? { titles, type: tile } : null;
+      }),
+    );
+
+    return rows.filter((row): row is TypeProgramRow => Boolean(row));
+  } catch (error) {
+    console.warn("Unable to load Payload type rows for homepage", error);
     return [];
   }
 }
@@ -352,18 +433,18 @@ function heroImageToTitle(hero: HeroImage): Title | null {
     slug,
     title,
     type: "Original",
-    genre: cleanText(hero.genre) || "ThaiPBS",
-    year: cleanText(hero.year) || "New",
-    rating: cleanText(hero.rating) || "ALL Age",
-    duration: cleanText(hero.duration) || "Featured",
-    eyebrow: cleanText(hero.eyebrow) || "ThaiPBS Parvilions",
-    description: cleanText(hero.description) || title,
+    genre: [
+      ...relationNames((hero as { genre?: unknown }).genre),
+      ...relationNames((hero as { subGenre?: unknown }).subGenre),
+    ].join(" | "),
+    year: cleanText(hero.year),
+    rating: cleanText(hero.rating),
+    duration: cleanText(hero.duration),
+    eyebrow: cleanText(hero.eyebrow),
+    description: cleanText(hero.description),
     featured: true,
     heroImage: image,
-    primaryHref: cleanUrl(hero.primaryLink),
-    primaryLabel: cleanText(hero.primaryLabel) || "Play",
-    secondaryHref: cleanUrl(hero.secondaryLink),
-    secondaryLabel: cleanText(hero.secondaryLabel) || "Details",
+    showHeroActions: false,
     showHeroDetails: hero.showDetails !== false,
     tone: tones[Math.abs(hashString(slug)) % tones.length],
   };
@@ -381,12 +462,13 @@ function buildCollections(titles: Title[]): TitleCollections {
     recommended: titles.slice(0, 12),
     continueWatching: continueWatching.length > 0 ? continueWatching : titles.slice(0, 8),
     trending: titles.filter((title) => title.featured || title.inWatchlist).slice(0, 12),
+    typeRows: [],
     originals: originals.length > 0 ? originals : featured,
     movies: movies.length > 0 ? movies : titles,
     posterMockups: titles.slice(0, 14),
     series,
     watchlist: watchlist.length > 0 ? watchlist : featured.slice(0, 8),
-    heroes: (featured.length > 0 ? featured : titles).slice(0, 6),
+    heroes: featured,
   };
 }
 
@@ -630,7 +712,7 @@ function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function normalizeTitleLookupKey(value: string) {
+function normalizeSlugLookupKey(value: string) {
   try {
     return decodeURIComponent(value).trim().replace(/\s+/g, " ");
   } catch {

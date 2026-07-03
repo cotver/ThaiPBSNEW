@@ -82,37 +82,44 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         <h1 className="max-w-3xl text-5xl font-black leading-[0.98] sm:text-6xl lg:text-7xl">
           {current.title}
         </h1>
-        <p className="mt-4 text-sm font-bold text-white/72">
-          {current.year} | {current.rating} | {current.duration}
-        </p>
-        <p className="mt-5 max-w-md text-sm leading-7 text-white/74 sm:text-base">
-          {current.description}
-        </p>
-        <p className="mt-4 max-w-2xl text-xs font-bold uppercase text-white/58 sm:text-sm">
-          {current.genre}
-        </p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            className="rounded-[6px] bg-white px-9 py-3 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
-            href={current.primaryHref || titleHref(current.slug)}
-          >
-            {current.primaryLabel || "Play"}
-          </Link>
-          <Link
-            className="rounded-[6px] border border-white/16 bg-white/12 px-8 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
-            href={current.secondaryHref || titleHref(current.slug)}
-          >
-            {current.secondaryLabel || "Details"}
-          </Link>
-          <Link
-            aria-label="Open watchlist"
-            className="grid size-12 place-items-center rounded-full border border-white/18 bg-black/35 text-2xl transition hover:bg-white/18"
-            href="/watchlist"
-          >
-            +
-          </Link>
-        </div>
-
+        {[current.year, current.rating, current.duration].filter(Boolean).length > 0 && (
+          <p className="mt-4 text-sm font-bold text-white/72">
+            {[current.year, current.rating, current.duration].filter(Boolean).join(" | ")}
+          </p>
+        )}
+        {current.description && (
+          <p className="mt-5 max-w-md text-sm leading-7 text-white/74 sm:text-base">
+            {current.description}
+          </p>
+        )}
+        {current.genre && (
+          <p className="mt-4 max-w-2xl text-xs font-bold uppercase text-white/58 sm:text-sm">
+            {current.genre}
+          </p>
+        )}
+        {current.showHeroActions !== false && (
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              className="rounded-[6px] bg-white px-9 py-3 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
+              href={titleHref(current.slug)}
+            >
+              Play
+            </Link>
+            <Link
+              className="rounded-[6px] border border-white/16 bg-white/12 px-8 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
+              href={titleHref(current.slug)}
+            >
+              Details
+            </Link>
+            <Link
+              aria-label="Open watchlist"
+              className="grid size-12 place-items-center rounded-full border border-white/18 bg-black/35 text-2xl transition hover:bg-white/18"
+              href="/watchlist"
+            >
+              +
+            </Link>
+          </div>
+        )}
         <div className="mt-8 flex items-center gap-2 lg:hidden">
           {titles.map((title, index) => (
             <button

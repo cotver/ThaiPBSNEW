@@ -12,12 +12,9 @@ export type Title = {
   inWatchlist?: boolean;
   featured?: boolean;
   heroImage?: string;
-  primaryHref?: string;
-  primaryLabel?: string;
   posterImage?: string;
-  secondaryHref?: string;
-  secondaryLabel?: string;
   seasons?: TitleSeason[];
+  showHeroActions?: boolean;
   showHeroDetails?: boolean;
   tone: string;
 };

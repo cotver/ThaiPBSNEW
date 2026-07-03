@@ -31,7 +31,7 @@ export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
             className={`group relative aspect-video min-w-0 overflow-hidden rounded-[6px] border border-white/10 bg-[#111827] transition duration-300 hover:-translate-y-1 hover:scale-[1.035] hover:border-white/50 ${
               hasImage ? "" : "p-5 shadow-2xl shadow-black/40"
             }`}
-            href={`/category/${category.slug}`}
+            href={`/category/${encodeURIComponent(category.slug)}`}
             key={category.id}
             onMouseEnter={() => setHoveredId(category.id)}
             onMouseLeave={() => setHoveredId(null)}

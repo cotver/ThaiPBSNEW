@@ -5,7 +5,7 @@ export const HeroImages: CollectionConfig = {
   orderable: true,
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'eyebrow', 'image', 'showDetails', 'isActive', 'updatedAt'],
+    defaultColumns: ['title', 'image', 'genre', 'subGenre', 'showDetails', 'isActive', 'updatedAt'],
     listSearchableFields: ['title', 'eyebrow', 'description'],
     pagination: {
       defaultLimit: 100,
@@ -27,7 +27,6 @@ export const HeroImages: CollectionConfig = {
     {
       name: 'eyebrow',
       type: 'text',
-      required: true,
       admin: { description: 'Small label above the title, e.g. ThaiPBS Parvilions Original' },
     },
     {
@@ -40,60 +39,42 @@ export const HeroImages: CollectionConfig = {
     {
       name: 'year',
       type: 'text',
-      required: true,
       admin: { description: 'Year or short date label shown in the metadata line' },
     },
     {
       name: 'rating',
       type: 'text',
-      required: true,
       admin: { description: 'Rating label, e.g. ALL Age, 13+, 18+' },
     },
     {
       name: 'duration',
       type: 'text',
-      required: true,
       admin: { description: 'Duration label, e.g. 48m, Series, Movie' },
     },
     {
       name: 'description',
       type: 'textarea',
-      required: true,
       admin: { description: 'Hero synopsis text' },
     },
     {
       name: 'genre',
-      type: 'text',
-      required: true,
-      admin: { description: 'Genre or category line shown below synopsis' },
+      type: 'relationship',
+      relationTo: 'genres',
+      hasMany: true,
+      admin: { description: 'Genres shown below synopsis' },
     },
     {
-      name: 'primaryLabel',
-      type: 'text',
-      defaultValue: 'Play',
-      admin: { description: 'Primary button label' },
-    },
-    {
-      name: 'primaryLink',
-      type: 'text',
-      admin: { description: 'Primary button URL. Use /title/example or https://...' },
-    },
-    {
-      name: 'secondaryLabel',
-      type: 'text',
-      defaultValue: 'Details',
-      admin: { description: 'Secondary button label' },
-    },
-    {
-      name: 'secondaryLink',
-      type: 'text',
-      admin: { description: 'Secondary button URL. Use /title/example or https://...' },
+      name: 'subGenre',
+      type: 'relationship',
+      relationTo: 'subGenres',
+      hasMany: true,
+      admin: { description: 'Sub-genres shown below synopsis' },
     },
     {
       name: 'showDetails',
       type: 'checkbox',
       defaultValue: true,
-      admin: { description: 'Show left side shadow, text details, and buttons' },
+      admin: { description: 'Show left side shadow and text details' },
     },
     {
       name: 'isActive',
