@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { titleEyebrow, titleHref, type Title } from "@/lib/content";
+import { serializeWatchHistory, watchHistoryCookieName } from "@/lib/watch-history";
 import { PosterCard, WideCard } from "./PosterCard";
 import { TitlePreviewModal } from "./TitlePreviewModal";
 
@@ -23,19 +24,17 @@ export function ContentRow({
   layout = "vertical",
   titles,
   title,
+  removable = false,
   viewAllHref,
   viewAllLabel = "View All",
 }: {
   layout?: "poster" | "vertical" | "wide";
+  removable?: boolean;
   titles: Title[];
   title: string;
   viewAllHref?: string;
   viewAllLabel?: string;
 }) {
-  if (titles.length === 0) {
-    return null;
-  }
-
   const railRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const dragStartXRef = useRef(0);
@@ -48,6 +47,7 @@ export function ContentRow({
   const [isDragging, setIsDragging] = useState(false);
   const [activePreview, setActivePreview] = useState<ActivePreview | null>(null);
   const [modalTitle, setModalTitle] = useState<Title | null>(null);
+  const [visibleTitles, setVisibleTitles] = useState(titles);
 
   const clearPreviewTimer = useCallback(() => {
     if (closePreviewTimerRef.current) {
@@ -125,11 +125,15 @@ export function ContentRow({
   }
 
   useEffect(() => {
+    setVisibleTitles(titles);
+  }, [titles]);
+
+  useEffect(() => {
     if (railRef.current) {
       railRef.current.scrollLeft = 0;
       updateScrollState();
     }
-  }, [title, titles]);
+  }, [title, visibleTitles]);
 
   useEffect(() => {
     const rail = railRef.current;
@@ -152,7 +156,7 @@ export function ContentRow({
       rail.removeEventListener("scroll", closeOnScroll);
       window.removeEventListener("resize", closeOnScroll);
     };
-  }, [titles]);
+  }, [visibleTitles]);
 
   useEffect(() => {
     if (!isDragging) {
@@ -281,6 +285,33 @@ export function ContentRow({
     }
   }
 
+  function removeFromContinueWatching(item: Title) {
+    const cookieValue = document.cookie
+      .split("; ")
+      .find((cookie) => cookie.startsWith(`${watchHistoryCookieName}=`))
+      ?.slice(watchHistoryCookieName.length + 1);
+    let slugs: string[] = [];
+
+    if (cookieValue) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(cookieValue));
+        slugs = Array.isArray(parsed) ? parsed.filter((slug): slug is string => typeof slug === "string") : [];
+      } catch {
+        slugs = [];
+      }
+    }
+
+    const nextSlugs = slugs.filter((slug) => slug !== item.slug);
+    document.cookie = `${watchHistoryCookieName}=${serializeWatchHistory(nextSlugs)}; path=/; max-age=15552000; samesite=lax`;
+    setVisibleTitles((current) => current.filter((titleItem) => titleItem.slug !== item.slug));
+    setActivePreview(null);
+    setModalTitle(null);
+  }
+
+  if (visibleTitles.length === 0) {
+    return null;
+  }
+
   const usesSafeRail = layout === "poster" || layout === "vertical" || layout === "wide";
   const railSafeClass = usesSafeRail
     ? `md:pl-0 md:scroll-pl-0 ${
@@ -346,10 +377,11 @@ export function ContentRow({
           onPointerUp={stopDrag}
           ref={railRef}
         >
-          {titles.map((item) =>
+          {visibleTitles.map((item) =>
             layout === "wide" ? (
               <WideCard
                 key={item.slug}
+                onRemoveTitle={removable ? removeFromContinueWatching : undefined}
                 onOpenTitle={setModalTitle}
                 onPreviewEnd={closePreview}
                 onPreviewStart={openPreview}
@@ -360,6 +392,7 @@ export function ContentRow({
                 key={item.slug}
                 onOpenTitle={setModalTitle}
                 orientation={layout === "vertical" ? "portrait" : "landscape"}
+                onRemoveTitle={removable ? removeFromContinueWatching : undefined}
                 onPreviewEnd={closePreview}
                 onPreviewStart={openPreview}
                 rail
@@ -369,12 +402,13 @@ export function ContentRow({
           )}
         </div>
         {activePreview ? (
-          <RowFloatingPreview
-            active={activePreview}
-            onClose={closePreview}
-            onEnter={clearPreviewTimer}
-            onOpenTitle={setModalTitle}
-          />
+        <RowFloatingPreview
+          active={activePreview}
+          onClose={closePreview}
+          onEnter={clearPreviewTimer}
+          onOpenTitle={setModalTitle}
+          onRemoveTitle={removable ? removeFromContinueWatching : undefined}
+        />
         ) : null}
         {canScrollRight ? (
           <button
@@ -397,11 +431,13 @@ export function RowFloatingPreview({
   onClose,
   onEnter,
   onOpenTitle,
+  onRemoveTitle,
 }: {
   active: ActivePreview;
   onClose: () => void;
   onEnter: () => void;
   onOpenTitle: (title: Title) => void;
+  onRemoveTitle?: (title: Title) => void;
 }) {
   const { title } = active;
   const imageSrc = title.heroImage || title.posterImage;
@@ -425,6 +461,20 @@ export function RowFloatingPreview({
           width: active.width,
         }}
       >
+        {onRemoveTitle ? (
+          <button
+            aria-label={`Remove ${title.title} from Continue Watching`}
+            className="absolute right-3 top-3 z-30 grid size-10 place-items-center rounded-full border border-white/18 bg-black/62 text-white/86 shadow-lg shadow-black/35 backdrop-blur transition hover:bg-white hover:text-[#030714] focus-visible:ring-2 focus-visible:ring-cyan-200"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onRemoveTitle(title);
+            }}
+            type="button"
+          >
+            <EraserIcon />
+          </button>
+        ) : null}
         <button
           aria-label={`Open details for ${title.title}`}
           className="block w-full text-left outline-none"
@@ -506,6 +556,25 @@ function InfoIcon() {
       <circle cx="12" cy="12" r="9" />
       <path d="M12 10v6" />
       <path d="M12 7h.01" />
+    </svg>
+  );
+}
+
+function EraserIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2.2"
+      viewBox="0 0 24 24"
+    >
+      <path d="m7 21-4-4L14.5 5.5a2.8 2.8 0 0 1 4 0 2.8 2.8 0 0 1 0 4L7 21Z" />
+      <path d="m12 8 4 4" />
+      <path d="M7 21h14" />
     </svg>
   );
 }

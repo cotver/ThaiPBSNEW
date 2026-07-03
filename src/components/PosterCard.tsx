@@ -9,6 +9,7 @@ type CardProps = {
   onOpenTitle?: (title: Title) => void;
   onPreviewEnd?: () => void;
   onPreviewStart?: (title: Title, element: HTMLElement) => void;
+  onRemoveTitle?: (title: Title) => void;
   orientation?: "landscape" | "portrait";
   rail?: boolean;
   title: Title;
@@ -18,6 +19,7 @@ export function PosterCard({
   onOpenTitle,
   onPreviewEnd,
   onPreviewStart,
+  onRemoveTitle,
   orientation = "landscape",
   rail = false,
   title,
@@ -32,7 +34,7 @@ export function PosterCard({
   return (
     <>
       <article
-        className={`relative snap-start rounded-[6px] ${
+        className={`group relative snap-start rounded-[6px] ${
           rail
             ? orientation === "portrait"
               ? "w-[calc((100%_-_32px)_*_0.333333)] shrink-0 sm:w-[calc((100%_-_48px)_*_0.25)] md:w-[calc((100%_-_64px)_*_0.2)] xl:w-[calc((100%_-_80px)_*_0.166667)] 2xl:w-[calc((100%_-_96px)_*_0.142857)]"
@@ -80,6 +82,21 @@ export function PosterCard({
             </div>
           </div>
         </button>
+        {onRemoveTitle ? (
+          <button
+            aria-label={`Remove ${title.title} from Continue Watching`}
+            className="absolute right-2 top-2 z-20 grid size-9 place-items-center rounded-full border border-white/18 bg-black/62 text-white/82 opacity-100 shadow-lg shadow-black/35 backdrop-blur transition hover:bg-white hover:text-[#030714] focus-visible:ring-2 focus-visible:ring-cyan-200 md:opacity-0 md:group-hover:opacity-100"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onRemoveTitle(title);
+            }}
+            onMouseEnter={onPreviewEnd}
+            type="button"
+          >
+            <EraserIcon />
+          </button>
+        ) : null}
       </article>
       {!onOpenTitle ? (
         <TitlePreviewModal onClose={() => setModalOpen(false)} open={modalOpen} title={title} />
@@ -88,7 +105,7 @@ export function PosterCard({
   );
 }
 
-export function WideCard({ onOpenTitle, onPreviewEnd, onPreviewStart, title }: CardProps) {
+export function WideCard({ onOpenTitle, onPreviewEnd, onPreviewStart, onRemoveTitle, title }: CardProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const imageSrc = title.heroImage || title.posterImage;
   const openModal = useCallback(() => {
@@ -98,7 +115,7 @@ export function WideCard({ onOpenTitle, onPreviewEnd, onPreviewStart, title }: C
 
   return (
     <>
-      <article className="relative w-[calc((100%_-_16px)_*_0.5)] shrink-0 snap-start rounded-[6px] lg:w-[calc((100%_-_32px)_*_0.333333)] 2xl:w-[calc((100%_-_48px)_*_0.25)]">
+      <article className="group relative w-[calc((100%_-_16px)_*_0.5)] shrink-0 snap-start rounded-[6px] lg:w-[calc((100%_-_32px)_*_0.333333)] 2xl:w-[calc((100%_-_48px)_*_0.25)]">
         <button
           aria-label={`Open details for ${title.title}`}
           className="block w-full overflow-hidden rounded-[6px] border border-white/10 bg-[#101827] text-left shadow-xl shadow-black/25 outline-none transition duration-300 hover:border-white/45 focus-visible:ring-2 focus-visible:ring-cyan-200"
@@ -128,10 +145,44 @@ export function WideCard({ onOpenTitle, onPreviewEnd, onPreviewStart, title }: C
             </div>
           ) : null}
         </button>
+        {onRemoveTitle ? (
+          <button
+            aria-label={`Remove ${title.title} from Continue Watching`}
+            className="absolute right-2 top-2 z-20 grid size-9 place-items-center rounded-full border border-white/18 bg-black/62 text-white/82 opacity-100 shadow-lg shadow-black/35 backdrop-blur transition hover:bg-white hover:text-[#030714] focus-visible:ring-2 focus-visible:ring-cyan-200 md:opacity-0 md:group-hover:opacity-100"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onRemoveTitle(title);
+            }}
+            onMouseEnter={onPreviewEnd}
+            type="button"
+          >
+            <EraserIcon />
+          </button>
+        ) : null}
       </article>
       {!onOpenTitle ? (
         <TitlePreviewModal onClose={() => setModalOpen(false)} open={modalOpen} title={title} />
       ) : null}
     </>
+  );
+}
+
+function EraserIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2.2"
+      viewBox="0 0 24 24"
+    >
+      <path d="m7 21-4-4L14.5 5.5a2.8 2.8 0 0 1 4 0 2.8 2.8 0 0 1 0 4L7 21Z" />
+      <path d="m12 8 4 4" />
+      <path d="M7 21h14" />
+    </svg>
   );
 }

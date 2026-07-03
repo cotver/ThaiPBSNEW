@@ -33,7 +33,7 @@ export default async function HomePage() {
             viewAllHref={`/browse?section=type&type=${encodeURIComponent(row.type.slug)}&label=${encodeURIComponent(row.type.name)}`}
           />
         ))}
-        <ContentRow layout="wide" title="Continue Watching" titles={collections.continueWatching} viewAllHref="/browse?section=continue-watching&label=Continue%20Watching" />
+        <ContentRow layout="wide" removable title="Continue Watching" titles={collections.continueWatching} viewAllHref="/browse?section=continue-watching&label=Continue%20Watching" />
         {collections.yearRows.map((row) => (
           <ContentRow
             key={row.year}

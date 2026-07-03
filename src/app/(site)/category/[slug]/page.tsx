@@ -76,6 +76,7 @@ export default async function CategoryPage({
         />
         <ContentRow
           layout="wide"
+          removable
           title="Continue Watching"
           titles={collections.continueWatching}
           viewAllHref={`/browse?section=continue-watching&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Continue Watching`)}`}
