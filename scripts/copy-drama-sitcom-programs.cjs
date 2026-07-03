@@ -7,6 +7,7 @@ const legacyRootDir = 'D:\\Work\\ThaiPBS\\ThaiPBSAdmin';
 const legacyGenreValue = 'Drama&Sitcom';
 const targetGenreName = 'Drama&Sitcom';
 const targetGenreSlug = 'drama-sitcom';
+const forcedFalseProgramColumns = ['is_feature'];
 const mediaReferenceColumnsByTable = {
   programs: ['image_id', 'cover_image_id'],
   seasons: ['cover_image_id'],
@@ -175,7 +176,7 @@ async function copyReferencedUploadRows(client, sourceSchema, targetSchema, tabl
 
   const columnList = copyColumns.map(({ target }) => quoteIdent(target.column_name)).join(', ');
   const selectList = copyColumns
-    .map(({ source, target }) => buildSelectExpression(source, target))
+    .map(({ source, target }) => buildSelectExpression(source, target, table))
     .join(', ');
   const hasIdentityColumn = copyColumns.some(({ target }) => target.identity_generation);
   const overrideIdentity = hasIdentityColumn ? ' overriding system value' : '';
@@ -251,7 +252,11 @@ function copyReferencedUploadFiles(uploadFiles, sourceUploadDir, targetUploadDir
   return { copied, skippedExisting, missing };
 }
 
-function buildSelectExpression(sourceColumn, targetColumn) {
+function buildSelectExpression(sourceColumn, targetColumn, table) {
+  if (table === 'programs' && forcedFalseProgramColumns.includes(targetColumn.column_name)) {
+    return 'false';
+  }
+
   const columnRef = `p.${quoteIdent(sourceColumn.column_name)}`;
 
   if (
@@ -269,7 +274,7 @@ function buildSelectExpression(sourceColumn, targetColumn) {
 function buildInsertMissingRowsStatement(sourceSchema, targetSchema, table, copyColumns, whereSql) {
   const columnList = copyColumns.map(({ target }) => quoteIdent(target.column_name)).join(', ');
   const selectList = copyColumns
-    .map(({ source, target }) => buildSelectExpression(source, target))
+    .map(({ source, target }) => buildSelectExpression(source, target, table))
     .join(', ');
   const hasIdentityColumn = copyColumns.some(({ target }) => target.identity_generation);
   const overrideIdentity = hasIdentityColumn ? ' overriding system value' : '';
@@ -474,6 +479,47 @@ async function copySeasonEpisodeRelationships(client, sourceSchema, targetSchema
   return inserted.rowCount;
 }
 
+async function fixTargetGenreIsFeatureFalse(client, targetSchema, shouldWrite) {
+  const countResult = await client.query(
+    `select count(*)::bigint as count
+     from ${quoteIdent(targetSchema)}.programs p
+     join ${quoteIdent(targetSchema)}.programs_rels rel
+       on rel.parent_id = p.id and rel.path = 'genre'
+     join ${quoteIdent(targetSchema)}.genres g
+       on g.id = rel.genres_id
+     where g.name = $1
+       and g.slug = $2
+       and p.is_feature is true`,
+    [targetGenreName, targetGenreSlug],
+  );
+  const count = Number(countResult.rows[0].count);
+
+  console.log(`Drama&Sitcom programs with is_feature = true: ${count}`);
+
+  if (!shouldWrite) {
+    console.log('');
+    console.log('Dry run only. Run with --fix-is-feature --yes to set them to false.');
+    return;
+  }
+
+  const updated = await client.query(
+    `update ${quoteIdent(targetSchema)}.programs p
+     set is_feature = false,
+         updated_at = now()
+     from ${quoteIdent(targetSchema)}.programs_rels rel
+     join ${quoteIdent(targetSchema)}.genres g
+       on g.id = rel.genres_id
+     where rel.parent_id = p.id
+       and rel.path = 'genre'
+       and g.name = $1
+       and g.slug = $2
+       and p.is_feature is true`,
+    [targetGenreName, targetGenreSlug],
+  );
+
+  console.log(`Updated programs: ${updated.rowCount}`);
+}
+
 async function main() {
   const currentEnv = readDotEnv(path.join(rootDir, '.env'));
   const legacyEnvPath = getArg('--source-env', path.join(legacyRootDir, '.env'));
@@ -481,6 +527,7 @@ async function main() {
   const sourceSchema = getArg('--from', process.env.SOURCE_SCHEMA || legacyEnv.PAYLOAD_DB_SCHEMA || 'payload');
   const targetSchema = getArg('--to', process.env.TARGET_SCHEMA || currentEnv.PAYLOAD_DB_SCHEMA || 'pavillions');
   const shouldWrite = process.argv.includes('--yes');
+  const shouldFixIsFeature = process.argv.includes('--fix-is-feature');
   const sourceMediaDir = resolveProjectPath(
     legacyRootDir,
     process.env.SOURCE_PAYLOAD_MEDIA_DIR || legacyEnv.PAYLOAD_MEDIA_DIR,
@@ -537,6 +584,11 @@ async function main() {
 
     if (!(await schemaExists(client, targetSchema))) {
       throw new Error(`Target schema "${targetSchema}" does not exist.`);
+    }
+
+    if (shouldFixIsFeature) {
+      await fixTargetGenreIsFeatureFalse(client, targetSchema, shouldWrite);
+      return;
     }
 
     const countResult = await client.query(
