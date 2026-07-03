@@ -80,6 +80,7 @@ export interface Config {
     languages: Language;
     awards: Award;
     categories: Category;
+    heroImages: HeroImage;
     types: Type;
     genres: Genre;
     subGenres: SubGenre;
@@ -107,6 +108,7 @@ export interface Config {
     languages: LanguagesSelect<false> | LanguagesSelect<true>;
     awards: AwardsSelect<false> | AwardsSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
+    heroImages: HeroImagesSelect<false> | HeroImagesSelect<true>;
     types: TypesSelect<false> | TypesSelect<true>;
     genres: GenresSelect<false> | GenresSelect<true>;
     subGenres: SubGenresSelect<false> | SubGenresSelect<true>;
@@ -2680,6 +2682,74 @@ export interface Footer {
   createdAt: string;
 }
 /**
+ * Homepage hero slides shown before program-generated hero slides.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "heroImages".
+ */
+export interface HeroImage {
+  id: number;
+  _order?: string | null;
+  /**
+   * Main hero title
+   */
+  title: string;
+  /**
+   * Small label above the title, e.g. ThaiPBS Parvilions Original
+   */
+  eyebrow: string;
+  /**
+   * Hero background image
+   */
+  image: number | Media;
+  /**
+   * Year or short date label shown in the metadata line
+   */
+  year: string;
+  /**
+   * Rating label, e.g. ALL Age, 13+, 18+
+   */
+  rating: string;
+  /**
+   * Duration label, e.g. 48m, Series, Movie
+   */
+  duration: string;
+  /**
+   * Hero synopsis text
+   */
+  description: string;
+  /**
+   * Genre or category line shown below synopsis
+   */
+  genre: string;
+  /**
+   * Primary button label
+   */
+  primaryLabel?: string | null;
+  /**
+   * Primary button URL. Use /title/example or https://...
+   */
+  primaryLink?: string | null;
+  /**
+   * Secondary button label
+   */
+  secondaryLabel?: string | null;
+  /**
+   * Secondary button URL. Use /title/example or https://...
+   */
+  secondaryLink?: string | null;
+  /**
+   * Show left side shadow, text details, and buttons
+   */
+  showDetails?: boolean | null;
+  /**
+   * Show this slide on the homepage hero
+   */
+  isActive?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -2754,6 +2824,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'categories';
         value: number | Category;
+      } | null)
+    | ({
+        relationTo: 'heroImages';
+        value: number | HeroImage;
       } | null)
     | ({
         relationTo: 'types';
@@ -3120,6 +3194,29 @@ export interface CategoriesSelect<T extends boolean = true> {
   image?: T;
   video?: T;
   order?: T;
+  isActive?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "heroImages_select".
+ */
+export interface HeroImagesSelect<T extends boolean = true> {
+  _order?: T;
+  title?: T;
+  eyebrow?: T;
+  image?: T;
+  year?: T;
+  rating?: T;
+  duration?: T;
+  description?: T;
+  genre?: T;
+  primaryLabel?: T;
+  primaryLink?: T;
+  secondaryLabel?: T;
+  secondaryLink?: T;
+  showDetails?: T;
   isActive?: T;
   updatedAt?: T;
   createdAt?: T;

@@ -1,4 +1,4 @@
-import type { Category, Episode, Landing, Media, Program, Season, Video } from "../../payload-types";
+import type { Category, Episode, HeroImage, Landing, Media, Program, Season, Video } from "../../payload-types";
 import type { NavItem, Title } from "@/lib/content";
 import { getPayloadClient } from "@/lib/payload-client";
 
@@ -63,13 +63,13 @@ const tones = [
 ];
 
 export async function getCatalogCollections(): Promise<TitleCollections> {
-  const titles = await getPayloadTitles();
+  const [titles, heroImages] = await Promise.all([getPayloadTitles(), getHeroImageTitles()]);
+  const collections = titles.length === 0 ? emptyCollections : buildCollections(titles);
 
-  if (titles.length === 0) {
-    return emptyCollections;
-  }
-
-  return buildCollections(titles);
+  return {
+    ...collections,
+    heroes: heroImages.length > 0 ? heroImages : collections.heroes,
+  };
 }
 
 export async function getCatalogTitles(): Promise<Title[]> {
@@ -315,6 +315,60 @@ async function getPayloadTitles(): Promise<Title[]> {
   }
 }
 
+async function getHeroImageTitles(): Promise<Title[]> {
+  try {
+    const payload = await getPayloadClient();
+    const result = await payload.find({
+      collection: "heroImages",
+      depth: 1,
+      limit: 12,
+      overrideAccess: true,
+      sort: "_order",
+      where: {
+        isActive: {
+          equals: true,
+        },
+      },
+    });
+
+    return result.docs.map(heroImageToTitle).filter((title): title is Title => Boolean(title));
+  } catch (error) {
+    console.warn("Unable to load Payload hero images for homepage", error);
+    return [];
+  }
+}
+
+function heroImageToTitle(hero: HeroImage): Title | null {
+  const title = cleanText(hero.title);
+  const image = mediaUrl(hero.image);
+
+  if (!title || !image) {
+    return null;
+  }
+
+  const slug = `hero-image-${hero.id}`;
+
+  return {
+    slug,
+    title,
+    type: "Original",
+    genre: cleanText(hero.genre) || "ThaiPBS",
+    year: cleanText(hero.year) || "New",
+    rating: cleanText(hero.rating) || "ALL Age",
+    duration: cleanText(hero.duration) || "Featured",
+    eyebrow: cleanText(hero.eyebrow) || "ThaiPBS Parvilions",
+    description: cleanText(hero.description) || title,
+    featured: true,
+    heroImage: image,
+    primaryHref: cleanUrl(hero.primaryLink),
+    primaryLabel: cleanText(hero.primaryLabel) || "Play",
+    secondaryHref: cleanUrl(hero.secondaryLink),
+    secondaryLabel: cleanText(hero.secondaryLabel) || "Details",
+    showHeroDetails: hero.showDetails !== false,
+    tone: tones[Math.abs(hashString(slug)) % tones.length],
+  };
+}
+
 function buildCollections(titles: Title[]): TitleCollections {
   const featured = titles.filter((title) => title.featured);
   const originals = titles.filter((title) => title.type === "Original");
@@ -439,7 +493,15 @@ function episodeToTitleEpisode(episode: Episode): NonNullable<Title["seasons"]>[
   };
 }
 
-function mediaUrl(media: Program["coverImage"] | Season["coverImage"] | Episode["coverImage"] | Category["image"] | Landing["heroImage"]) {
+function mediaUrl(
+  media:
+    | Program["coverImage"]
+    | Season["coverImage"]
+    | Episode["coverImage"]
+    | Category["image"]
+    | Landing["heroImage"]
+    | HeroImage["image"],
+) {
   if (!media || typeof media === "number") {
     return undefined;
   }

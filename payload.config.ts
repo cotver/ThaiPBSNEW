@@ -21,6 +21,7 @@ import { Categories } from './collections/Categories.ts'
 import { Types } from './collections/Types.ts'
 import { Genres } from './collections/Genres.ts'
 import { SubGenres } from './collections/SubGenres.ts'
+import { HeroImages } from './collections/HeroImages.ts'
 import { Programs } from './collections/Programs.ts'
 import { VipaPrograms } from './collections/VipaPrograms.ts'
 import { Seasons } from './collections/Seasons.ts'
@@ -101,6 +102,7 @@ export default buildConfig({
     Types,
     Genres,
     SubGenres,
+    HeroImages,
     Programs,
     VipaPrograms,
     Seasons,

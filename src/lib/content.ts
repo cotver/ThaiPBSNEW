@@ -6,13 +6,19 @@ export type Title = {
   year: string;
   rating: string;
   duration: string;
+  eyebrow?: string;
   description: string;
   progress?: string;
   inWatchlist?: boolean;
   featured?: boolean;
   heroImage?: string;
+  primaryHref?: string;
+  primaryLabel?: string;
   posterImage?: string;
+  secondaryHref?: string;
+  secondaryLabel?: string;
   seasons?: TitleSeason[];
+  showHeroDetails?: boolean;
   tone: string;
 };
 

@@ -69,12 +69,15 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         </div>
       ))}
 
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.94)_28%,rgba(3,7,20,0.38)_48%,transparent_68%)]" />
+      {current.showHeroDetails !== false && (
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.94)_28%,rgba(3,7,20,0.38)_48%,transparent_68%)]" />
+      )}
       <div className="absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-[#030714] via-[#030714]/92 to-transparent" />
 
+      {current.showHeroDetails !== false && (
       <div className="relative z-10 flex min-h-[560px] max-w-3xl flex-col justify-end lg:min-h-[590px]">
         <p className="mb-3 text-xs font-black uppercase text-cyan-200">
-          {current.type === "Original" ? "ThaiPBS Parvilions Original" : current.type}
+          {current.eyebrow || (current.type === "Original" ? "ThaiPBS Parvilions Original" : current.type)}
         </p>
         <h1 className="max-w-3xl text-5xl font-black leading-[0.98] sm:text-6xl lg:text-7xl">
           {current.title}
@@ -91,15 +94,15 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             className="rounded-[6px] bg-white px-9 py-3 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
-            href={titleHref(current.slug)}
+            href={current.primaryHref || titleHref(current.slug)}
           >
-            Play
+            {current.primaryLabel || "Play"}
           </Link>
           <Link
             className="rounded-[6px] border border-white/16 bg-white/12 px-8 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
-            href={titleHref(current.slug)}
+            href={current.secondaryHref || titleHref(current.slug)}
           >
-            Details
+            {current.secondaryLabel || "Details"}
           </Link>
           <Link
             aria-label="Open watchlist"
@@ -124,6 +127,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
           ))}
         </div>
       </div>
+      )}
 
       <div className="no-scrollbar absolute bottom-10 right-8 z-20 hidden max-w-[34vw] gap-2 overflow-x-auto pb-1 lg:flex">
         {titles.map((title, index) => (

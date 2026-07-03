@@ -7,6 +7,7 @@ import * as migration_20260702_091033_target_group_age_number from './20260702_0
 import * as migration_20260702_093019_genres_and_subgenres from './20260702_093019_genres_and_subgenres';
 import * as migration_20260702_165928_add_types_collection from './20260702_165928_add_types_collection';
 import * as migration_20260703_022140_move_type_program_links from './20260703_022140_move_type_program_links';
+import * as migration_20260703_024740_add_home_hero_images from './20260703_024740_add_home_hero_images';
 
 export const migrations = [
   {
@@ -52,6 +53,11 @@ export const migrations = [
   {
     up: migration_20260703_022140_move_type_program_links.up,
     down: migration_20260703_022140_move_type_program_links.down,
-    name: '20260703_022140_move_type_program_links'
+    name: '20260703_022140_move_type_program_links',
+  },
+  {
+    up: migration_20260703_024740_add_home_hero_images.up,
+    down: migration_20260703_024740_add_home_hero_images.down,
+    name: '20260703_024740_add_home_hero_images'
   },
 ];
