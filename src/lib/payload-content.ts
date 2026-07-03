@@ -194,18 +194,9 @@ export async function getTypeNavItems(): Promise<NavItem[]> {
       overrideAccess: true,
       sort: "_order",
       where: {
-        and: [
-          {
-            isActive: {
-              equals: true,
-            },
-          },
-          {
-            appShellActive: {
-              equals: true,
-            },
-          },
-        ],
+        appShellActive: {
+          equals: true,
+        },
       },
     });
 
@@ -213,7 +204,7 @@ export async function getTypeNavItems(): Promise<NavItem[]> {
       .map((item) => typeToTile(item as TypeDoc))
       .filter((type): type is TypeTile => Boolean(type))
       .map((type) => ({
-        href: type.link || `/type/${encodeURIComponent(type.slug)}`,
+        href: type.link || `/category/${encodeURIComponent(type.slug)}`,
         icon: type.icon || "film",
         label: type.name,
       }));
@@ -249,9 +240,18 @@ export async function getCategoryPage(slug: string): Promise<{ category: Categor
             ],
           },
           {
-            isActive: {
-              equals: true,
-            },
+            or: [
+              {
+                isActive: {
+                  equals: true,
+                },
+              },
+              {
+                appShellActive: {
+                  equals: true,
+                },
+              },
+            ],
           },
         ],
       },
@@ -312,9 +312,18 @@ export async function getTypePage(slug: string): Promise<{ type: TypeTile; title
             ],
           },
           {
-            isActive: {
-              equals: true,
-            },
+            or: [
+              {
+                isActive: {
+                  equals: true,
+                },
+              },
+              {
+                appShellActive: {
+                  equals: true,
+                },
+              },
+            ],
           },
         ],
       },

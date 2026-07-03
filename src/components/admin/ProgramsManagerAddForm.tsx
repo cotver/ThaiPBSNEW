@@ -1630,14 +1630,14 @@ function payloadErrorMessage(error: unknown, fallback: string) {
   const details = errors.flatMap((item) => {
     const row = item && typeof item === 'object' ? (item as Record<string, unknown>) : {}
     const message = typeof row.message === 'string' ? row.message : ''
-    const field = typeof row.field === 'string' ? row.field : ''
+    const field = typeof row.field === 'string' ? row.field : typeof row.path === 'string' ? row.path : ''
     const data = row.data && typeof row.data === 'object' ? (row.data as Record<string, unknown>) : {}
     const nestedErrors = Array.isArray(data.errors) ? data.errors : []
     const nested = nestedErrors
       .map((nestedItem) => {
         const nestedRow = nestedItem && typeof nestedItem === 'object' ? (nestedItem as Record<string, unknown>) : {}
         const nestedMessage = typeof nestedRow.message === 'string' ? nestedRow.message : ''
-        const nestedField = typeof nestedRow.field === 'string' ? nestedRow.field : ''
+        const nestedField = typeof nestedRow.field === 'string' ? nestedRow.field : typeof nestedRow.path === 'string' ? nestedRow.path : ''
         return nestedMessage ? `${nestedField ? `${nestedField}: ` : ''}${nestedMessage}` : ''
       })
       .filter(Boolean)

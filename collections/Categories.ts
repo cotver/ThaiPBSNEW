@@ -78,7 +78,7 @@ export const Categories: CollectionConfig = {
     {
       name: 'link',
       type: 'text',
-      admin: { description: 'Optional URL. If set, AppShell navigation opens this link instead of the type filter page.' },
+      admin: { description: 'Optional URL. If set, AppShell navigation opens this link instead of the category page.' },
     },
     {
       name: 'order',
@@ -92,7 +92,7 @@ export const Categories: CollectionConfig = {
       name: 'isActive',
       type: 'checkbox',
       defaultValue: true,
-      admin: { description: 'Show this category on the website' },
+      admin: { description: 'Show this category in brand tiles' },
     },
     {
       name: 'appShellActive',

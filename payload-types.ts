@@ -1820,7 +1820,7 @@ export interface Category {
    */
   video?: (number | null) | Video;
   /**
-   * Optional URL. If set, AppShell navigation opens this link instead of the type filter page.
+   * Optional URL. If set, AppShell navigation opens this link instead of the category page.
    */
   link?: string | null;
   /**
@@ -1828,7 +1828,7 @@ export interface Category {
    */
   order?: number | null;
   /**
-   * Show this category on the website
+   * Show this category in brand tiles
    */
   isActive?: boolean | null;
   /**
