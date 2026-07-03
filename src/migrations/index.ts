@@ -9,6 +9,8 @@ import * as migration_20260702_165928_add_types_collection from './20260702_1659
 import * as migration_20260703_022140_move_type_program_links from './20260703_022140_move_type_program_links';
 import * as migration_20260703_024740_add_home_hero_images from './20260703_024740_add_home_hero_images';
 import * as migration_20260703_030120_simplify_home_hero_images from './20260703_030120_simplify_home_hero_images';
+import * as migration_20260703_090000_merge_types_into_categories from './20260703_090000_merge_types_into_categories';
+import * as migration_20260703_091000_add_programs_is_discontinued from './20260703_091000_add_programs_is_discontinued';
 
 export const migrations = [
   {
@@ -65,5 +67,15 @@ export const migrations = [
     up: migration_20260703_030120_simplify_home_hero_images.up,
     down: migration_20260703_030120_simplify_home_hero_images.down,
     name: '20260703_030120_simplify_home_hero_images'
+  },
+  {
+    up: migration_20260703_090000_merge_types_into_categories.up,
+    down: migration_20260703_090000_merge_types_into_categories.down,
+    name: '20260703_090000_merge_types_into_categories'
+  },
+  {
+    up: migration_20260703_091000_add_programs_is_discontinued.up,
+    down: migration_20260703_091000_add_programs_is_discontinued.down,
+    name: '20260703_091000_add_programs_is_discontinued'
   },
 ];

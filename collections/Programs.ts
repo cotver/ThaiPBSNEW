@@ -164,13 +164,6 @@ export const Programs: CollectionConfig = {
           admin: { description: 'Genres' },
         },
         {
-          name: 'programsType',
-          type: 'relationship',
-          relationTo: 'types',
-          hasMany: true,
-          admin: { description: 'Programs Type' },
-        },
-        {
           name: 'genre_sub',
           type: 'relationship',
           relationTo: 'subGenres',
@@ -253,6 +246,7 @@ export const Programs: CollectionConfig = {
         },
         { name: 'is_special_programs', type: 'checkbox', admin: { description: 'Is special programs' } },
         { name: 'is_old_series', type: 'checkbox', admin: { description: 'Is old series' } },
+        { name: 'is_discontinued', type: 'checkbox', admin: { description: 'Is discontinued' } },
         { name: 'is_global_programs', type: 'checkbox', admin: { description: 'Is global programs' } },
         {
           name: 'is_global_international',

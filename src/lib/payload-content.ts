@@ -44,6 +44,7 @@ export type TypeTile = CategoryTile & {
 
 type TypeDoc = {
   id: number;
+  appShellActive?: boolean | null;
   icon?: string | null;
   image?: Category["image"];
   isActive?: boolean | null;
@@ -187,15 +188,24 @@ export async function getTypeNavItems(): Promise<NavItem[]> {
   try {
     const payload = await getPayloadClient();
     const result = await payload.find({
-      collection: "types",
+      collection: "categories",
       depth: 0,
       limit: 20,
       overrideAccess: true,
       sort: "_order",
       where: {
-        isActive: {
-          equals: true,
-        },
+        and: [
+          {
+            isActive: {
+              equals: true,
+            },
+          },
+          {
+            appShellActive: {
+              equals: true,
+            },
+          },
+        ],
       },
     });
 
@@ -208,7 +218,7 @@ export async function getTypeNavItems(): Promise<NavItem[]> {
         label: type.name,
       }));
   } catch (error) {
-    console.warn("Unable to load Payload types for navigation", error);
+    console.warn("Unable to load Payload categories for AppShell navigation", error);
     return [];
   }
 }
@@ -281,7 +291,7 @@ export async function getTypePage(slug: string): Promise<{ type: TypeTile; title
     const payload = await getPayloadClient();
     const cleanSlug = normalizeSlugLookupKey(slug);
     const typeResult = await payload.find({
-      collection: "types",
+      collection: "categories",
       depth: 2,
       limit: 1,
       overrideAccess: true,
@@ -323,7 +333,7 @@ export async function getTypePage(slug: string): Promise<{ type: TypeTile; title
       overrideAccess: true,
       sort: "-updatedAt",
       where: {
-        programsType: {
+        categories: {
           contains: typeDoc.id,
         },
       },
@@ -384,7 +394,7 @@ async function getHomeTypeRows(): Promise<TypeProgramRow[]> {
   try {
     const payload = await getPayloadClient();
     const typesResult = await payload.find({
-      collection: "types",
+      collection: "categories",
       depth: 2,
       limit: 1000,
       overrideAccess: true,
@@ -411,7 +421,7 @@ async function getHomeTypeRows(): Promise<TypeProgramRow[]> {
           overrideAccess: true,
           sort: "-updatedAt",
           where: {
-            programsType: {
+            categories: {
               contains: typeDoc.id,
             },
           },
@@ -549,7 +559,7 @@ function programToTitle(program: Program): Title | null {
     tone: tones[Math.abs(hashString(program.slug)) % tones.length],
     trailerMimeType: videoMimeType(program.trailer),
     trailerUrl: getProgramTrailerUrl(program),
-    typeSlugs: relationSlugs((program as { programsType?: unknown }).programsType),
+    typeSlugs: relationSlugs((program as { categories?: unknown }).categories),
   };
 }
 

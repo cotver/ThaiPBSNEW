@@ -20,7 +20,7 @@ export const Categories: CollectionConfig = {
   orderable: true,
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'slug', 'icon', 'image', 'video', 'updatedAt'],
+    defaultColumns: ['name', 'slug', 'icon', 'link', 'appShellActive', 'image', 'video', 'updatedAt'],
     listSearchableFields: ['name'],
     pagination: {
       defaultLimit: 1000,
@@ -76,6 +76,11 @@ export const Categories: CollectionConfig = {
       admin: { description: 'Short video or GIF-style loop from Videos collection' },
     },
     {
+      name: 'link',
+      type: 'text',
+      admin: { description: 'Optional URL. If set, AppShell navigation opens this link instead of the type filter page.' },
+    },
+    {
       name: 'order',
       type: 'number',
       defaultValue: 0,
@@ -88,6 +93,12 @@ export const Categories: CollectionConfig = {
       type: 'checkbox',
       defaultValue: true,
       admin: { description: 'Show this category on the website' },
+    },
+    {
+      name: 'appShellActive',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: { description: 'Show this category in the AppShell navigation' },
     },
   ],
 }

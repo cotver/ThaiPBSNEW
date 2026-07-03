@@ -80,7 +80,6 @@ export interface Config {
     languages: Language;
     awards: Award;
     categories: Category;
-    types: Type;
     genres: Genre;
     subGenres: SubGenre;
     heroImages: HeroImage;
@@ -108,7 +107,6 @@ export interface Config {
     languages: LanguagesSelect<false> | LanguagesSelect<true>;
     awards: AwardsSelect<false> | AwardsSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
-    types: TypesSelect<false> | TypesSelect<true>;
     genres: GenresSelect<false> | GenresSelect<true>;
     subGenres: SubGenresSelect<false> | SubGenresSelect<true>;
     heroImages: HeroImagesSelect<false> | HeroImagesSelect<true>;
@@ -1501,10 +1499,6 @@ export interface Program {
    */
   genre?: (number | Genre)[] | null;
   /**
-   * Programs Type
-   */
-  programsType?: (number | Type)[] | null;
-  /**
    * Sub-genres
    */
   genre_sub?: (number | SubGenre)[] | null;
@@ -1588,6 +1582,10 @@ export interface Program {
    * Is old series
    */
   is_old_series?: boolean | null;
+  /**
+   * Is discontinued
+   */
+  is_discontinued?: boolean | null;
   /**
    * Is global programs
    */
@@ -1822,6 +1820,10 @@ export interface Category {
    */
   video?: (number | null) | Video;
   /**
+   * Optional URL. If set, AppShell navigation opens this link instead of the type filter page.
+   */
+  link?: string | null;
+  /**
    * Legacy numeric order. Use drag-and-drop on the Categories list to change display order.
    */
   order?: number | null;
@@ -1829,6 +1831,10 @@ export interface Category {
    * Show this category on the website
    */
   isActive?: boolean | null;
+  /**
+   * Show this category in the AppShell navigation
+   */
+  appShellActive?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1900,63 +1906,6 @@ export interface Genre {
    * URL-safe genre key, e.g. documentary
    */
   slug: string;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "types".
- */
-export interface Type {
-  id: number;
-  _order?: string | null;
-  /**
-   * Type name
-   */
-  name: string;
-  /**
-   * URL-safe type key, e.g. documentary, kids, drama
-   */
-  slug: string;
-  /**
-   * Optional icon shown in navigation
-   */
-  icon?:
-    | (
-        | 'home'
-        | 'search'
-        | 'plus'
-        | 'spark'
-        | 'film'
-        | 'screen'
-        | 'news'
-        | 'music'
-        | 'food'
-        | 'travel'
-        | 'kids'
-        | 'education'
-      )
-    | null;
-  /**
-   * Type image / poster / thumbnail
-   */
-  image?: (number | null) | Media;
-  /**
-   * Short video or GIF-style loop from Videos collection
-   */
-  video?: (number | null) | Video;
-  /**
-   * Optional URL. If set, navigation opens this link instead of the type filter page.
-   */
-  link?: string | null;
-  /**
-   * Legacy numeric order. Use drag-and-drop on the Types list to change display order.
-   */
-  order?: number | null;
-  /**
-   * Show this type on the website navigation
-   */
-  isActive?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2814,10 +2763,6 @@ export interface PayloadLockedDocument {
         value: number | Category;
       } | null)
     | ({
-        relationTo: 'types';
-        value: number | Type;
-      } | null)
-    | ({
         relationTo: 'genres';
         value: number | Genre;
       } | null)
@@ -3181,25 +3126,10 @@ export interface CategoriesSelect<T extends boolean = true> {
   icon?: T;
   image?: T;
   video?: T;
-  order?: T;
-  isActive?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "types_select".
- */
-export interface TypesSelect<T extends boolean = true> {
-  _order?: T;
-  name?: T;
-  slug?: T;
-  icon?: T;
-  image?: T;
-  video?: T;
   link?: T;
   order?: T;
   isActive?: T;
+  appShellActive?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -3266,7 +3196,6 @@ export interface ProgramsSelect<T extends boolean = true> {
   writer?: T;
   type?: T;
   genre?: T;
-  programsType?: T;
   genre_sub?: T;
   tags?: T;
   comment?: T;
@@ -3288,6 +3217,7 @@ export interface ProgramsSelect<T extends boolean = true> {
   is_Award?: T;
   is_special_programs?: T;
   is_old_series?: T;
+  is_discontinued?: T;
   is_global_programs?: T;
   is_global_international?: T;
   is_global_thai_dub?: T;
