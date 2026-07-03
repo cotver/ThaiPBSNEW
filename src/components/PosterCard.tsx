@@ -26,6 +26,7 @@ export function PosterCard({
 }: CardProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const imageSrc = orientation === "portrait" ? title.posterImage || title.heroImage : title.heroImage || title.posterImage;
+  const imageClassName = title.isDiscontinued ? "object-cover grayscale" : "object-cover";
   const openModal = useCallback(() => {
     if (onOpenTitle) onOpenTitle(title);
     else setModalOpen(true);
@@ -61,7 +62,7 @@ export function PosterCard({
             {imageSrc ? (
               <Image
                 alt=""
-                className="object-cover"
+                className={imageClassName}
                 fill
                 sizes={
                   rail
@@ -108,6 +109,7 @@ export function PosterCard({
 export function WideCard({ onOpenTitle, onPreviewEnd, onPreviewStart, onRemoveTitle, title }: CardProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const imageSrc = title.heroImage || title.posterImage;
+  const imageClassName = title.isDiscontinued ? "object-cover grayscale" : "object-cover";
   const openModal = useCallback(() => {
     if (onOpenTitle) onOpenTitle(title);
     else setModalOpen(true);
@@ -129,7 +131,7 @@ export function WideCard({ onOpenTitle, onPreviewEnd, onPreviewStart, onRemoveTi
         >
           <div className={`relative aspect-video bg-gradient-to-br ${title.tone}`}>
             {imageSrc ? (
-              <Image alt="" className="object-cover" fill sizes="384px" src={imageSrc} />
+              <Image alt="" className={imageClassName} fill sizes="384px" src={imageSrc} />
             ) : null}
             <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.20),transparent_35%),linear-gradient(0deg,rgba(0,0,0,0.72),transparent_55%)]" />
             <div className="absolute bottom-4 left-4 right-4">

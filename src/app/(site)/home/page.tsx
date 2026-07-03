@@ -34,6 +34,8 @@ export default async function HomePage() {
           />
         ))}
         <ContentRow layout="wide" removable title="Continue Watching" titles={collections.continueWatching} viewAllHref="/browse?section=continue-watching&label=Continue%20Watching" />
+        <ContentRow layout="vertical" title="Continue Programs" titles={collections.continuePrograms} viewAllHref="/browse?section=continue-programs&label=Continue%20Programs" />
+        <ContentRow layout="vertical" title="Discontinued Programs" titles={collections.discontinuedPrograms} viewAllHref="/browse?section=discontinued-programs&label=Discontinued%20Programs" />
         {collections.yearRows.map((row) => (
           <ContentRow
             key={row.year}

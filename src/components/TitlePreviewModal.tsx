@@ -44,6 +44,8 @@ export function TitlePreviewModal({
 
   const heroAsset = title.heroImage || title.posterImage;
   const hasTrailer = title.source === "program" && Boolean(title.trailerUrl);
+  const mediaClassName = title.isDiscontinued ? "absolute inset-0 h-full w-full object-cover object-center grayscale" : "absolute inset-0 h-full w-full object-cover object-center";
+  const imageClassName = title.isDiscontinued ? "object-fill grayscale" : "object-fill";
   const isGifTrailer = title.trailerMimeType === "image/gif";
   const showImageFade = title.showHeroDetails !== false;
   const useFullImage = title.source === "heroImage" && title.showHeroDetails === false;
@@ -76,14 +78,14 @@ export function TitlePreviewModal({
               isGifTrailer ? (
                 <img
                   alt=""
-                  className="absolute inset-0 h-full w-full object-cover object-center"
+                  className={mediaClassName}
                   src={title.trailerUrl}
                 />
               ) : (
                 <video
                   aria-hidden="true"
                   autoPlay
-                  className="absolute inset-0 h-full w-full object-cover object-center"
+                  className={mediaClassName}
                   loop
                   muted
                   playsInline
@@ -97,7 +99,7 @@ export function TitlePreviewModal({
                 <div className={useFullImage ? "absolute inset-0" : "relative aspect-video w-[min(100%,calc(78vh*16/9))] max-h-full"}>
                   <Image
                     alt=""
-                    className="object-fill"
+                    className={imageClassName}
                     fill
                     priority
                     sizes="min(100vw, 1024px)"

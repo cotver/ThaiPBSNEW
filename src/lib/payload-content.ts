@@ -3,7 +3,9 @@ import type { NavItem, Title } from "@/lib/content";
 import { getPayloadClient } from "@/lib/payload-client";
 
 export type TitleCollections = {
+  continuePrograms: Title[];
   continueWatching: Title[];
+  discontinuedPrograms: Title[];
   heroes: Title[];
   internationalPrograms: Title[];
   movies: Title[];
@@ -55,8 +57,10 @@ type TypeDoc = {
 };
 
 const emptyCollections: TitleCollections = {
+  continuePrograms: [],
   recommended: [],
   continueWatching: [],
+  discontinuedPrograms: [],
   trending: [],
   originals: [],
   movies: [],
@@ -499,8 +503,10 @@ export function buildTitleCollections(titles: Title[], continueWatchingSlugs: st
   const homeYears = [currentYear, currentYear + 1];
 
   return {
+    continuePrograms: titles.filter((title) => title.isContinue).slice(0, 12),
     recommended: titles.filter((title) => title.isNew).slice(0, 12),
     continueWatching,
+    discontinuedPrograms: titles.filter((title) => title.isDiscontinued).slice(0, 12),
     trending: titles.filter((title) => title.featured || title.inWatchlist).slice(0, 12),
     typeRows: [],
     originals: originals.length > 0 ? originals : featured,
@@ -561,6 +567,8 @@ function programToTitle(program: Program): Title | null {
     heroImage: getProgramBackdropImage(program),
     heroTitleLines: heroTitleLines.length > 0 ? heroTitleLines : undefined,
     homeYear: getProgramHomeYear(program),
+    isContinue: Boolean(program.is_continue),
+    isDiscontinued: Boolean(program.is_discontinued),
     isGlobalProgram: Boolean(program.is_global_programs),
     isNew: Boolean(program.is_NEW),
     posterImage: getProgramPosterImage(program),

@@ -111,6 +111,8 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
       {titles.map((title, index) => {
         const heroAsset = title.heroImage || title.posterImage;
         const hasTrailer = title.source === "program" && Boolean(title.trailerUrl);
+        const mediaClassName = title.isDiscontinued ? "absolute inset-0 h-full w-full object-cover object-center grayscale" : "absolute inset-0 h-full w-full object-cover object-center";
+        const imageClassName = title.isDiscontinued ? "object-fill grayscale" : "object-fill";
         const isGifTrailer = title.trailerMimeType === "image/gif";
         const showImageFade = title.showHeroDetails !== false;
         const useFullImage = title.source === "heroImage" && title.showHeroDetails === false;
@@ -127,14 +129,14 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
               isGifTrailer ? (
                 <img
                   alt=""
-                  className="absolute inset-0 h-full w-full object-cover object-center"
+                  className={mediaClassName}
                   src={title.trailerUrl}
                 />
               ) : (
                 <video
                   aria-hidden="true"
                   autoPlay
-                  className="absolute inset-0 h-full w-full object-cover object-center"
+                  className={mediaClassName}
                   loop
                   muted
                   playsInline
@@ -148,7 +150,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                 <div className={useFullImage ? "absolute inset-0" : "relative aspect-video w-[min(100%,calc(100vh*16/9))] max-h-full"}>
                   <Image
                     alt=""
-                    className="object-fill"
+                    className={imageClassName}
                     fill
                     priority={index === 0}
                     sizes="100vw"
@@ -258,40 +260,44 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
           onPointerUp={stopThumbDrag}
           ref={railRef}
         >
-        {titles.map((title, index) => (
-          <button
-            aria-label={`Show ${title.title}`}
-            className={`group w-20 shrink-0 snap-end overflow-hidden rounded-[5px] border bg-black/35 shadow-2xl shadow-black/30 backdrop-blur transition duration-300 hover:-translate-y-0.5 hover:border-white/70 xl:w-24 ${
-              index === active ? "border-white/80" : "border-white/14"
-            }`}
-            key={title.slug}
-            onClick={() => setActive(index)}
-            ref={index === active ? activeThumbRef : null}
-            type="button"
-          >
-            <div className={`relative aspect-video bg-gradient-to-br ${title.tone}`}>
-              {title.heroImage || title.posterImage ? (
-                <Image
-                  alt=""
-                  className="object-cover"
-                  fill
-                  sizes="96px"
-                  src={title.heroImage || title.posterImage || ""}
+        {titles.map((title, index) => {
+          const thumbnailClassName = title.isDiscontinued ? "object-cover grayscale" : "object-cover";
+
+          return (
+            <button
+              aria-label={`Show ${title.title}`}
+              className={`group w-20 shrink-0 snap-end overflow-hidden rounded-[5px] border bg-black/35 shadow-2xl shadow-black/30 backdrop-blur transition duration-300 hover:-translate-y-0.5 hover:border-white/70 xl:w-24 ${
+                index === active ? "border-white/80" : "border-white/14"
+              }`}
+              key={title.slug}
+              onClick={() => setActive(index)}
+              ref={index === active ? activeThumbRef : null}
+              type="button"
+            >
+              <div className={`relative aspect-video bg-gradient-to-br ${title.tone}`}>
+                {title.heroImage || title.posterImage ? (
+                  <Image
+                    alt=""
+                    className={thumbnailClassName}
+                    fill
+                    sizes="96px"
+                    src={title.heroImage || title.posterImage || ""}
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_58%_28%,rgba(255,255,255,0.24),transparent_26%),linear-gradient(0deg,rgba(0,0,0,0.42),transparent_55%)]" />
+                )}
+                <div className="absolute inset-0 bg-black/10 transition group-hover:bg-black/0" />
+              </div>
+              <div className="h-0.5 bg-white/12">
+                <div
+                  className={`h-full rounded-r-full transition-all ${
+                    index === active ? "w-full bg-white" : "w-0 bg-white/0"
+                  }`}
                 />
-              ) : (
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_58%_28%,rgba(255,255,255,0.24),transparent_26%),linear-gradient(0deg,rgba(0,0,0,0.42),transparent_55%)]" />
-              )}
-              <div className="absolute inset-0 bg-black/10 transition group-hover:bg-black/0" />
-            </div>
-            <div className="h-0.5 bg-white/12">
-              <div
-                className={`h-full rounded-r-full transition-all ${
-                  index === active ? "w-full bg-white" : "w-0 bg-white/0"
-                }`}
-              />
-            </div>
-          </button>
-        ))}
+              </div>
+            </button>
+          );
+        })}
         </div>
       </div>
     </section>

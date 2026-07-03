@@ -441,6 +441,7 @@ export function RowFloatingPreview({
 }) {
   const { title } = active;
   const imageSrc = title.heroImage || title.posterImage;
+  const imageClassName = title.isDiscontinued ? "object-cover grayscale" : "object-cover";
   const previewScaleX = Math.max(0.72, Math.min(1, active.anchorWidth / active.width));
 
   return (
@@ -483,7 +484,7 @@ export function RowFloatingPreview({
         >
           <div className={`relative aspect-video bg-gradient-to-br ${title.tone}`}>
             {imageSrc ? (
-              <Image alt="" className="object-cover" fill sizes={`${Math.ceil(active.width)}px`} src={imageSrc} />
+              <Image alt="" className={imageClassName} fill sizes={`${Math.ceil(active.width)}px`} src={imageSrc} />
             ) : null}
             <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(17,24,39,0.58),transparent_54%),radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.20),transparent_24%)]" />
             <div className="absolute bottom-4 left-4 right-4">

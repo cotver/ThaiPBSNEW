@@ -81,6 +81,18 @@ export default async function CategoryPage({
           titles={collections.continueWatching}
           viewAllHref={`/browse?section=continue-watching&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Continue Watching`)}`}
         />
+        <ContentRow
+          layout="vertical"
+          title="Continue Programs"
+          titles={collections.continuePrograms}
+          viewAllHref={`/browse?section=continue-programs&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Continue Programs`)}`}
+        />
+        <ContentRow
+          layout="vertical"
+          title="Discontinued Programs"
+          titles={collections.discontinuedPrograms}
+          viewAllHref={`/browse?section=discontinued-programs&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Discontinued Programs`)}`}
+        />
         {collections.yearRows.map((row) => (
           <ContentRow
             key={row.year}

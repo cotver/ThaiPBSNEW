@@ -80,6 +80,14 @@ function filterBrowseTitles(titles: Title[], params: BrowseParams, watchedSlugs:
     return filteredTitles.filter((title) => title.isNew);
   }
 
+  if (section === "continue-programs") {
+    return filteredTitles.filter((title) => title.isContinue);
+  }
+
+  if (section === "discontinued-programs") {
+    return filteredTitles.filter((title) => title.isDiscontinued);
+  }
+
   if (section === "year" && Number.isInteger(year)) {
     return filteredTitles.filter((title) => title.homeYear === year);
   }
@@ -106,6 +114,14 @@ function getBrowseHeading(params: BrowseParams) {
 
   if (params.section === "recommended") {
     return "Recommended For You";
+  }
+
+  if (params.section === "continue-programs") {
+    return "Continue Programs";
+  }
+
+  if (params.section === "discontinued-programs") {
+    return "Discontinued Programs";
   }
 
   if (params.section === "year" && params.year) {
