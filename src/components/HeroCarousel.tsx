@@ -105,7 +105,8 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         const hasTrailer = title.source === "program" && Boolean(title.trailerUrl);
         const isGifTrailer = title.trailerMimeType === "image/gif";
         const isHeroImage = title.source === "heroImage";
-        const isProgramImage = title.source === "program" && !hasTrailer;
+        const useSideImage = (title.source === "program" && !hasTrailer) || (isHeroImage && title.showHeroDetails !== false);
+        const useFullImage = isHeroImage && title.showHeroDetails === false;
 
         return (
           <div
@@ -138,17 +139,17 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
             ) : heroAsset ? (
               <div
                 className={
-                  isHeroImage
+                  useFullImage
                     ? "absolute inset-0"
                     : "absolute right-0 top-1/2 aspect-video h-[100%] max-h-full -translate-y-1/2"
                 }
               >
                 <Image
                   alt=""
-                  className="object-cover object-center"
+                  className={useFullImage ? "object-cover object-center" : "object-contain object-right"}
                   fill
                   priority={index === 0}
-                  sizes={isHeroImage ? "100vw" : "100vh"}
+                  sizes={useFullImage ? "100vw" : "100vh"}
                   src={heroAsset}
                 />
                
