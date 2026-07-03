@@ -7,6 +7,7 @@ import type { CategoryTile } from "@/lib/payload-content";
 export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [loadedVideos, setLoadedVideos] = useState<Set<number>>(new Set());
+  const [requestedVideos, setRequestedVideos] = useState<Set<number>>(new Set());
 
   if (categories.length === 0) {
     return null;
@@ -18,6 +19,7 @@ export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
         const isHovered = hoveredId === category.id;
         const hasImage = Boolean(category.imageUrl);
         const hasLoadedVideo = loadedVideos.has(category.id);
+        const hasRequestedVideo = requestedVideos.has(category.id);
         const isGif = category.videoMimeType === "image/gif";
         const showVideo = isHovered && Boolean(category.videoUrl) && hasLoadedVideo;
         const showOnlyName = !hasImage && (!isHovered || !category.videoUrl || !hasLoadedVideo);
@@ -30,23 +32,40 @@ export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
             }`}
             href={`/category/${encodeURIComponent(category.slug)}`}
             key={category.id}
-            onMouseEnter={() => setHoveredId(category.id)}
-            onMouseLeave={() => setHoveredId(null)}
+            onMouseEnter={(event) => {
+              setHoveredId(category.id);
+              if (category.videoUrl) {
+                setRequestedVideos((current) => {
+                  const next = new Set(current);
+                  next.add(category.id);
+                  return next;
+                });
+                event.currentTarget.querySelector("video")?.play().catch(() => undefined);
+              }
+            }}
+            onMouseLeave={(event) => {
+              setHoveredId(null);
+              event.currentTarget.querySelector("video")?.pause();
+            }}
           >
             {category.imageUrl && (
               <img
                 alt=""
                 className="absolute inset-0 z-10 h-full w-full object-cover"
+                decoding="async"
+                loading="lazy"
                 src={category.imageUrl}
               />
             )}
 
-            {isHovered && category.videoUrl && isGif && (
+            {hasRequestedVideo && category.videoUrl && isGif && (
               <img
                 alt=""
                 className={`absolute inset-0 h-full w-full object-cover transition duration-300 ${
                   showVideo ? "opacity-100" : "opacity-0"
                 }`}
+                decoding="async"
+                loading="lazy"
                 onLoad={() =>
                   setLoadedVideos((current) => {
                     const next = new Set(current);
@@ -58,7 +77,7 @@ export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
               />
             )}
 
-            {isHovered && category.videoUrl && !isGif && (
+            {hasRequestedVideo && category.videoUrl && !isGif && (
               <video
                 aria-hidden="true"
                 autoPlay
@@ -75,7 +94,8 @@ export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
                   })
                 }
                 playsInline
-                preload="metadata"
+                poster={category.imageUrl}
+                preload="auto"
                 src={category.videoUrl}
               />
             )}
