@@ -2644,7 +2644,7 @@ export interface HeroImage {
    */
   title: string;
   /**
-   * Small label above the title, e.g. ThaiPBS Parvilions Original
+   * Small label above the title, e.g. ThaiPBS Category
    */
   eyebrow?: string | null;
   /**

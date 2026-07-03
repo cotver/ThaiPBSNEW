@@ -553,6 +553,7 @@ function programToTitle(program: Program): Title | null {
     rating: getRating(program),
     duration,
     description,
+    categoryNames: relationNames((program as { categories?: unknown }).categories),
     categorySlugs: relationSlugs((program as { categories?: unknown }).categories),
     progress: program.isNewHits ? "38%" : undefined,
     inWatchlist: Boolean(program.is_Feature || program.is_NEW),

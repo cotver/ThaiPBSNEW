@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { titleHref, type Title } from "@/lib/content";
+import { titleEyebrow, titleHref, type Title } from "@/lib/content";
 
 export function HeroCarousel({ titles }: { titles: Title[] }) {
   const [active, setActive] = useState(0);
@@ -179,7 +179,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
       {current.showHeroDetails !== false && (
         <div className="absolute bottom-20 left-5 z-10 max-w-3xl sm:left-8 lg:bottom-24 lg:left-10">
           <p className="mb-3 text-xs font-black uppercase text-cyan-200">
-            {current.eyebrow || (current.type === "Original" ? "ThaiPBS Parvilions Original" : current.type)}
+            {titleEyebrow(current)}
           </p>
           <h1 className="max-w-3xl text-5xl font-black leading-[0.98] sm:text-6xl lg:text-7xl">
             {(current.heroTitleLines?.length ? current.heroTitleLines : [current.title]).map((line) => (

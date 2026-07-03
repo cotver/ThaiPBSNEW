@@ -8,6 +8,7 @@ export type Title = {
   duration: string;
   eyebrow?: string;
   description: string;
+  categoryNames?: string[];
   categorySlugs?: string[];
   progress?: string;
   inWatchlist?: boolean;
@@ -61,4 +62,18 @@ export const navItems = [
 
 export function titleHref(slug: string) {
   return `/title/${encodeURIComponent(slug)}`;
+}
+
+export function titleEyebrow(title: Title) {
+  if (title.eyebrow) {
+    return title.eyebrow;
+  }
+
+  if (title.type === "Original") {
+    const category = title.categoryNames?.find(Boolean);
+
+    return category ? `ThaiPBS ${category}` : "ThaiPBS";
+  }
+
+  return title.type;
 }

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { titleHref, type Title } from "@/lib/content";
+import { titleEyebrow, titleHref, type Title } from "@/lib/content";
 import { PosterCard, WideCard } from "./PosterCard";
 import { TitlePreviewModal } from "./TitlePreviewModal";
 
@@ -438,7 +438,7 @@ export function RowFloatingPreview({
             <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(17,24,39,0.58),transparent_54%),radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.20),transparent_24%)]" />
             <div className="absolute bottom-4 left-4 right-4">
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-200/90">
-                {title.type === "Original" ? "ThaiPBS Parvilions Original" : title.type}
+                {titleEyebrow(title)}
               </p>
               <h3 className="mt-1 line-clamp-1 text-xl font-black leading-tight">{title.title}</h3>
             </div>

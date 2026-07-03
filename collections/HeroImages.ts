@@ -27,7 +27,7 @@ export const HeroImages: CollectionConfig = {
     {
       name: 'eyebrow',
       type: 'text',
-      admin: { description: 'Small label above the title, e.g. ThaiPBS Parvilions Original' },
+      admin: { description: 'Small label above the title, e.g. ThaiPBS Category' },
     },
     {
       name: 'image',
