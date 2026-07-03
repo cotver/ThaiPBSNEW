@@ -1,7 +1,10 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ContentRow } from "@/components/ContentRow";
-import { getCategoryPage } from "@/lib/payload-content";
+import { buildTitleCollections, getCategoryPage } from "@/lib/payload-content";
+import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
+import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -11,13 +14,18 @@ export default async function CategoryPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const cookieStore = await cookies();
+  const continueWatchingSlugs = parseWatchHistoryCookie(cookieStore.get(watchHistoryCookieName)?.value);
+  const savedTitleSlugs = parseSavedTitlesCookie(cookieStore.get(savedTitlesCookieName)?.value);
   const categoryPage = await getCategoryPage(slug);
 
   if (!categoryPage) {
     notFound();
   }
-
+ 
   const { category, titles } = categoryPage;
+  const collections = buildTitleCollections(titles, continueWatchingSlugs, savedTitleSlugs);
+  const heroMedia = category.videoUrl || category.imageUrl;
 
   return (
     <>
@@ -45,7 +53,7 @@ export default async function CategoryPage({
         {titles.length > 0 ? (
           <ContentRow
             layout="vertical"
-            title="Titles"
+            title={`${category.name} Programs`}
             titles={titles}
             viewAllHref={`/browse?category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Programs`)}`}
           />
@@ -54,6 +62,52 @@ export default async function CategoryPage({
             No programs are connected to this category yet.
           </div>
         )}
+        <ContentRow
+          layout="poster"
+          title="Recommended For You"
+          titles={collections.recommended}
+          viewAllHref={`/browse?section=recommended&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Recommended For You`)}`}
+        />
+        <ContentRow
+          layout="wide"
+          removable
+          title="Continue Watching"
+          titles={collections.continueWatching}
+          viewAllHref={`/browse?section=continue-watching&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Continue Watching`)}`}
+        />
+        <ContentRow
+          layout="vertical"
+          title="Continue Programs"
+          titles={collections.continuePrograms}
+          viewAllHref={`/browse?section=continue-programs&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Continue Programs`)}`}
+        />
+        <ContentRow
+          layout="vertical"
+          title="Discontinued Programs"
+          titles={collections.discontinuedPrograms}
+          viewAllHref={`/browse?section=discontinued-programs&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Discontinued Programs`)}`}
+        />
+        {collections.yearRows.map((row) => (
+          <ContentRow
+            key={row.year}
+            layout="vertical"
+            title={`ThaiPBS Year ${row.year}`}
+            titles={row.titles}
+            viewAllHref={`/browse?section=year&year=${encodeURIComponent(String(row.year))}&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} ThaiPBS Year ${row.year}`)}`}
+          />
+        ))}
+        <ContentRow
+          layout="vertical"
+          title="Thai Programs"
+          titles={collections.thaiPrograms}
+          viewAllHref={`/browse?section=thai&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Thai Programs`)}`}
+        />
+        <ContentRow
+          layout="vertical"
+          title="International Programs"
+          titles={collections.internationalPrograms}
+          viewAllHref={`/browse?section=international&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} International Programs`)}`}
+        />
       </section>
     </>
   );
