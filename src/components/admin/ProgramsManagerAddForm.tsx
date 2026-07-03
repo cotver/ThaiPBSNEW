@@ -2818,6 +2818,8 @@ export function ProgramsManagerAddForm(props?: {
   const [initialImageDisplay, setInitialImageDisplay] = useState<MediaDoc | null>(null)
   const [initialCoverImageDisplay, setInitialCoverImageDisplay] = useState<MediaDoc | null>(null)
   const [seasons, setSeasons] = useState<SeasonForm[]>([emptySeason()])
+  const [seasonAddCount, setSeasonAddCount] = useState('1')
+  const [episodeAddCounts, setEpisodeAddCounts] = useState<Record<string, string>>({})
   const [collapsedSeasons, setCollapsedSeasons] = useState<Set<string>>(new Set())
   const [collapsedEpisodes, setCollapsedEpisodes] = useState<Set<string>>(new Set())
   const [collapsedAwards, setCollapsedAwards] = useState<Set<string>>(new Set())
@@ -3150,8 +3152,14 @@ export function ProgramsManagerAddForm(props?: {
     return getPayloadApiBase()
   }
 
-  const addSeason = () => {
-    setSeasons((s) => [...s, emptySeason()])
+  const addCountFromInput = (value: string) => {
+    const parsed = Number(value)
+    return Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, 50) : 1
+  }
+
+  const addSeason = (count = 1) => {
+    const nextCount = addCountFromInput(String(count))
+    setSeasons((s) => [...s, ...Array.from({ length: nextCount }, () => emptySeason())])
   }
 
   const removeSeason = (index: number) => {
@@ -3313,10 +3321,19 @@ export function ProgramsManagerAddForm(props?: {
     )
   }
 
-  const addEpisode = (seasonIndex: number) => {
+  const addEpisode = (seasonIndex: number, count = 1) => {
+    const nextCount = addCountFromInput(String(count))
     setSeasons((s) =>
       s.map((row, i) =>
-        i === seasonIndex ? { ...row, episodes: [...row.episodes, emptyEpisode()] } : row
+        i === seasonIndex
+          ? {
+              ...row,
+              episodes: [
+                ...row.episodes,
+                ...Array.from({ length: nextCount }, () => emptyEpisode()),
+              ],
+            }
+          : row
       )
     )
   }
@@ -4927,13 +4944,26 @@ export function ProgramsManagerAddForm(props?: {
                   <h2 className="text-xl font-semibold text-neutral-950 dark:text-neutral-50">Seasons and episodes</h2>
                   <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Create nested season, episode, pricing, captions, awards, and media metadata.</p>
                 </div>
-              <button
-                type="button"
-                onClick={addSeason}
-                className="h-12 bg-neutral-900 px-5 text-sm font-semibold text-white shadow-sm hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-200"
-              >
-                + Add season
-              </button>
+              <div className="flex flex-wrap items-end gap-2">
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium text-neutral-500 dark:text-neutral-400">Add seasons</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={seasonAddCount}
+                    onChange={(e) => setSeasonAddCount(e.target.value)}
+                    className="h-12 w-24 rounded border border-neutral-300 bg-white px-3 text-sm text-neutral-950 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-50"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => addSeason(addCountFromInput(seasonAddCount))}
+                  className="h-12 bg-neutral-900 px-5 text-sm font-semibold text-white shadow-sm hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-200"
+                >
+                  + Add season
+                </button>
+              </div>
               </div>
             </div>
 
@@ -5486,18 +5516,36 @@ export function ProgramsManagerAddForm(props?: {
 
                       {/* Episodes in this season */}
                       <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900">
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                           <div>
                             <h4 className="text-sm font-semibold text-neutral-950 dark:text-neutral-50">Episodes</h4>
                             <p className="text-xs text-neutral-500 dark:text-neutral-400">{seasonRow.episodes.length} episode{seasonRow.episodes.length === 1 ? '' : 's'} in this season</p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => addEpisode(si)}
-                            className="bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-200"
-                          >
-                            + Add episode
-                          </button>
+                          <div className="flex flex-wrap items-end gap-2">
+                            <label className="block">
+                              <span className="mb-1 block text-xs font-medium text-neutral-500 dark:text-neutral-400">Add episodes</span>
+                              <input
+                                type="number"
+                                min={1}
+                                max={50}
+                                value={episodeAddCounts[seasonRow._key] ?? '1'}
+                                onChange={(e) =>
+                                  setEpisodeAddCounts((prev) => ({
+                                    ...prev,
+                                    [seasonRow._key]: e.target.value,
+                                  }))
+                                }
+                                className="h-10 w-24 rounded border border-neutral-300 bg-white px-3 text-sm text-neutral-950 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-50"
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => addEpisode(si, addCountFromInput(episodeAddCounts[seasonRow._key] ?? '1'))}
+                              className="h-10 bg-neutral-900 px-3 text-sm font-medium text-white hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-200"
+                            >
+                              + Add episode
+                            </button>
+                          </div>
                         </div>
                         {seasonRow.episodes.map((epRow, ei) => {
                           const episodeCollapsed = collapsedEpisodes.has(epRow._key)
