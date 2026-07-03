@@ -265,6 +265,57 @@ function hasSeasonData(row: SeasonForm) {
   )
 }
 
+function hasEpisodeUserData(row: EpisodeForm) {
+  return (
+    row.id != null ||
+    row.epNameTh.trim() !== '' ||
+    row.epNameEn.trim() !== '' ||
+    row.comingSoon ||
+    row.comingSoonDate !== '' ||
+    row.firstRun !== '' ||
+    row.rerunDates.some((date) => date.trim() !== '') ||
+    row.synopsisEpTh.trim() !== '' ||
+    row.synopsisEpEn.trim() !== '' ||
+    row.TrailerAirflowProxyPath.trim() !== '' ||
+    row.TrailerThumbnailAirflowProxyPath.trim() !== '' ||
+    row.videoAirflowProxyPath.trim() !== '' ||
+    row.videoThumbnailAirflowProxyPath.trim() !== '' ||
+    row.videoLink.trim() !== '' ||
+    row.trailerLink.trim() !== '' ||
+    row.coverImage !== '' ||
+    row.trailer !== '' ||
+    row.video !== ''
+  )
+}
+
+function hasSeasonUserData(row: SeasonForm) {
+  return (
+    row.id != null ||
+    row.seasonName.trim() !== '' ||
+    row.seasonNameEn.trim() !== '' ||
+    row.is_Award ||
+    row.awards.length > 0 ||
+    row.hasCc ||
+    row.languages.length > 0 ||
+    row.hasSoundtrack ||
+    row.languagesSoundtrack.length > 0 ||
+    row.comingSoon ||
+    row.comingSoonDate !== '' ||
+    row.synopsisTh.trim() !== '' ||
+    row.synopsisEn.trim() !== '' ||
+    row.TrailerAirflowProxyPath.trim() !== '' ||
+    row.TrailerThumbnailAirflowProxyPath.trim() !== '' ||
+    row.videoAirflowProxyPath.trim() !== '' ||
+    row.videoThumbnailAirflowProxyPath.trim() !== '' ||
+    row.videoLink.trim() !== '' ||
+    row.trailerLink.trim() !== '' ||
+    row.coverImage !== '' ||
+    row.trailer !== '' ||
+    row.video !== '' ||
+    row.episodes.some(hasEpisodeUserData)
+  )
+}
+
 /** Parse views JSON string for payload. Supports flat { "X": 100, "Youtube": 1000 } or by month-year { "2025-02": { "X": 100, "Youtube": 1000 }, "2025-01": { ... } }. */
 function parseViewsJson(s: string): Record<string, unknown> | undefined {
   const t = s.trim()
@@ -2820,6 +2871,8 @@ export function ProgramsManagerAddForm(props?: {
   const [seasons, setSeasons] = useState<SeasonForm[]>([emptySeason()])
   const [seasonAddCount, setSeasonAddCount] = useState('1')
   const [episodeAddCounts, setEpisodeAddCounts] = useState<Record<string, string>>({})
+  const [selectedSeasonKeys, setSelectedSeasonKeys] = useState<Set<string>>(new Set())
+  const [selectedEpisodeKeys, setSelectedEpisodeKeys] = useState<Set<string>>(new Set())
   const [collapsedSeasons, setCollapsedSeasons] = useState<Set<string>>(new Set())
   const [collapsedEpisodes, setCollapsedEpisodes] = useState<Set<string>>(new Set())
   const [collapsedAwards, setCollapsedAwards] = useState<Set<string>>(new Set())
@@ -2952,6 +3005,22 @@ export function ProgramsManagerAddForm(props?: {
   }
   const toggleEpisodeCollapsed = (episodeKey: string) => {
     setCollapsedEpisodes((prev) => {
+      const next = new Set(prev)
+      if (next.has(episodeKey)) next.delete(episodeKey)
+      else next.add(episodeKey)
+      return next
+    })
+  }
+  const toggleSeasonSelected = (seasonKey: string) => {
+    setSelectedSeasonKeys((prev) => {
+      const next = new Set(prev)
+      if (next.has(seasonKey)) next.delete(seasonKey)
+      else next.add(seasonKey)
+      return next
+    })
+  }
+  const toggleEpisodeSelected = (episodeKey: string) => {
+    setSelectedEpisodeKeys((prev) => {
       const next = new Set(prev)
       if (next.has(episodeKey)) next.delete(episodeKey)
       else next.add(episodeKey)
@@ -3152,18 +3221,109 @@ export function ProgramsManagerAddForm(props?: {
     return getPayloadApiBase()
   }
 
+  const bulkAddMax = 1000
+
   const addCountFromInput = (value: string) => {
     const parsed = Number(value)
-    return Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, 50) : 1
+    return Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, bulkAddMax) : 1
+  }
+
+  const nextNumber = (values: Array<number | ''>) => {
+    const numericValues = values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
+    return numericValues.length > 0 ? Math.max(...numericValues) + 1 : 1
   }
 
   const addSeason = (count = 1) => {
     const nextCount = addCountFromInput(String(count))
-    setSeasons((s) => [...s, ...Array.from({ length: nextCount }, () => emptySeason())])
+    setSeasons((s) => {
+      const firstSeasonNumber = nextNumber(s.map((row) => row.season))
+      return [
+        ...s,
+        ...Array.from({ length: nextCount }, (_, index) => ({
+          ...emptySeason(),
+          season: firstSeasonNumber + index,
+        })),
+      ]
+    })
   }
 
   const removeSeason = (index: number) => {
+    const removedSeason = seasons[index]
     setSeasons((s) => s.filter((_, i) => i !== index))
+    if (removedSeason) {
+      const removedEpisodeKeys = new Set(removedSeason.episodes.map((episode) => episode._key))
+      setSelectedSeasonKeys((prev) => {
+        const next = new Set(prev)
+        next.delete(removedSeason._key)
+        return next
+      })
+      setSelectedEpisodeKeys((prev) => {
+        const next = new Set(prev)
+        removedEpisodeKeys.forEach((key) => next.delete(key))
+        return next
+      })
+      setCollapsedSeasons((prev) => {
+        const next = new Set(prev)
+        next.delete(removedSeason._key)
+        return next
+      })
+      setCollapsedEpisodes((prev) => {
+        const next = new Set(prev)
+        removedEpisodeKeys.forEach((key) => next.delete(key))
+        return next
+      })
+    }
+  }
+
+  const removeSeasonsByKeys = (seasonKeys: Set<string>) => {
+    if (seasonKeys.size === 0) return
+    const removedEpisodeKeys = new Set(
+      seasons
+        .filter((season) => seasonKeys.has(season._key))
+        .flatMap((season) => season.episodes.map((episode) => episode._key))
+    )
+    setSeasons((s) => s.filter((season) => !seasonKeys.has(season._key)))
+    setSelectedSeasonKeys((prev) => {
+      const next = new Set(prev)
+      seasonKeys.forEach((key) => next.delete(key))
+      return next
+    })
+    setSelectedEpisodeKeys((prev) => {
+      const next = new Set(prev)
+      removedEpisodeKeys.forEach((key) => next.delete(key))
+      return next
+    })
+    setCollapsedSeasons((prev) => {
+      const next = new Set(prev)
+      seasonKeys.forEach((key) => next.delete(key))
+      return next
+    })
+    setCollapsedEpisodes((prev) => {
+      const next = new Set(prev)
+      removedEpisodeKeys.forEach((key) => next.delete(key))
+      return next
+    })
+  }
+
+  const removeSelectedSeasons = () => {
+    if (selectedSeasonKeys.size === 0) return
+    const episodeCount = seasons
+      .filter((season) => selectedSeasonKeys.has(season._key))
+      .reduce((sum, season) => sum + season.episodes.length, 0)
+    if (window.confirm(`Warning: remove ${selectedSeasonKeys.size} selected season${selectedSeasonKeys.size === 1 ? '' : 's'} and ${episodeCount} episode${episodeCount === 1 ? '' : 's'} from this form?\n\nThis cannot be undone after you save.`)) {
+      removeSeasonsByKeys(selectedSeasonKeys)
+    }
+  }
+
+  const removeEmptySeasons = () => {
+    const seasonKeys = new Set(seasons.filter((season) => !hasSeasonUserData(season)).map((season) => season._key))
+    if (seasonKeys.size === 0) return
+    const episodeCount = seasons
+      .filter((season) => seasonKeys.has(season._key))
+      .reduce((sum, season) => sum + season.episodes.length, 0)
+    if (window.confirm(`Warning: remove ${seasonKeys.size} season${seasonKeys.size === 1 ? '' : 's'} with no data and ${episodeCount} episode${episodeCount === 1 ? '' : 's'} from this form?\n\nThis cannot be undone after you save.`)) {
+      removeSeasonsByKeys(seasonKeys)
+    }
   }
 
   const moveSeason = (fromIndex: number, toIndex: number) => {
@@ -3324,27 +3484,87 @@ export function ProgramsManagerAddForm(props?: {
   const addEpisode = (seasonIndex: number, count = 1) => {
     const nextCount = addCountFromInput(String(count))
     setSeasons((s) =>
-      s.map((row, i) =>
-        i === seasonIndex
-          ? {
-              ...row,
-              episodes: [
-                ...row.episodes,
-                ...Array.from({ length: nextCount }, () => emptyEpisode()),
-              ],
-            }
-          : row
-      )
+      s.map((row, i) => {
+        if (i !== seasonIndex) return row
+        const firstEpisodeNumber = nextNumber(row.episodes.map((episode) => episode.ep))
+        return {
+          ...row,
+          episodes: [
+            ...row.episodes,
+            ...Array.from({ length: nextCount }, (_, index) => ({
+              ...emptyEpisode(),
+              ep: firstEpisodeNumber + index,
+            })),
+          ],
+        }
+      })
     )
   }
 
   const removeEpisode = (seasonIndex: number, epIndex: number) => {
+    const removedEpisodeKey = seasons[seasonIndex]?.episodes[epIndex]?._key
     setSeasons((s) =>
       s.map((row, i) => {
         if (i !== seasonIndex) return row
         return { ...row, episodes: row.episodes.filter((_, j) => j !== epIndex) }
       })
     )
+    if (removedEpisodeKey) {
+      setSelectedEpisodeKeys((prev) => {
+        const next = new Set(prev)
+        next.delete(removedEpisodeKey)
+        return next
+      })
+      setCollapsedEpisodes((prev) => {
+        const next = new Set(prev)
+        next.delete(removedEpisodeKey)
+        return next
+      })
+    }
+  }
+
+  const removeEpisodesByKeys = (seasonIndex: number, episodeKeys: Set<string>) => {
+    if (episodeKeys.size === 0) return
+    setSeasons((s) =>
+      s.map((row, i) => {
+        if (i !== seasonIndex) return row
+        return { ...row, episodes: row.episodes.filter((episode) => !episodeKeys.has(episode._key)) }
+      })
+    )
+    setSelectedEpisodeKeys((prev) => {
+      const next = new Set(prev)
+      episodeKeys.forEach((key) => next.delete(key))
+      return next
+    })
+    setCollapsedEpisodes((prev) => {
+      const next = new Set(prev)
+      episodeKeys.forEach((key) => next.delete(key))
+      return next
+    })
+  }
+
+  const removeSelectedEpisodes = (seasonIndex: number) => {
+    const episodeKeys = new Set(
+      seasons[seasonIndex]?.episodes
+        .filter((episode) => selectedEpisodeKeys.has(episode._key))
+        .map((episode) => episode._key) ?? []
+    )
+    if (episodeKeys.size === 0) return
+    if (window.confirm(`Warning: remove ${episodeKeys.size} selected episode${episodeKeys.size === 1 ? '' : 's'} from this form?\n\nThis cannot be undone after you save.`)) {
+      removeEpisodesByKeys(seasonIndex, episodeKeys)
+    }
+  }
+
+  const removeEmptyEpisodes = (seasonIndex: number) => {
+    const episodeKeys = new Set(
+      seasons[seasonIndex]?.episodes
+        .filter((episode) => !hasEpisodeUserData(episode))
+        .map((episode) => episode._key) ?? []
+    )
+    if (episodeKeys.size === 0) return
+    if (window.confirm(`Warning: remove ${episodeKeys.size} episode${episodeKeys.size === 1 ? '' : 's'} with no data from this form?\n\nThis cannot be undone after you save.`)) {
+      removeEpisodesByKeys(seasonIndex, episodeKeys)
+    }
   }
 
   const moveEpisode = (seasonIndex: number, fromIndex: number, toIndex: number) => {
@@ -4950,7 +5170,7 @@ export function ProgramsManagerAddForm(props?: {
                   <input
                     type="number"
                     min={1}
-                    max={50}
+                    max={bulkAddMax}
                     value={seasonAddCount}
                     onChange={(e) => setSeasonAddCount(e.target.value)}
                     className="h-12 w-24 rounded border border-neutral-300 bg-white px-3 text-sm text-neutral-950 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-50"
@@ -4963,12 +5183,30 @@ export function ProgramsManagerAddForm(props?: {
                 >
                   + Add season
                 </button>
+                <button
+                  type="button"
+                  onClick={removeSelectedSeasons}
+                  disabled={selectedSeasonKeys.size === 0}
+                  className="h-12 border border-red-300 px-4 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-40 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/30"
+                >
+                  Remove selected
+                </button>
+                <button
+                  type="button"
+                  onClick={removeEmptySeasons}
+                  disabled={!seasons.some((season) => !hasSeasonUserData(season))}
+                  className="h-12 border border-neutral-300 px-4 text-sm font-semibold text-neutral-700 hover:bg-neutral-100 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                >
+                  Remove no data
+                </button>
               </div>
               </div>
             </div>
 
             {seasons.map((seasonRow, si) => {
               const seasonCollapsed = collapsedSeasons.has(seasonRow._key)
+              const selectedEpisodesInSeasonCount = seasonRow.episodes.filter((episode) => selectedEpisodeKeys.has(episode._key)).length
+              const emptyEpisodesInSeasonCount = seasonRow.episodes.filter((episode) => !hasEpisodeUserData(episode)).length
               return (
                 <div
                   key={seasonRow._key}
@@ -4982,6 +5220,14 @@ export function ProgramsManagerAddForm(props?: {
                     className="w-full flex items-center justify-between gap-4 border-b border-neutral-100 bg-neutral-50 p-4 text-left transition-colors cursor-pointer hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-neutral-800"
                   >
                     <span className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedSeasonKeys.has(seasonRow._key)}
+                        onChange={() => toggleSeasonSelected(seasonRow._key)}
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label={`Select season ${seasonRow.season === '' ? si + 1 : seasonRow.season}`}
+                        className="size-4"
+                      />
                       <span className="text-neutral-500 dark:text-neutral-400 select-none" aria-hidden>
                         {seasonCollapsed ? '▶' : '▼'}
                       </span>
@@ -5527,7 +5773,7 @@ export function ProgramsManagerAddForm(props?: {
                               <input
                                 type="number"
                                 min={1}
-                                max={50}
+                                max={bulkAddMax}
                                 value={episodeAddCounts[seasonRow._key] ?? '1'}
                                 onChange={(e) =>
                                   setEpisodeAddCounts((prev) => ({
@@ -5544,6 +5790,22 @@ export function ProgramsManagerAddForm(props?: {
                               className="h-10 bg-neutral-900 px-3 text-sm font-medium text-white hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-200"
                             >
                               + Add episode
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeSelectedEpisodes(si)}
+                              disabled={selectedEpisodesInSeasonCount === 0}
+                              className="h-10 border border-red-300 px-3 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-40 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/30"
+                            >
+                              Remove selected
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeEmptyEpisodes(si)}
+                              disabled={emptyEpisodesInSeasonCount === 0}
+                              className="h-10 border border-neutral-300 px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-100 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                            >
+                              Remove no data
                             </button>
                           </div>
                         </div>
@@ -5562,6 +5824,14 @@ export function ProgramsManagerAddForm(props?: {
                                 className="w-full flex items-center justify-between gap-4 border-b border-neutral-100 bg-white p-3 text-left transition-colors cursor-pointer hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
                               >
                                 <span className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedEpisodeKeys.has(epRow._key)}
+                                    onChange={() => toggleEpisodeSelected(epRow._key)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    aria-label={`Select episode ${epRow.ep === '' ? ei + 1 : epRow.ep}`}
+                                    className="size-4"
+                                  />
                                   <span className="text-neutral-500 dark:text-neutral-400 select-none text-xs" aria-hidden>
                                     {episodeCollapsed ? '▶' : '▼'}
                                   </span>
