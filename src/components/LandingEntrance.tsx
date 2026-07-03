@@ -157,21 +157,14 @@ export function LandingEntrance({ imageUrls }: { imageUrls: string[] }) {
 
       <Image
         alt=""
-        className="absolute top-0 left-5 z-10 h-auto w-[min(14vw,312px)] opacity-90 drop-shadow-[0_8px_22px_rgba(0,0,0,0.72)] sm:top-0 sm:left-10 sm:w-[min(10vw,342px)]"
+        className="absolute top-0 left-0 z-10 h-auto w-[min(24vw,312px)] opacity-90 drop-shadow-[0_8px_22px_rgba(0,0,0,0.72)] sm:top-0 sm:left-0 sm:w-[min(20vw,342px)]"
         height={1772}
         priority
-        src="/LOGO/Logo with tagline h.png"
+        src="/LOGO/Logo with Tagline 2.png"
         width={1772}
       />
 
-      <Image
-        alt=""
-        className="absolute bottom-5 left-5 z-10 h-auto w-[min(24vw,312px)] opacity-90 drop-shadow-[0_8px_22px_rgba(0,0,0,0.72)] sm:bottom-0 sm:left-0 sm:w-[min(20vw,342px)]"
-        height={1772}
-        priority
-        src="/LOGO/สำนักสร้างสรรค์เนื้อหา สีขาว.png"
-        width={1772}
-      />
+     
     </main>
   );
 }
