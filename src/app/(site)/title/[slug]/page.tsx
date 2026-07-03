@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { TitleDetails } from "@/components/TitleDetails";
+import { WatchHistoryMarker } from "@/components/WatchHistoryMarker";
 import { titleHref } from "@/lib/content";
 import { getCatalogTitle } from "@/lib/payload-content";
 
@@ -23,6 +24,7 @@ export default async function TitlePage({
 
   return (
     <>
+      <WatchHistoryMarker slug={title.slug} />
       <section className="relative min-h-[1080px] overflow-hidden px-5 pb-24 text-white sm:px-8 lg:min-h-[1080px] lg:px-10">
         {heroImage ? (
           <div className="absolute inset-x-0 top-0 aspect-video w-full">

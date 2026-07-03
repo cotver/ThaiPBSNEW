@@ -2,12 +2,16 @@ import { BrandTiles } from "@/components/BrandTiles";
 import { ContentRow } from "@/components/ContentRow";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { getCatalogCollections, getCategoryTiles } from "@/lib/payload-content";
+import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
+  const cookieStore = await cookies();
+  const continueWatchingSlugs = parseWatchHistoryCookie(cookieStore.get(watchHistoryCookieName)?.value);
   const [collections, categories] = await Promise.all([
-    getCatalogCollections(),
+    getCatalogCollections(continueWatchingSlugs),
     getCategoryTiles(),
   ]);
 
@@ -29,8 +33,16 @@ export default async function HomePage() {
           />
         ))}
         <ContentRow layout="wide" title="Continue Watching" titles={collections.continueWatching} />
-        <ContentRow layout="vertical" title="Trending Movies" titles={collections.trending} />
-        <ContentRow layout="vertical" title="ThaiPBS Parvilions Originals" titles={collections.originals} />
+        {collections.yearRows.map((row) => (
+          <ContentRow
+            key={row.year}
+            layout="vertical"
+            title={`ThaiPBS Year ${row.year}`}
+            titles={row.titles}
+          />
+        ))}
+        <ContentRow layout="vertical" title="Thai Programs" titles={collections.thaiPrograms} />
+        <ContentRow layout="vertical" title="International Programs" titles={collections.internationalPrograms} />
       </section>
     </>
   );

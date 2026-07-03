@@ -13,6 +13,9 @@ export type Title = {
   featured?: boolean;
   heroImage?: string;
   heroTitleLines?: string[];
+  homeYear?: number;
+  isGlobalProgram?: boolean;
+  isNew?: boolean;
   posterImage?: string;
   seasons?: TitleSeason[];
   showHeroActions?: boolean;

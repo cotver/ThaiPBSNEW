@@ -5,19 +5,27 @@ import { getPayloadClient } from "@/lib/payload-client";
 type TitleCollections = {
   continueWatching: Title[];
   heroes: Title[];
+  internationalPrograms: Title[];
   movies: Title[];
   originals: Title[];
   posterMockups: Title[];
   recommended: Title[];
   series: Title[];
+  thaiPrograms: Title[];
   trending: Title[];
   typeRows: TypeProgramRow[];
   watchlist: Title[];
+  yearRows: YearProgramRow[];
 };
 
 export type TypeProgramRow = {
   titles: Title[];
   type: TypeTile;
+};
+
+export type YearProgramRow = {
+  titles: Title[];
+  year: number;
 };
 
 export type CategoryTile = {
@@ -55,7 +63,10 @@ const emptyCollections: TitleCollections = {
   series: [],
   watchlist: [],
   heroes: [],
+  internationalPrograms: [],
+  thaiPrograms: [],
   typeRows: [],
+  yearRows: [],
 };
 
 const tones = [
@@ -69,13 +80,13 @@ const tones = [
   "from-sky-800 via-cyan-500 to-amber-200",
 ];
 
-export async function getCatalogCollections(): Promise<TitleCollections> {
+export async function getCatalogCollections(continueWatchingSlugs: string[] = []): Promise<TitleCollections> {
   const [titles, heroImages, typeRows] = await Promise.all([
     getPayloadTitles(),
     getHeroImageTitles(),
     getHomeTypeRows(),
   ]);
-  const collections = titles.length === 0 ? emptyCollections : buildCollections(titles);
+  const collections = titles.length === 0 ? emptyCollections : buildCollections(titles, continueWatchingSlugs);
 
   return {
     ...collections,
@@ -451,25 +462,36 @@ function heroImageToTitle(hero: HeroImage): Title | null {
   };
 }
 
-function buildCollections(titles: Title[]): TitleCollections {
+function buildCollections(titles: Title[], continueWatchingSlugs: string[]): TitleCollections {
   const featured = titles.filter((title) => title.featured);
   const originals = titles.filter((title) => title.type === "Original");
   const movies = titles.filter((title) => title.type === "Movie" || title.type === "Original");
   const series = titles.filter((title) => title.type === "Series");
-  const continueWatching = titles.filter((title) => title.progress);
+  const titlesBySlug = new Map(titles.map((title) => [title.slug, title]));
+  const continueWatching = continueWatchingSlugs
+    .map((slug) => titlesBySlug.get(slug))
+    .filter((title): title is Title => Boolean(title));
   const watchlist = titles.filter((title) => title.inWatchlist);
+  const currentYear = new Date().getFullYear();
+  const homeYears = [currentYear, currentYear + 1];
 
   return {
-    recommended: titles.slice(0, 12),
-    continueWatching: continueWatching.length > 0 ? continueWatching : titles.slice(0, 8),
+    recommended: titles.filter((title) => title.isNew).slice(0, 12),
+    continueWatching,
     trending: titles.filter((title) => title.featured || title.inWatchlist).slice(0, 12),
     typeRows: [],
     originals: originals.length > 0 ? originals : featured,
     movies: movies.length > 0 ? movies : titles,
     posterMockups: titles.slice(0, 14),
     series,
+    thaiPrograms: titles.filter((title) => !title.isGlobalProgram).slice(0, 12),
+    internationalPrograms: titles.filter((title) => title.isGlobalProgram).slice(0, 12),
     watchlist: watchlist.length > 0 ? watchlist : featured.slice(0, 8),
     heroes: featured,
+    yearRows: homeYears.map((year) => ({
+      year,
+      titles: titles.filter((title) => title.homeYear === year).slice(0, 12),
+    })),
   };
 }
 
@@ -513,6 +535,9 @@ function programToTitle(program: Program): Title | null {
     featured: Boolean(program.is_Feature),
     heroImage: getProgramBackdropImage(program),
     heroTitleLines: heroTitleLines.length > 0 ? heroTitleLines : undefined,
+    homeYear: getProgramHomeYear(program),
+    isGlobalProgram: Boolean(program.is_global_programs),
+    isNew: Boolean(program.is_NEW),
     posterImage: getProgramPosterImage(program),
     seasons: getProgramSeasons(program),
     source: "program",
@@ -540,6 +565,36 @@ function getProgramPosterImage(program: Program) {
 
 function getProgramTrailerUrl(program: Program) {
   return videoUrl(program.trailer) || cleanUrl(program.trailerLink) || thumbnailPath(program.TrailerAirflowProxyPath);
+}
+
+function getProgramHomeYear(program: Program) {
+  return (
+    validYear(program.productionYear) ||
+    dateYearNumber(program.comingSoonDate) ||
+    dateYearNumber(program.firstRun) ||
+    firstRerunYear(program.rerunDates) ||
+    dateYearNumber(program.createdAt)
+  );
+}
+
+function validYear(value: unknown) {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
+}
+
+function firstRerunYear(rerunDates: Program["rerunDates"]) {
+  if (!Array.isArray(rerunDates)) {
+    return undefined;
+  }
+
+  for (const item of rerunDates) {
+    const year = dateYearNumber(item?.date);
+
+    if (year) {
+      return year;
+    }
+  }
+
+  return undefined;
 }
 
 function getProgramSeasons(program: Program): Title["seasons"] {
@@ -700,6 +755,16 @@ function dateYear(date?: string | null) {
   const parsed = new Date(date);
 
   return Number.isNaN(parsed.getTime()) ? undefined : parsed.getFullYear().toString();
+}
+
+function dateYearNumber(date?: string | null) {
+  if (!date) {
+    return undefined;
+  }
+
+  const parsed = new Date(date);
+
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.getFullYear();
 }
 
 function dateLabel(date?: string | null) {
