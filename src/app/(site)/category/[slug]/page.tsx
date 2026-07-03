@@ -33,8 +33,6 @@ export default async function CategoryPage({
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-sky-900 to-cyan-500" />
         )}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.94)_30%,rgba(3,7,20,0.42)_72%,#030714_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-[#030714] via-[#030714]/86 to-transparent" />
 
         <div className="relative z-10 flex min-h-[480px] max-w-4xl flex-col justify-end lg:min-h-[560px]">
           <div className="text-xs font-bold uppercase tracking-[0.22em] text-white/70">

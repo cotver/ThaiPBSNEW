@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { PosterCard } from "@/components/PosterCard";
+import { BrowseTitleGrid } from "@/components/BrowseTitleGrid";
 import type { Title } from "@/lib/content";
 import { getCatalogTitles } from "@/lib/payload-content";
 import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
@@ -46,11 +46,7 @@ export default async function BrowsePage({
       </div>
 
       {filteredTitles.length > 0 ? (
-        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
-          {filteredTitles.map((title) => (
-            <PosterCard key={title.slug} orientation="portrait" title={title} />
-          ))}
-        </div>
+        <BrowseTitleGrid titles={filteredTitles} />
       ) : (
         <div className="rounded-[8px] border border-white/10 bg-white/6 p-8 text-white/70">
           No titles match this browse view.
