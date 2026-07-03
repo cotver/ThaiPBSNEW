@@ -96,7 +96,7 @@ export function TitlePreviewModal({
                 />
               )
             ) : heroAsset ? (
-              <div className={useFullImage ? "absolute inset-0" : "absolute inset-0 flex items-center justify-end"}>
+              <div className={useFullImage ? "absolute inset-0" : "absolute inset-0 flex items-start justify-end"}>
                 <div className={useFullImage ? "absolute inset-0" : "relative aspect-video w-[min(100%,calc(78vh*16/9))] max-h-full"}>
                   <Image
                     alt=""
