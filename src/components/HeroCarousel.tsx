@@ -28,10 +28,18 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   }, [titles.length]);
 
   useEffect(() => {
-    activeThumbRef.current?.scrollIntoView({
+    const activeThumb = activeThumbRef.current;
+    const rail = railRef.current;
+
+    if (!activeThumb || !rail) {
+      return;
+    }
+
+    const left = activeThumb.offsetLeft - (rail.clientWidth - activeThumb.clientWidth) / 2;
+
+    rail.scrollTo({
       behavior: "smooth",
-      block: "nearest",
-      inline: "nearest",
+      left: Math.max(0, left),
     });
   }, [active]);
 

@@ -8,7 +8,8 @@
     "build": "npx payload migrate && next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "copy:payload-to-pavillions": "node scripts/copy-payload-schema-data.cjs --from payload --to pavillions"
+    "copy:payload-to-pavillions": "node scripts/copy-payload-schema-data.cjs --from payload --to pavillions",
+    "copy:drama-sitcom-programs": "node scripts/copy-drama-sitcom-programs.cjs --from payload --to pavillions"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "3.82.1",
