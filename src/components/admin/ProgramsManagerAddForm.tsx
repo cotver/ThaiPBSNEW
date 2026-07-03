@@ -212,6 +212,59 @@ const emptySeason = (): SeasonForm => ({
   episodes: [emptyEpisode()],
 })
 
+function hasEpisodeData(row: EpisodeForm) {
+  return (
+    row.id != null ||
+    row.ep !== '' ||
+    row.epNameTh.trim() !== '' ||
+    row.epNameEn.trim() !== '' ||
+    row.comingSoon ||
+    row.comingSoonDate !== '' ||
+    row.firstRun !== '' ||
+    row.rerunDates.some((date) => date.trim() !== '') ||
+    row.synopsisEpTh.trim() !== '' ||
+    row.synopsisEpEn.trim() !== '' ||
+    row.TrailerAirflowProxyPath.trim() !== '' ||
+    row.TrailerThumbnailAirflowProxyPath.trim() !== '' ||
+    row.videoAirflowProxyPath.trim() !== '' ||
+    row.videoThumbnailAirflowProxyPath.trim() !== '' ||
+    row.videoLink.trim() !== '' ||
+    row.trailerLink.trim() !== '' ||
+    row.coverImage !== '' ||
+    row.trailer !== '' ||
+    row.video !== ''
+  )
+}
+
+function hasSeasonData(row: SeasonForm) {
+  return (
+    row.id != null ||
+    row.season !== '' ||
+    row.seasonName.trim() !== '' ||
+    row.seasonNameEn.trim() !== '' ||
+    row.is_Award ||
+    row.awards.length > 0 ||
+    row.hasCc ||
+    row.languages.length > 0 ||
+    row.hasSoundtrack ||
+    row.languagesSoundtrack.length > 0 ||
+    row.comingSoon ||
+    row.comingSoonDate !== '' ||
+    row.synopsisTh.trim() !== '' ||
+    row.synopsisEn.trim() !== '' ||
+    row.TrailerAirflowProxyPath.trim() !== '' ||
+    row.TrailerThumbnailAirflowProxyPath.trim() !== '' ||
+    row.videoAirflowProxyPath.trim() !== '' ||
+    row.videoThumbnailAirflowProxyPath.trim() !== '' ||
+    row.videoLink.trim() !== '' ||
+    row.trailerLink.trim() !== '' ||
+    row.coverImage !== '' ||
+    row.trailer !== '' ||
+    row.video !== '' ||
+    row.episodes.some(hasEpisodeData)
+  )
+}
+
 /** Parse views JSON string for payload. Supports flat { "X": 100, "Youtube": 1000 } or by month-year { "2025-02": { "X": 100, "Youtube": 1000 }, "2025-01": { ... } }. */
 function parseViewsJson(s: string): Record<string, unknown> | undefined {
   const t = s.trim()
@@ -1568,6 +1621,32 @@ function buildSellPricingPayload(pricing: SeasonSellPricingForm, isIpProgram: bo
     hasAd: Boolean(pricing.hasAd),
     adPrice: pricing.hasAd && pricing.adPrice !== '' ? Number(pricing.adPrice) : null,
   }
+}
+
+function payloadErrorMessage(error: unknown, fallback: string) {
+  const record = error && typeof error === 'object' ? (error as Record<string, unknown>) : {}
+  const topMessage = typeof record.message === 'string' ? record.message : ''
+  const errors = Array.isArray(record.errors) ? record.errors : []
+  const details = errors.flatMap((item) => {
+    const row = item && typeof item === 'object' ? (item as Record<string, unknown>) : {}
+    const message = typeof row.message === 'string' ? row.message : ''
+    const field = typeof row.field === 'string' ? row.field : ''
+    const data = row.data && typeof row.data === 'object' ? (row.data as Record<string, unknown>) : {}
+    const nestedErrors = Array.isArray(data.errors) ? data.errors : []
+    const nested = nestedErrors
+      .map((nestedItem) => {
+        const nestedRow = nestedItem && typeof nestedItem === 'object' ? (nestedItem as Record<string, unknown>) : {}
+        const nestedMessage = typeof nestedRow.message === 'string' ? nestedRow.message : ''
+        const nestedField = typeof nestedRow.field === 'string' ? nestedRow.field : ''
+        return nestedMessage ? `${nestedField ? `${nestedField}: ` : ''}${nestedMessage}` : ''
+      })
+      .filter(Boolean)
+
+    if (nested.length > 0) return nested
+    return message ? [`${field ? `${field}: ` : ''}${message}`] : []
+  })
+
+  return [topMessage, ...details].filter(Boolean).join(' | ') || fallback
 }
 
 function toMediaDoc(v: unknown): MediaDoc | null {
@@ -3427,7 +3506,7 @@ export function ProgramsManagerAddForm(props?: {
         const seasonIdsForProgram: number[] = []
         for (let si = 0; si < seriesSeasons.length; si++) {
           const seasonRow = seriesSeasons[si]
-          if (seasonRow.season === '' && seasonRow.id == null) continue
+          if (!hasSeasonData(seasonRow)) continue
           const seasonBody = {
             program: programDbId,
             season: seasonRow.season === '' ? undefined : Number(seasonRow.season),
@@ -3462,7 +3541,7 @@ export function ProgramsManagerAddForm(props?: {
               credentials: 'include',
               body: JSON.stringify(seasonBody),
             })
-            if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || r.statusText)
+            if (!r.ok) throw new Error(payloadErrorMessage(await r.json().catch(() => ({})), r.statusText))
             const data = await r.json()
             seasonId = (data.doc ?? data).id
           } else {
@@ -3472,7 +3551,7 @@ export function ProgramsManagerAddForm(props?: {
               credentials: 'include',
               body: JSON.stringify(seasonBody),
             })
-            if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || r.statusText)
+            if (!r.ok) throw new Error(payloadErrorMessage(await r.json().catch(() => ({})), r.statusText))
             const data = await r.json()
             seasonId = (data.doc ?? data).id
             nextSeasons[si].id = seasonId
@@ -3502,7 +3581,7 @@ export function ProgramsManagerAddForm(props?: {
           const episodeIdsForSeason: number[] = []
           for (let ei = 0; ei < seasonRow.episodes.length; ei++) {
             const epRow = seasonRow.episodes[ei]
-            if (epRow.ep === '' && epRow.id == null) continue
+            if (!hasEpisodeData(epRow)) continue
             const epBody = {
               season: seasonId,
               ep: epRow.ep === '' ? undefined : Number(epRow.ep),
@@ -3533,7 +3612,7 @@ export function ProgramsManagerAddForm(props?: {
                 credentials: 'include',
                 body: JSON.stringify(epBody),
               })
-              if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || r.statusText)
+              if (!r.ok) throw new Error(payloadErrorMessage(await r.json().catch(() => ({})), r.statusText))
               episodeIdsForSeason.push(Number(epRow.id))
             } else {
               const r = await fetch(`${base}/episodes`, {
@@ -3542,7 +3621,7 @@ export function ProgramsManagerAddForm(props?: {
                 credentials: 'include',
                 body: JSON.stringify(epBody),
               })
-              if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || r.statusText)
+              if (!r.ok) throw new Error(payloadErrorMessage(await r.json().catch(() => ({})), r.statusText))
               const epData = await r.json()
               const newEpId = (epData.doc ?? epData).id
               nextSeasons[si].episodes[ei].id = newEpId
@@ -3662,14 +3741,14 @@ export function ProgramsManagerAddForm(props?: {
 
       const createdSeasonIds: number[] = []
       for (const seasonRow of programContentType === 'Series' ? seasons : []) {
-        if (seasonRow.season === '') continue
+        if (!hasSeasonData(seasonRow)) continue
         const seasonRes = await fetch(`${base}/seasons`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({
             program: programDoc.id,
-            season: Number(seasonRow.season),
+            season: seasonRow.season === '' ? undefined : Number(seasonRow.season),
             seasonName: seasonRow.seasonName.trim() || null,
             seasonNameEn: seasonRow.seasonNameEn.trim() || null,
             is_Award: seasonRow.is_Award,
@@ -3696,21 +3775,21 @@ export function ProgramsManagerAddForm(props?: {
         })
         if (!seasonRes.ok) {
           const err = await seasonRes.json().catch(() => ({}))
-          throw new Error(err.message || err.errors?.[0]?.message || seasonRes.statusText)
+          throw new Error(payloadErrorMessage(err, seasonRes.statusText))
         }
         const season = await seasonRes.json()
         const seasonDoc = season.doc ?? season
         const createdEpisodeIds: number[] = []
 
         for (const epRow of seasonRow.episodes) {
-          if (epRow.ep === '') continue
+          if (!hasEpisodeData(epRow)) continue
           const epRes = await fetch(`${base}/episodes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({
               season: seasonDoc.id,
-              ep: Number(epRow.ep),
+              ep: epRow.ep === '' ? undefined : Number(epRow.ep),
               epNameTh: epRow.epNameTh.trim() || null,
               epNameEn: epRow.epNameEn.trim() || null,
               comingSoon: epRow.comingSoon,
@@ -3728,11 +3807,13 @@ export function ProgramsManagerAddForm(props?: {
               videoLink: epRow.videoLink.trim() || null,
               trailerLink: epRow.trailerLink.trim() || null,
               coverImage: epRow.coverImage === '' ? null : epRow.coverImage,
+              trailer: epRow.trailer === '' ? null : epRow.trailer,
+              video: epRow.video === '' ? null : epRow.video,
             }),
           })
           if (!epRes.ok) {
             const err = await epRes.json().catch(() => ({}))
-            throw new Error(err.message || err.errors?.[0]?.message || epRes.statusText)
+            throw new Error(payloadErrorMessage(err, epRes.statusText))
           }
           const ep = await epRes.json()
           const epDoc = ep.doc ?? ep
