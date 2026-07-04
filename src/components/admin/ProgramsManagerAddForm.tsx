@@ -650,6 +650,35 @@ function normalizeImageSrc(src: string): string {
   return src
 }
 
+const SUPPORTED_IMAGE_UPLOAD_TYPES = new Map([
+  ['image/jpeg', 'jpg'],
+  ['image/png', 'png'],
+  ['image/webp', 'webp'],
+  ['image/gif', 'gif'],
+  ['image/avif', 'avif'],
+])
+
+async function prepareImageUploadFile(file: File): Promise<File> {
+  const extension = SUPPORTED_IMAGE_UPLOAD_TYPES.get(file.type)
+  if (!extension) {
+    throw new Error('Please upload a JPEG, PNG, WebP, GIF, or AVIF image.')
+  }
+
+  const objectUrl = URL.createObjectURL(file)
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const image = document.createElement('img')
+      image.onload = () => resolve()
+      image.onerror = () => reject(new Error('This file could not be decoded as an image. Please export it again and retry.'))
+      image.src = objectUrl
+    })
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
+
+  return file
+}
+
 function getPayloadApiPath(): string {
   const basePath =
     typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH
@@ -1364,11 +1393,11 @@ function MediaPicker({
 
   const handleFile = React.useCallback(
     async (file: File) => {
-      if (!file.type.startsWith('image/')) return
       setUploading(true)
       try {
+        const uploadFile = await prepareImageUploadFile(file)
         const fd = new FormData()
-        fd.append('file', file)
+        fd.append('file', uploadFile)
         const res = await fetch(`${base}/media`, {
           method: 'POST',
           credentials: 'include',
@@ -1385,6 +1414,8 @@ function MediaPicker({
           onChange(Number(doc.id))
           setModalOpen(false)
         }
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Image upload failed.')
       } finally {
         setUploading(false)
       }
@@ -2051,11 +2082,12 @@ function AwardDetailRichTextEditor({
   }
 
   const handleImageFile = async (file: File) => {
-    if (!editor || !file.type.startsWith('image/')) return
+    if (!editor) return
     setUploading(true)
     try {
+      const uploadFile = await prepareImageUploadFile(file)
       const fd = new FormData()
-      fd.append('file', file)
+      fd.append('file', uploadFile)
       const res = await fetch(`${base}/media`, {
         method: 'POST',
         credentials: 'include',
@@ -2077,6 +2109,8 @@ function AwardDetailRichTextEditor({
           insertMedia(doc)
         }
       }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Image upload failed.')
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
