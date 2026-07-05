@@ -417,14 +417,25 @@ type SerializedArticleBlockNode = SerializedLexicalNode & {
   version: 2
 }
 
+function createLexicalObjectId(): string {
+  const bytes = new Uint8Array(12)
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    crypto.getRandomValues(bytes)
+  } else {
+    for (let i = 0; i < bytes.length; i += 1) {
+      bytes[i] = Math.floor(Math.random() * 256)
+    }
+  }
+
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
 function createAwardUploadNodeId() {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
-  return `award-upload-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  return createLexicalObjectId()
 }
 
 function createArticleBlockId() {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
-  return `article-block-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  return createLexicalObjectId()
 }
 
 class AwardUploadNode extends DecoratorBlockNode {
