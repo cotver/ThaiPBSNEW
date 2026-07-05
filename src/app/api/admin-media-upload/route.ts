@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import type { PayloadRequest } from 'payload'
 import { getPayloadClient } from '@/lib/payload-client'
 
 export const runtime = 'nodejs'
@@ -34,12 +35,28 @@ export async function POST(request: Request) {
         size: file.size,
       },
       overrideAccess: true,
+      req: {
+        headers: request.headers,
+        user: auth.user,
+      } as Partial<PayloadRequest> as PayloadRequest,
       user: auth.user,
     })
 
     return NextResponse.json({ doc }, { status: 201 })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Image upload failed.'
-    return NextResponse.json({ error: message }, { status: 500 })
+    const errorWithDetails = err as {
+      data?: unknown
+      status?: number
+    }
+    const status = typeof errorWithDetails.status === 'number' ? errorWithDetails.status : 500
+
+    return NextResponse.json(
+      {
+        error: message,
+        details: errorWithDetails.data,
+      },
+      { status },
+    )
   }
 }
