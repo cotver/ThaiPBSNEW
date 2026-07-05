@@ -690,6 +690,23 @@ async function prepareImageUploadFile(file: File): Promise<File> {
   return file
 }
 
+function uploadErrorMessage(err: unknown, fallback: string): string {
+  if (!err || typeof err !== 'object') return fallback
+  const data = err as {
+    details?: { errors?: Array<{ message?: string; path?: string }> } | null
+    error?: string
+    errors?: Array<{ message?: string; path?: string }>
+    message?: string
+  }
+  const fieldErrors = data.errors ?? data.details?.errors
+  const fieldMessage = fieldErrors
+    ?.map((item) => [item.path, item.message].filter(Boolean).join(': '))
+    .filter(Boolean)
+    .join('\n')
+
+  return fieldMessage || data.error || data.message || fallback
+}
+
 function getPayloadApiPath(): string {
   const basePath =
     typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH
@@ -1416,7 +1433,7 @@ function MediaPicker({
         })
         if (!res.ok) {
           const err = await res.json().catch(() => ({}))
-          throw new Error(err.message || err.errors?.[0]?.message || res.statusText)
+          throw new Error(uploadErrorMessage(err, res.statusText))
         }
         const data = await res.json()
         const doc: MediaDoc = data.doc ?? data
@@ -2106,7 +2123,7 @@ function AwardDetailRichTextEditor({
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.message || err.errors?.[0]?.message || res.statusText)
+        throw new Error(uploadErrorMessage(err, res.statusText))
       }
       const data = await res.json()
       const doc = data.doc ?? data
