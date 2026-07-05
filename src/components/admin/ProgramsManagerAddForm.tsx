@@ -1425,8 +1425,9 @@ function MediaPicker({
       try {
         const uploadFile = await prepareImageUploadFile(file)
         const fd = new FormData()
+        fd.append('_payload', JSON.stringify({}))
         fd.append('file', uploadFile)
-        const res = await fetch(`${base}/admin-media-upload`, {
+        const res = await fetch(`${base}/media`, {
           method: 'POST',
           credentials: 'include',
           body: fd,
@@ -2115,8 +2116,9 @@ function AwardDetailRichTextEditor({
     try {
       const uploadFile = await prepareImageUploadFile(file)
       const fd = new FormData()
+      fd.append('_payload', JSON.stringify({}))
       fd.append('file', uploadFile)
-      const res = await fetch(`${base}/admin-media-upload`, {
+      const res = await fetch(`${base}/media`, {
         method: 'POST',
         credentials: 'include',
         body: fd,
