@@ -27,7 +27,7 @@ export default async function CategoryPage({
   if (!categoryPage) {
     notFound();
   }
- 
+
   const { category, titles } = categoryPage;
   const availableTitles = titles.filter((title) => !title.isDiscontinued);
   const collections = buildTitleCollections(titles, continueWatchingSlugs, savedTitleSlugs);
@@ -40,7 +40,7 @@ export default async function CategoryPage({
   const countLabel = category.postRoom
     ? selectedPostRoomGroup
       ? `${selectedPostRoomGroup.images.length} image${selectedPostRoomGroup.images.length === 1 ? "" : "s"}`
-      : `${postRoomGroups.length} group${postRoomGroups.length === 1 ? "" : "s"}`
+      : `` //`${postRoomGroups.length} group${postRoomGroups.length === 1 ? "" : "s"}`
     : `${availableTitles.length} title${availableTitles.length === 1 ? "" : "s"}`;
   const contentOffsetClass = showHeaderSection && !category.postRoom ? "-mt-20" : "pt-8";
 
@@ -82,7 +82,6 @@ export default async function CategoryPage({
       <section className={`${contentOffsetClass} space-y-9 px-5 pb-16 sm:px-8 lg:px-10`}>
         {!showHeaderSection ? (
           <div className="max-w-4xl">
-            <p className="text-sm font-bold uppercase text-cyan-200">Category</p>
             <h1 className="mt-3 text-4xl font-black sm:text-6xl">{category.name}</h1>
             <p className="mt-4 text-sm font-bold uppercase tracking-[0.18em] text-white/48">{countLabel}</p>
           </div>
@@ -186,7 +185,6 @@ function PostRoomGroupGrid({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-black md:text-xl">Post Room</h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {groups.map((group) => (
           <Link
