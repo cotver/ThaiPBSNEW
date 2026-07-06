@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ContentRow } from "@/components/ContentRow";
+import { PostRoomImageGallery } from "@/components/PostRoomImageGallery";
 import { buildTitleCollections, getCategoryPage, type PostRoomGroupTile } from "@/lib/payload-content";
 import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
 import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
@@ -249,30 +250,7 @@ function PostRoomGallery({
           Back to groups
         </Link>
       </div>
-      <div className="columns-1 gap-4 sm:columns-2 xl:columns-3">
-        {images.map((item, index) => {
-          const imageWidth = item.imageWidth ?? 1200;
-          const imageHeight = item.imageHeight ?? 900;
-
-          return (
-            <article
-              className="mb-4 break-inside-avoid overflow-hidden rounded-[8px] border border-white/10 bg-white/6 shadow-xl shadow-black/20"
-              key={item.id || `${item.imageUrl}-${index}`}
-            >
-              {item.imageUrl ? (
-                <Image
-                  alt=""
-                  className="h-auto w-full object-cover"
-                  height={imageHeight}
-                  sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                  src={item.imageUrl}
-                  width={imageWidth}
-                />
-              ) : null}
-            </article>
-          );
-        })}
-      </div>
+      <PostRoomImageGallery images={images} />
     </div>
   );
 }
