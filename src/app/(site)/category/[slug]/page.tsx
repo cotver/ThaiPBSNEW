@@ -66,7 +66,6 @@ export default async function CategoryPage({
           <div className="relative z-10 flex min-h-[480px] max-w-4xl flex-col justify-end lg:min-h-[560px]">
             {showTitle ? (
               <>
-                <p className="mb-3 text-xs font-black uppercase text-cyan-200">Category</p>
                 <h1 className="max-w-3xl text-5xl font-black leading-[0.98] sm:text-6xl lg:text-7xl">
                   {category.name}
                 </h1>
