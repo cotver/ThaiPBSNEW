@@ -60,9 +60,6 @@ export default async function CategoryPage({
                 <h1 className="max-w-3xl text-5xl font-black leading-[0.98] sm:text-6xl lg:text-7xl">
                   {category.name}
                 </h1>
-                <p className="mt-5 max-w-2xl text-sm leading-7 text-white/74 sm:text-base">
-                  Browse every program connected to {category.name}.
-                </p>
               </>
             ) : null}
             <div className="text-xs font-bold uppercase tracking-[0.22em] text-white/70">
