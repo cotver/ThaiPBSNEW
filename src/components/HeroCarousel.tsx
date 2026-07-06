@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { titleEyebrow, titleHref, type Title } from "@/lib/content";
+import { titleDisplayLines, titleEyebrow, titleHref, type Title } from "@/lib/content";
 import { SaveForLaterButton } from "./SaveForLaterButton";
 
 export function HeroCarousel({ titles }: { titles: Title[] }) {
@@ -73,7 +73,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
     rail.scrollLeft = dragStartScrollRef.current - delta;
   }
 
-  function stopThumbDrag(event: React.PointerEvent<HTMLDivElement>) {
+  function stopThumbDrag() {
     if (isDraggingThumbs) {
       setIsDraggingThumbs(false);
     }
@@ -187,7 +187,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
             {titleEyebrow(current)}
           </p>
           <h1 className="max-w-3xl text-5xl font-black leading-[0.98] sm:text-6xl lg:text-7xl">
-            {(current.heroTitleLines?.length ? current.heroTitleLines : [current.title]).map((line) => (
+            {titleDisplayLines(current).map((line) => (
               <span className="block" key={line}>
                 {line}
               </span>

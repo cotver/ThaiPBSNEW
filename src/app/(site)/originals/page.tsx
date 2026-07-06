@@ -1,12 +1,16 @@
 import { BrandTiles } from "@/components/BrandTiles";
 import { ContentRow } from "@/components/ContentRow";
 import { getCatalogCollections, getCategoryTiles } from "@/lib/payload-content";
+import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 export default async function OriginalsPage() {
+  const cookieStore = await cookies();
+  const continueWatchingSlugs = parseWatchHistoryCookie(cookieStore.get(watchHistoryCookieName)?.value);
   const [collections, categories] = await Promise.all([
-    getCatalogCollections(),
+    getCatalogCollections(continueWatchingSlugs),
     getCategoryTiles(),
   ]);
 
@@ -21,8 +25,8 @@ export default async function OriginalsPage() {
         </p>
       </div>
       <BrandTiles categories={categories} />
-      <ContentRow layout="vertical" title="ThaiPBS Parvilions Originals" titles={collections.originals} />
-      <ContentRow layout="vertical" title="Because You Watched" titles={collections.recommended} />
+      <ContentRow layout="vertical" matchSourceTitles={collections.continueWatching} title="ThaiPBS Parvilions Originals" titles={collections.originals} />
+      <ContentRow layout="vertical" matchSourceTitles={collections.continueWatching} title="Because You Watched" titles={collections.recommended} />
     </section>
   );
 }

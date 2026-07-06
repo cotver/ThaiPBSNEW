@@ -6,12 +6,16 @@ import { PosterCard } from "@/components/PosterCard";
 import { TitlePreviewModal } from "@/components/TitlePreviewModal";
 import type { Title } from "@/lib/content";
 
+const titleLoadBatchSize = 70;
+
 export function SearchExperience({ initialQuery = "", titles }: { initialQuery?: string; titles: Title[] }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   const closePreviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [query, setQuery] = useState(initialQuery);
   const [activePreview, setActivePreview] = useState<ActivePreview | null>(null);
   const [modalTitle, setModalTitle] = useState<Title | null>(null);
+  const [visibleCount, setVisibleCount] = useState(titleLoadBatchSize);
 
   const results = useMemo(() => {
     const cleanQuery = query.trim().toLowerCase();
@@ -26,6 +30,8 @@ export function SearchExperience({ initialQuery = "", titles }: { initialQuery?:
       ),
     );
   }, [query, titles]);
+  const visibleResults = results.slice(0, visibleCount);
+  const hasMoreResults = visibleCount < results.length;
 
   const clearPreviewTimer = useCallback(() => {
     if (closePreviewTimerRef.current) {
@@ -82,6 +88,27 @@ export function SearchExperience({ initialQuery = "", titles }: { initialQuery?:
     return () => clearPreviewTimer();
   }, [clearPreviewTimer]);
 
+  useEffect(() => {
+    const loadMoreElement = loadMoreRef.current;
+
+    if (!loadMoreElement || !hasMoreResults) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVisibleCount((current) => Math.min(current + titleLoadBatchSize, results.length));
+        }
+      },
+      { rootMargin: "720px 0px" },
+    );
+
+    observer.observe(loadMoreElement);
+
+    return () => observer.disconnect();
+  }, [hasMoreResults, results.length]);
+
   return (
     <section className="px-5 pb-16 sm:px-8 lg:px-10">
       <div className="max-w-4xl">
@@ -92,6 +119,7 @@ export function SearchExperience({ initialQuery = "", titles }: { initialQuery?:
           className="mt-8 h-14 w-full rounded-[8px] border border-white/12 bg-white/10 px-5 text-lg font-semibold text-white outline-none transition placeholder:text-white/36 focus:border-cyan-200 focus:bg-white/14"
           onChange={(event) => {
             setQuery(event.target.value);
+            setVisibleCount(titleLoadBatchSize);
             setActivePreview(null);
           }}
           placeholder="Search by title, genre, year, or type"
@@ -101,7 +129,7 @@ export function SearchExperience({ initialQuery = "", titles }: { initialQuery?:
 
       <div className="relative mt-10 overflow-visible" ref={rootRef}>
         <div className="flex flex-wrap gap-4">
-          {results.map((title) => (
+          {visibleResults.map((title) => (
             <PosterCard
               key={title.slug}
               onOpenTitle={setModalTitle}
@@ -113,6 +141,9 @@ export function SearchExperience({ initialQuery = "", titles }: { initialQuery?:
             />
           ))}
         </div>
+        {hasMoreResults ? (
+          <div aria-hidden="true" className="h-10 w-full" ref={loadMoreRef} />
+        ) : null}
         {activePreview ? (
           <RowFloatingPreview
             active={activePreview}

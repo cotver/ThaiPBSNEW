@@ -1,10 +1,14 @@
 import { ContentRow } from "@/components/ContentRow";
 import { getCatalogCollections } from "@/lib/payload-content";
+import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 export default async function MoviesPage() {
-  const collections = await getCatalogCollections();
+  const cookieStore = await cookies();
+  const continueWatchingSlugs = parseWatchHistoryCookie(cookieStore.get(watchHistoryCookieName)?.value);
+  const collections = await getCatalogCollections(continueWatchingSlugs);
 
   return (
     <section className="space-y-10 px-5 pb-16 sm:px-8 lg:px-10">
@@ -16,8 +20,8 @@ export default async function MoviesPage() {
           Parvilions catalog.
         </p>
       </div>
-      <ContentRow layout="vertical" title="Featured Movies" titles={collections.movies} />
-      <ContentRow layout="vertical" title="Trending Now" titles={collections.trending} />
+      <ContentRow layout="vertical" matchSourceTitles={collections.continueWatching} title="Featured Movies" titles={collections.movies} />
+      <ContentRow layout="vertical" matchSourceTitles={collections.continueWatching} title="Trending Now" titles={collections.trending} />
     </section>
   );
 }

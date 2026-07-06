@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { titleEyebrow, titleHref, type Title } from "@/lib/content";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { titleEyebrow, titleHref, titleInlineText, type Title } from "@/lib/content";
 import { serializeWatchHistory, watchHistoryCookieName } from "@/lib/watch-history";
 import { DiscontinuedBadge } from "./DiscontinuedBadge";
 import { PosterCard, WideCard } from "./PosterCard";
@@ -24,6 +24,7 @@ export type ActivePreview = {
 
 export function ContentRow({
   layout = "vertical",
+  matchSourceTitles = [],
   titles,
   title,
   removable = false,
@@ -31,6 +32,7 @@ export function ContentRow({
   viewAllLabel = "View All",
 }: {
   layout?: "poster" | "vertical" | "wide";
+  matchSourceTitles?: Title[];
   removable?: boolean;
   titles: Title[];
   title: string;
@@ -49,7 +51,11 @@ export function ContentRow({
   const [isDragging, setIsDragging] = useState(false);
   const [activePreview, setActivePreview] = useState<ActivePreview | null>(null);
   const [modalTitle, setModalTitle] = useState<Title | null>(null);
-  const [visibleTitles, setVisibleTitles] = useState(titles);
+  const [removedTitleSlugs, setRemovedTitleSlugs] = useState<Set<string>>(() => new Set());
+  const visibleTitles = useMemo(
+    () => titles.filter((item) => !removedTitleSlugs.has(item.slug)),
+    [removedTitleSlugs, titles],
+  );
 
   const clearPreviewTimer = useCallback(() => {
     if (closePreviewTimerRef.current) {
@@ -107,7 +113,7 @@ export function ContentRow({
         width,
       });
     },
-    [canScrollLeft, canScrollRight, clearPreviewTimer, layout],
+    [canScrollRight, clearPreviewTimer, layout],
   );
 
   function updateScrollState() {
@@ -126,10 +132,6 @@ export function ContentRow({
     setCanScrollLeft(rail.scrollLeft > 2);
     setCanScrollRight(rail.scrollLeft < maxScroll - 2);
   }
-
-  useEffect(() => {
-    setVisibleTitles(titles);
-  }, [titles]);
 
   useEffect(() => {
     if (railRef.current) {
@@ -306,7 +308,7 @@ export function ContentRow({
 
     const nextSlugs = slugs.filter((slug) => slug !== item.slug);
     document.cookie = `${watchHistoryCookieName}=${serializeWatchHistory(nextSlugs)}; path=/; max-age=15552000; samesite=lax`;
-    setVisibleTitles((current) => current.filter((titleItem) => titleItem.slug !== item.slug));
+    setRemovedTitleSlugs((current) => new Set(current).add(item.slug));
     setActivePreview(null);
     setModalTitle(null);
   }
@@ -407,6 +409,7 @@ export function ContentRow({
         {activePreview ? (
         <RowFloatingPreview
           active={activePreview}
+          matchSourceTitles={matchSourceTitles}
           onClose={closePreview}
           onEnter={clearPreviewTimer}
           onOpenTitle={setModalTitle}
@@ -431,12 +434,14 @@ export function ContentRow({
 
 export function RowFloatingPreview({
   active,
+  matchSourceTitles,
   onClose,
   onEnter,
   onOpenTitle,
   onRemoveTitle,
 }: {
   active: ActivePreview;
+  matchSourceTitles?: Title[];
   onClose: () => void;
   onEnter: () => void;
   onOpenTitle: (title: Title) => void;
@@ -446,6 +451,8 @@ export function RowFloatingPreview({
   const imageSrc = title.heroImage || title.posterImage;
   const imageClassName = title.isDiscontinued ? "object-cover grayscale" : "object-cover";
   const previewScaleX = Math.max(0.72, Math.min(1, active.anchorWidth / active.width));
+  const matchPercent = calculateTitleMatch(title, matchSourceTitles ?? []);
+  const displayTitle = titleInlineText(title);
 
   return (
     <div className="pointer-events-none absolute inset-0 z-[80] overflow-visible">
@@ -497,7 +504,7 @@ export function RowFloatingPreview({
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-200/90">
                 {titleEyebrow(title)}
               </p>
-              <h3 className="mt-1 line-clamp-1 text-xl font-black leading-tight">{title.title}</h3>
+              <h3 className="mt-1 line-clamp-1 text-xl font-black leading-tight">{displayTitle}</h3>
             </div>
           </div>
         </button>
@@ -529,7 +536,9 @@ export function RowFloatingPreview({
             {title.isDiscontinued ? (
               <span className="text-red-200">Discontinued</span>
             ) : null}
-            <span className="text-emerald-300">98% Match</span>
+            {matchPercent ? (
+              <span className="text-emerald-300">{matchPercent}% Match</span>
+            ) : null}
             <span className="rounded border border-white/24 px-1.5 py-px text-[10px] text-white/84">
               {title.rating}
             </span>
@@ -548,6 +557,99 @@ export function RowFloatingPreview({
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function calculateTitleMatch(title: Title, sourceTitles: Title[]) {
+  const profile = buildPreferenceProfile(sourceTitles.filter((sourceTitle) => sourceTitle.slug !== title.slug));
+
+  if (!profile) {
+    return null;
+  }
+
+  const genreScore = scoreTokens(normalizeGenreTokens(title.genre), profile.genres);
+  const categoryScore = scoreTokens(normalizeTokens([...(title.categoryNames ?? []), ...(title.categorySlugs ?? [])]), profile.categories);
+  const typeSlugScore = scoreTokens(normalizeTokens(title.typeSlugs ?? []), profile.typeSlugs);
+  const typeScore = profile.types.get(normalizeToken(title.type)) ?? 0;
+  const flagScore = scoreTokens(getTitleFlags(title), profile.flags);
+
+  const weightedScore =
+    genreScore * 34 +
+    categoryScore * 26 +
+    typeScore * 22 +
+    typeSlugScore * 12 +
+    flagScore * 6;
+
+  if (weightedScore < 24) {
+    return null;
+  }
+
+  return Math.round(clamp(62 + weightedScore * 0.37, 70, 99));
+}
+
+function buildPreferenceProfile(sourceTitles: Title[]) {
+  const titles = sourceTitles.filter((title) => !title.isDiscontinued);
+
+  if (titles.length === 0) {
+    return null;
+  }
+
+  return {
+    categories: buildTokenWeights(titles.flatMap((title) => normalizeTokens([...(title.categoryNames ?? []), ...(title.categorySlugs ?? [])]))),
+    flags: buildTokenWeights(titles.flatMap(getTitleFlags)),
+    genres: buildTokenWeights(titles.flatMap((title) => normalizeGenreTokens(title.genre))),
+    types: buildTokenWeights(titles.map((title) => normalizeToken(title.type)).filter(Boolean)),
+    typeSlugs: buildTokenWeights(titles.flatMap((title) => normalizeTokens(title.typeSlugs ?? []))),
+  };
+}
+
+function buildTokenWeights(tokens: string[]) {
+  const weights = new Map<string, number>();
+  const cleanTokens = tokens.filter(Boolean);
+
+  if (cleanTokens.length === 0) {
+    return weights;
+  }
+
+  for (const token of cleanTokens) {
+    weights.set(token, (weights.get(token) ?? 0) + 1);
+  }
+
+  for (const [token, count] of weights) {
+    weights.set(token, count / cleanTokens.length);
+  }
+
+  return weights;
+}
+
+function scoreTokens(tokens: string[], weights: Map<string, number>) {
+  if (tokens.length === 0 || weights.size === 0) {
+    return 0;
+  }
+
+  return Math.min(1, tokens.reduce((score, token) => score + (weights.get(token) ?? 0), 0));
+}
+
+function normalizeGenreTokens(genre: string) {
+  return normalizeTokens(genre.split(/[,/&|]+/));
+}
+
+function normalizeTokens(values: string[]) {
+  return values.map(normalizeToken).filter(Boolean);
+}
+
+function normalizeToken(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function getTitleFlags(title: Title) {
+  return [
+    title.featured ? "featured" : "",
+    title.inWatchlist ? "watchlist" : "",
+    title.isContinue ? "continue" : "",
+    title.isGlobalProgram ? "global" : "",
+    title.isNew ? "new" : "",
+    title.source ? `source:${title.source}` : "",
+  ].filter(Boolean);
 }
 
 function PlayIcon() {

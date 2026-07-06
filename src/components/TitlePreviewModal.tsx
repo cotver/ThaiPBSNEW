@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { titleEyebrow, titleHref, type Title } from "@/lib/content";
+import { titleDisplayLines, titleEyebrow, titleHref, type Title } from "@/lib/content";
 import { DiscontinuedBadge } from "./DiscontinuedBadge";
 import { SaveForLaterButton } from "./SaveForLaterButton";
 import { TitleDetails } from "./TitleDetails";
@@ -100,7 +100,7 @@ export function TitlePreviewModal({
   const isGifTrailer = title.trailerMimeType === "image/gif";
   const showImageFade = title.showHeroDetails !== false;
   const useFullImage = title.source === "heroImage" && title.showHeroDetails === false;
-  const titleLines = title.heroTitleLines?.length ? title.heroTitleLines : [title.title];
+  const titleLines = titleDisplayLines(title);
   const meta = [title.year, title.rating, title.duration].filter(Boolean);
 
   return createPortal(

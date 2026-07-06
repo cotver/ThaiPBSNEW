@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useState } from "react";
-import type { Title } from "@/lib/content";
+import { titleInlineText, type Title } from "@/lib/content";
 import { DiscontinuedBadge } from "./DiscontinuedBadge";
 import { TitlePreviewModal } from "./TitlePreviewModal";
 
@@ -29,6 +29,7 @@ export function PosterCard({
   const imageSrc = orientation === "portrait" ? title.posterImage || title.heroImage : title.heroImage || title.posterImage;
   const imageClassName = title.isDiscontinued ? "object-cover grayscale" : "object-cover";
   const isDisabled = title.isDiscontinued;
+  const displayTitle = titleInlineText(title);
   const openModal = useCallback(() => {
     if (isDisabled) return;
     if (onOpenTitle) onOpenTitle(title);
@@ -86,8 +87,8 @@ export function PosterCard({
             ) : null}
             <div className={orientation === "portrait" ? "absolute bottom-3 left-3 right-3" : "absolute bottom-3 left-4 right-4"}>
               <p className="line-clamp-1 text-[10px] font-black uppercase text-white/56">{title.genre}</p>
-              <h3 className={orientation === "portrait" ? "mt-0.5 line-clamp-2 text-base font-black leading-5" : "mt-0.5 text-lg font-black leading-6"}>
-                {title.title}
+              <h3 className={orientation === "portrait" ? "mt-0.5 line-clamp-1 text-base font-black leading-5" : "mt-0.5 line-clamp-1 text-lg font-black leading-6"}>
+                {displayTitle}
               </h3>
             </div>
           </div>
@@ -120,6 +121,7 @@ export function WideCard({ onOpenTitle, onPreviewEnd, onPreviewStart, onRemoveTi
   const imageSrc = title.heroImage || title.posterImage;
   const imageClassName = title.isDiscontinued ? "object-cover grayscale" : "object-cover";
   const isDisabled = title.isDiscontinued;
+  const displayTitle = titleInlineText(title);
   const openModal = useCallback(() => {
     if (isDisabled) return;
     if (onOpenTitle) onOpenTitle(title);
@@ -153,7 +155,7 @@ export function WideCard({ onOpenTitle, onPreviewEnd, onPreviewStart, onRemoveTi
             ) : null}
             <div className="absolute bottom-4 left-4 right-4">
               <p className="text-xs font-bold uppercase text-white/62">{title.type}</p>
-              <h3 className="mt-1 text-lg font-black">{title.title}</h3>
+              <h3 className="mt-1 line-clamp-1 text-lg font-black">{displayTitle}</h3>
             </div>
           </div>
           {title.progress ? (

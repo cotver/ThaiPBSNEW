@@ -5,7 +5,7 @@ import { DiscontinuedBadge } from "@/components/DiscontinuedBadge";
 import { SaveForLaterButton } from "@/components/SaveForLaterButton";
 import { TitleDetails } from "@/components/TitleDetails";
 import { WatchHistoryMarker } from "@/components/WatchHistoryMarker";
-import { titleEyebrow, titleHref } from "@/lib/content";
+import { titleDisplayLines, titleEyebrow, titleHref } from "@/lib/content";
 import { getCatalogTitle } from "@/lib/payload-content";
 import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
 import { cookies } from "next/headers";
@@ -35,7 +35,7 @@ export default async function TitlePage({
   const isGifTrailer = title.trailerMimeType === "image/gif";
   const showImageFade = title.showHeroDetails !== false;
   const useFullImage = title.source === "heroImage" && title.showHeroDetails === false;
-  const titleLines = title.heroTitleLines?.length ? title.heroTitleLines : [title.title];
+  const titleLines = titleDisplayLines(title);
   const meta = [title.year, title.rating, title.duration].filter(Boolean);
 
   return (

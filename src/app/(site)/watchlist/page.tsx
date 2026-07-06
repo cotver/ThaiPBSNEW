@@ -21,8 +21,8 @@ export default async function WatchlistPage() {
           Jump back into saved movies, originals, and series from one place.
         </p>
       </div>
-      <ContentRow layout="vertical" title="Saved For Later" titles={collections.watchlist} />
-      <ContentRow layout="wide" title="Continue Watching" titles={collections.continueWatching} />
+      <ContentRow layout="vertical" matchSourceTitles={collections.continueWatching} title="Saved For Later" titles={collections.watchlist} />
+      <ContentRow layout="wide" matchSourceTitles={collections.continueWatching} title="Continue Watching" titles={collections.continueWatching} />
     </section>
   );
 }

@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { ContentRow } from "@/components/ContentRow";
 import { getCatalogCollections, getTypePage } from "@/lib/payload-content";
+import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -10,9 +12,11 @@ export default async function TypePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const cookieStore = await cookies();
+  const continueWatchingSlugs = parseWatchHistoryCookie(cookieStore.get(watchHistoryCookieName)?.value);
   const [typePage, collections] = await Promise.all([
     getTypePage(slug),
-    getCatalogCollections(),
+    getCatalogCollections(continueWatchingSlugs),
   ]);
 
   if (!typePage) {
@@ -56,13 +60,13 @@ export default async function TypePage({
 
       <section className="-mt-20 space-y-9 px-5 pb-16 sm:px-8 lg:px-10">
         {availableTitles.length > 0 ? (
-          <ContentRow layout="vertical" title={`${type.name} Programs`} titles={availableTitles} />
+          <ContentRow layout="vertical" matchSourceTitles={collections.continueWatching} title={`${type.name} Programs`} titles={availableTitles} />
         ) : (
           <div className="rounded-[8px] border border-white/10 bg-white/6 p-8 text-white/70">
             No programs are connected to this type yet.
           </div>
         )}
-        <ContentRow layout="poster" title="Recommended For You" titles={collections.recommended} />
+        <ContentRow layout="poster" matchSourceTitles={collections.continueWatching} title="Recommended For You" titles={collections.recommended} />
       </section>
     </>
   );

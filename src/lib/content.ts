@@ -79,3 +79,20 @@ export function titleEyebrow(title: Title) {
 
   return title.type;
 }
+
+export function titleDisplayLines(title: Pick<Title, "heroTitleLines" | "title">) {
+  const sourceLines = title.heroTitleLines?.length
+    ? title.heroTitleLines
+    : [title.title];
+  const lines = sourceLines.flatMap((line) => line.split(/\\n|\r?\n/));
+
+  return lines.map((line) => line.trim()).filter(Boolean);
+}
+
+export function titleDisplayText(title: Pick<Title, "heroTitleLines" | "title">) {
+  return titleDisplayLines(title).join("\n");
+}
+
+export function titleInlineText(title: Pick<Title, "title">) {
+  return title.title.replace(/\\n|\r?\n/g, " ").replace(/\s+/g, " ").trim();
+}

@@ -98,6 +98,7 @@ export default async function CategoryPage({
             {availableTitles.length > 0 ? (
               <ContentRow
                 layout="vertical"
+                matchSourceTitles={collections.continueWatching}
                 title={`${category.name} Programs`}
                 titles={availableTitles}
                 viewAllHref={`/browse?category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Programs`)}`}
@@ -109,12 +110,14 @@ export default async function CategoryPage({
             )}
             <ContentRow
               layout="poster"
+              matchSourceTitles={collections.continueWatching}
               title="Recommended For You"
               titles={collections.recommended}
               viewAllHref={`/browse?section=recommended&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Recommended For You`)}`}
             />
             <ContentRow
               layout="wide"
+              matchSourceTitles={collections.continueWatching}
               removable
               title="Continue Watching"
               titles={collections.continueWatching}
@@ -122,12 +125,14 @@ export default async function CategoryPage({
             />
             <ContentRow
               layout="vertical"
+              matchSourceTitles={collections.continueWatching}
               title="Continue Programs"
               titles={collections.continuePrograms}
               viewAllHref={`/browse?section=continue-programs&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Continue Programs`)}`}
             />
             <ContentRow
               layout="vertical"
+              matchSourceTitles={collections.continueWatching}
               title="Discontinued Programs"
               titles={collections.discontinuedPrograms}
               viewAllHref={`/browse?section=discontinued-programs&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Discontinued Programs`)}`}
@@ -136,6 +141,7 @@ export default async function CategoryPage({
               <ContentRow
                 key={row.year}
                 layout="vertical"
+                matchSourceTitles={collections.continueWatching}
                 title={`ThaiPBS Year ${row.year}`}
                 titles={row.titles}
                 viewAllHref={`/browse?section=year&year=${encodeURIComponent(String(row.year))}&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} ThaiPBS Year ${row.year}`)}`}
@@ -143,12 +149,14 @@ export default async function CategoryPage({
             ))}
             <ContentRow
               layout="vertical"
+              matchSourceTitles={collections.continueWatching}
               title="Thai Programs"
               titles={collections.thaiPrograms}
               viewAllHref={`/browse?section=thai&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Thai Programs`)}`}
             />
             <ContentRow
               layout="vertical"
+              matchSourceTitles={collections.continueWatching}
               title="International Programs"
               titles={collections.internationalPrograms}
               viewAllHref={`/browse?section=international&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} International Programs`)}`}
