@@ -34,9 +34,20 @@ export type CategoryTile = {
   id: number;
   imageUrl?: string;
   name: string;
+  postRoom?: boolean;
+  postRoomImages?: PostRoomImageTile[];
+  showHeaderSection?: boolean;
+  showTitle?: boolean;
   slug: string;
   videoMimeType?: string;
   videoUrl?: string;
+};
+
+export type PostRoomImageTile = {
+  id: string;
+  imageHeight?: number;
+  imageUrl?: string;
+  imageWidth?: number;
 };
 
 export type TypeTile = CategoryTile & {
@@ -650,6 +661,10 @@ function validYear(value: unknown) {
   return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
 }
 
+function validDimension(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.round(value) : undefined;
+}
+
 function firstRerunYear(rerunDates: Program["rerunDates"]) {
   if (!Array.isArray(rerunDates)) {
     return undefined;
@@ -739,6 +754,24 @@ function categoryToTile(category: Category): CategoryTile | null {
     id: category.id,
     imageUrl: mediaUrl(category.image),
     name,
+    postRoom: Boolean(category.postRoom),
+    postRoomImages: Array.isArray(category.postRoomImages)
+      ? category.postRoomImages
+          .map((item) => {
+            const image = item?.image;
+            const media = image && typeof image !== "number" ? (image as Media) : null;
+
+            return {
+              id: String(item?.id ?? ""),
+              imageHeight: validDimension(media?.height),
+              imageUrl: mediaUrl(image as Category["image"]),
+              imageWidth: validDimension(media?.width),
+            };
+          })
+          .filter((item) => Boolean(item.id || item.imageUrl))
+      : undefined,
+    showHeaderSection: category.showHeaderSection !== false,
+    showTitle: category.showTitle !== false,
     slug,
     videoMimeType: videoMimeType(category.video),
     videoUrl: videoUrl(category.video),

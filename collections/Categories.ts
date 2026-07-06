@@ -20,7 +20,19 @@ export const Categories: CollectionConfig = {
   orderable: true,
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'slug', 'icon', 'link', 'appShellActive', 'image', 'video', 'updatedAt'],
+    defaultColumns: [
+      'name',
+      'slug',
+      'icon',
+      'link',
+      'showHeaderSection',
+      'showTitle',
+      'postRoom',
+      'appShellActive',
+      'image',
+      'video',
+      'updatedAt',
+    ],
     listSearchableFields: ['name'],
     pagination: {
       defaultLimit: 1000,
@@ -74,6 +86,51 @@ export const Categories: CollectionConfig = {
       type: 'relationship',
       relationTo: 'videos',
       admin: { description: 'Short video or GIF-style loop from Videos collection' },
+    },
+    {
+      name: 'showHeaderSection',
+      label: 'Show header section',
+      type: 'checkbox',
+      defaultValue: true,
+      admin: { description: 'Show the header section on this category page' },
+    },
+    {
+      name: 'showTitle',
+      label: 'Show Title',
+      type: 'checkbox',
+      defaultValue: true,
+      admin: { description: 'Show the category title in the header section' },
+    },
+    {
+      name: 'postRoom',
+      label: 'Post Room',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: { description: 'Enable Post Room images for this category' },
+    },
+    {
+      name: 'postRoomImages',
+      label: 'Post Room images',
+      type: 'array',
+      labels: {
+        singular: 'Post Room image',
+        plural: 'Post Room images',
+      },
+      admin: {
+        description: 'Add as many Post Room images as needed',
+        condition: (_data, siblingData) =>
+          Boolean(siblingData?.postRoom) ||
+          (Array.isArray(siblingData?.postRoomImages) && siblingData.postRoomImages.length > 0),
+      },
+      fields: [
+        {
+          name: 'image',
+          type: 'upload',
+          relationTo: 'media',
+          required: true,
+          admin: { description: 'Post Room image' },
+        },
+      ],
     },
     {
       name: 'link',

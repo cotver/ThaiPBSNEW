@@ -16,6 +16,7 @@ import * as migration_20260703_093000_add_programs_is_continue from './20260703_
 import * as migration_20260703_094000_resync_seasons_and_episodes_id_sequences from './20260703_094000_resync_seasons_and_episodes_id_sequences';
 import * as migration_20260705_124900_resync_media_id_sequence from './20260705_124900_resync_media_id_sequence';
 import * as migration_20260705_130500_resync_videos_id_sequence from './20260705_130500_resync_videos_id_sequence';
+import * as migration_20260706_090000_add_category_header_and_post_room from './20260706_090000_add_category_header_and_post_room';
 
 export const migrations = [
   {
@@ -107,5 +108,10 @@ export const migrations = [
     up: migration_20260705_130500_resync_videos_id_sequence.up,
     down: migration_20260705_130500_resync_videos_id_sequence.down,
     name: '20260705_130500_resync_videos_id_sequence'
+  },
+  {
+    up: migration_20260706_090000_add_category_header_and_post_room.up,
+    down: migration_20260706_090000_add_category_header_and_post_room.down,
+    name: '20260706_090000_add_category_header_and_post_room'
   },
 ];

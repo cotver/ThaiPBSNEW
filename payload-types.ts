@@ -1827,6 +1827,30 @@ export interface Category {
    */
   video?: (number | null) | Video;
   /**
+   * Show the header section on this category page
+   */
+  showHeaderSection?: boolean | null;
+  /**
+   * Show the category title in the header section
+   */
+  showTitle?: boolean | null;
+  /**
+   * Enable Post Room images for this category
+   */
+  postRoom?: boolean | null;
+  /**
+   * Add as many Post Room images as needed
+   */
+  postRoomImages?:
+    | {
+        /**
+         * Post Room image
+         */
+        image: number | Media;
+        id?: string | null;
+      }[]
+    | null;
+  /**
    * Optional URL. If set, AppShell navigation opens this link instead of the category page.
    */
   link?: string | null;
@@ -3133,6 +3157,15 @@ export interface CategoriesSelect<T extends boolean = true> {
   icon?: T;
   image?: T;
   video?: T;
+  showHeaderSection?: T;
+  showTitle?: T;
+  postRoom?: T;
+  postRoomImages?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
   link?: T;
   order?: T;
   isActive?: T;
