@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { titleEyebrow, titleHref, type Title } from "@/lib/content";
+import { DiscontinuedBadge } from "./DiscontinuedBadge";
 import { SaveForLaterButton } from "./SaveForLaterButton";
 import { TitleDetails } from "./TitleDetails";
 
@@ -131,6 +132,9 @@ export function TitlePreviewModal({
               <p className="mb-3 text-xs font-black uppercase text-cyan-200">
                 {titleEyebrow(title)}
               </p>
+              {title.isDiscontinued ? (
+                <DiscontinuedBadge className="mb-4" />
+              ) : null}
               <h2 className="max-w-3xl text-4xl font-black leading-[0.98] sm:text-6xl">
                 {titleLines.map((line) => (
                   <span className="block" key={line}>

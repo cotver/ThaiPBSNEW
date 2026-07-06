@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import type { Title, TitleSeason } from "@/lib/content";
+import { DiscontinuedBadge } from "./DiscontinuedBadge";
 
 type DetailTab = "episodes" | "details";
 
@@ -196,6 +197,14 @@ function DetailsPanel({ title }: { title: Title }) {
         <p className="mt-3 leading-7 text-white/70">{title.description}</p>
       </div>
       <dl className="grid grid-cols-2 gap-x-5 gap-y-4 md:grid-cols-1">
+        {title.isDiscontinued ? (
+          <div>
+            <dt className="text-xs font-black uppercase tracking-[0.16em] text-white/34">Status</dt>
+            <dd className="mt-2">
+              <DiscontinuedBadge />
+            </dd>
+          </div>
+        ) : null}
         <Meta label="Type" value={title.type} />
         <Meta label="Genre" value={title.genre} />
         <Meta label="Released" value={title.year} />

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { DiscontinuedBadge } from "@/components/DiscontinuedBadge";
 import { SaveForLaterButton } from "@/components/SaveForLaterButton";
 import { TitleDetails } from "@/components/TitleDetails";
 import { WatchHistoryMarker } from "@/components/WatchHistoryMarker";
@@ -98,6 +99,9 @@ export default async function TitlePage({
             <p className="mb-3 text-xs font-black uppercase text-cyan-200">
               {titleEyebrow(title)}
             </p>
+            {title.isDiscontinued ? (
+              <DiscontinuedBadge className="mb-4" />
+            ) : null}
             <h1 className="max-w-3xl text-5xl font-black leading-[0.98] sm:text-6xl lg:text-7xl">
               {titleLines.map((line) => (
                 <span className="block" key={line}>

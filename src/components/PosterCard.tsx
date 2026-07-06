@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useCallback, useState } from "react";
 import type { Title } from "@/lib/content";
+import { DiscontinuedBadge } from "./DiscontinuedBadge";
 import { TitlePreviewModal } from "./TitlePreviewModal";
 
 type CardProps = {
@@ -80,6 +81,9 @@ export function PosterCard({
               />
             ) : null}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_45%_24%,rgba(255,255,255,0.22),transparent_24%),linear-gradient(0deg,rgba(0,0,0,0.82),transparent_56%)]" />
+            {title.isDiscontinued ? (
+              <DiscontinuedBadge className="absolute left-3 top-3 z-10" />
+            ) : null}
             <div className={orientation === "portrait" ? "absolute bottom-3 left-3 right-3" : "absolute bottom-3 left-4 right-4"}>
               <p className="line-clamp-1 text-[10px] font-black uppercase text-white/56">{title.genre}</p>
               <h3 className={orientation === "portrait" ? "mt-0.5 line-clamp-2 text-base font-black leading-5" : "mt-0.5 text-lg font-black leading-6"}>
@@ -144,6 +148,9 @@ export function WideCard({ onOpenTitle, onPreviewEnd, onPreviewStart, onRemoveTi
               <Image alt="" className={imageClassName} fill sizes="384px" src={imageSrc} />
             ) : null}
             <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.20),transparent_35%),linear-gradient(0deg,rgba(0,0,0,0.72),transparent_55%)]" />
+            {title.isDiscontinued ? (
+              <DiscontinuedBadge className="absolute left-3 top-3 z-10" />
+            ) : null}
             <div className="absolute bottom-4 left-4 right-4">
               <p className="text-xs font-bold uppercase text-white/62">{title.type}</p>
               <h3 className="mt-1 text-lg font-black">{title.title}</h3>

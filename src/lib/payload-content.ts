@@ -285,7 +285,7 @@ export async function getCategoryPage(slug: string): Promise<{ category: Categor
 
     return {
       category: tile,
-      titles: programsResult.docs.map(programToTitle).filter((title): title is Title => Boolean(title)),
+      titles: sortTitlesByAvailability(programsResult.docs.map(programToTitle).filter((title): title is Title => Boolean(title))),
     };
   } catch (error) {
     console.warn(`Unable to load Payload category "${slug}"`, error);
@@ -357,7 +357,7 @@ export async function getTypePage(slug: string): Promise<{ type: TypeTile; title
 
     return {
       type: tile,
-      titles: programsResult.docs.map(programToTitle).filter((title): title is Title => Boolean(title)),
+      titles: sortTitlesByAvailability(programsResult.docs.map(programToTitle).filter((title): title is Title => Boolean(title))),
     };
   } catch (error) {
     console.warn(`Unable to load Payload type "${slug}"`, error);
@@ -376,7 +376,7 @@ async function getPayloadTitles(): Promise<Title[]> {
       sort: "-updatedAt",
     });
 
-    return result.docs.map(programToTitle).filter((title): title is Title => Boolean(title));
+    return sortTitlesByAvailability(result.docs.map(programToTitle).filter((title): title is Title => Boolean(title)));
   } catch (error) {
     console.warn("Unable to load Payload programs for catalog", error);
     return [];
@@ -443,7 +443,10 @@ async function getHomeTypeRows(): Promise<TypeProgramRow[]> {
           },
         });
 
-        const titles = programsResult.docs.map(programToTitle).filter((title): title is Title => Boolean(title));
+        const titles = programsResult.docs
+          .map(programToTitle)
+          .filter(isTitle)
+          .filter(isAvailableTitle);
 
         return titles.length > 0 ? { titles, type: tile } : null;
       }),
@@ -498,43 +501,48 @@ export function buildTitleCollections(
   }
 
   const savedTitleSet = new Set(savedTitleSlugs);
-  const collectionTitles: Title[] = titles.map((title) => ({
-    ...title,
-    inWatchlist: savedTitleSet.has(title.slug),
-  }));
+  const collectionTitles: Title[] = sortTitlesByAvailability(
+    titles.map((title) => ({
+      ...title,
+      inWatchlist: savedTitleSet.has(title.slug),
+    })),
+  );
+  const availableTitles = collectionTitles.filter(isAvailableTitle);
 
-  const featured = collectionTitles.filter((title) => title.featured);
-  const originals = collectionTitles.filter((title) => title.type === "Original");
-  const movies = collectionTitles.filter((title) => title.type === "Movie" || title.type === "Original");
-  const series = collectionTitles.filter((title) => title.type === "Series");
+  const featured = availableTitles.filter((title) => title.featured);
+  const originals = availableTitles.filter((title) => title.type === "Original");
+  const movies = availableTitles.filter((title) => title.type === "Movie" || title.type === "Original");
+  const series = availableTitles.filter((title) => title.type === "Series");
   const titlesBySlug = new Map(collectionTitles.map((title) => [title.slug, title]));
   const continueWatching = continueWatchingSlugs
     .map((slug) => titlesBySlug.get(slug))
-    .filter((title): title is Title => Boolean(title));
+    .filter(isTitle)
+    .filter(isAvailableTitle);
   const watchlist = savedTitleSlugs
     .map((slug) => titlesBySlug.get(slug))
-    .filter((title): title is Title => Boolean(title));
+    .filter(isTitle)
+    .filter(isAvailableTitle);
   const currentYear = new Date().getFullYear();
   const homeYears = [currentYear, currentYear + 1];
 
   return {
-    continuePrograms: collectionTitles.filter((title) => title.isContinue).slice(0, 12),
-    recommended: collectionTitles.filter((title) => title.isNew).slice(0, 12),
-    continueWatching,
+    continuePrograms: availableTitles.filter((title) => title.isContinue).slice(0, 12),
+    recommended: availableTitles.filter((title) => title.isNew).slice(0, 12),
+    continueWatching: sortTitlesByAvailability(continueWatching),
     discontinuedPrograms: collectionTitles.filter((title) => title.isDiscontinued).slice(0, 12),
-    trending: collectionTitles.filter((title) => title.featured || title.inWatchlist).slice(0, 12),
+    trending: availableTitles.filter((title) => title.featured || title.inWatchlist).slice(0, 12),
     typeRows: [],
     originals: originals.length > 0 ? originals : featured,
-    movies: movies.length > 0 ? movies : collectionTitles,
-    posterMockups: collectionTitles.slice(0, 14),
+    movies: movies.length > 0 ? movies : availableTitles,
+    posterMockups: availableTitles.slice(0, 14),
     series,
-    thaiPrograms: collectionTitles.filter((title) => !title.isGlobalProgram).slice(0, 12),
-    internationalPrograms: collectionTitles.filter((title) => title.isGlobalProgram).slice(0, 12),
-    watchlist,
+    thaiPrograms: availableTitles.filter((title) => !title.isGlobalProgram).slice(0, 12),
+    internationalPrograms: availableTitles.filter((title) => title.isGlobalProgram).slice(0, 12),
+    watchlist: sortTitlesByAvailability(watchlist),
     heroes: featured,
     yearRows: homeYears.map((year) => ({
       year,
-      titles: collectionTitles.filter((title) => title.homeYear === year).slice(0, 12),
+      titles: availableTitles.filter((title) => title.homeYear === year).slice(0, 12),
     })),
   };
 }
@@ -594,6 +602,18 @@ function programToTitle(program: Program): Title | null {
     trailerUrl: getProgramTrailerUrl(program),
     typeSlugs: relationSlugs((program as { categories?: unknown }).categories),
   };
+}
+
+function sortTitlesByAvailability(titles: Title[]) {
+  return [...titles].sort((a, b) => Number(Boolean(a.isDiscontinued)) - Number(Boolean(b.isDiscontinued)));
+}
+
+function isAvailableTitle(title: Title) {
+  return !title.isDiscontinued;
+}
+
+function isTitle(title: Title | null | undefined): title is Title {
+  return Boolean(title);
 }
 
 function getTitleType(program: Program): Title["type"] {

@@ -20,6 +20,7 @@ export default async function TypePage({
   }
 
   const { type, titles } = typePage;
+  const availableTitles = titles.filter((title) => !title.isDiscontinued);
   const heroMedia = type.videoUrl || type.imageUrl;
 
   return (
@@ -47,15 +48,15 @@ export default async function TypePage({
           </p>
           {heroMedia && (
             <div className="mt-7 text-xs font-bold uppercase tracking-[0.22em] text-white/48">
-              {titles.length} title{titles.length === 1 ? "" : "s"}
+              {availableTitles.length} title{availableTitles.length === 1 ? "" : "s"}
             </div>
           )}
         </div>
       </section>
 
       <section className="-mt-20 space-y-9 px-5 pb-16 sm:px-8 lg:px-10">
-        {titles.length > 0 ? (
-          <ContentRow layout="vertical" title={`${type.name} Programs`} titles={titles} />
+        {availableTitles.length > 0 ? (
+          <ContentRow layout="vertical" title={`${type.name} Programs`} titles={availableTitles} />
         ) : (
           <div className="rounded-[8px] border border-white/10 bg-white/6 p-8 text-white/70">
             No programs are connected to this type yet.

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { titleEyebrow, titleHref, type Title } from "@/lib/content";
 import { serializeWatchHistory, watchHistoryCookieName } from "@/lib/watch-history";
+import { DiscontinuedBadge } from "./DiscontinuedBadge";
 import { PosterCard, WideCard } from "./PosterCard";
 import { SaveForLaterButton } from "./SaveForLaterButton";
 import { TitlePreviewModal } from "./TitlePreviewModal";
@@ -489,6 +490,9 @@ export function RowFloatingPreview({
               <Image alt="" className={imageClassName} fill sizes={`${Math.ceil(active.width)}px`} src={imageSrc} />
             ) : null}
             <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(17,24,39,0.58),transparent_54%),radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.20),transparent_24%)]" />
+            {title.isDiscontinued ? (
+              <DiscontinuedBadge className="absolute left-4 top-4 z-10" />
+            ) : null}
             <div className="absolute bottom-4 left-4 right-4">
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-200/90">
                 {titleEyebrow(title)}
@@ -522,6 +526,9 @@ export function RowFloatingPreview({
             />
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] font-bold text-white/66">
+            {title.isDiscontinued ? (
+              <span className="text-red-200">Discontinued</span>
+            ) : null}
             <span className="text-emerald-300">98% Match</span>
             <span className="rounded border border-white/24 px-1.5 py-px text-[10px] text-white/84">
               {title.rating}

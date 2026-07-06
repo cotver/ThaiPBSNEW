@@ -24,8 +24,8 @@ export default async function CategoryPage({
   }
  
   const { category, titles } = categoryPage;
+  const availableTitles = titles.filter((title) => !title.isDiscontinued);
   const collections = buildTitleCollections(titles, continueWatchingSlugs, savedTitleSlugs);
-  const heroMedia = category.videoUrl || category.imageUrl;
 
   return (
     <>
@@ -43,18 +43,29 @@ export default async function CategoryPage({
         )}
 
         <div className="relative z-10 flex min-h-[480px] max-w-4xl flex-col justify-end lg:min-h-[560px]">
+          {!category.imageUrl ? (
+            <>
+              <p className="mb-3 text-xs font-black uppercase text-cyan-200">Category</p>
+              <h1 className="max-w-3xl text-5xl font-black leading-[0.98] sm:text-6xl lg:text-7xl">
+                {category.name}
+              </h1>
+              <p className="mt-5 max-w-2xl text-sm leading-7 text-white/74 sm:text-base">
+                Browse every program connected to {category.name}.
+              </p>
+            </>
+          ) : null}
           <div className="text-xs font-bold uppercase tracking-[0.22em] text-white/70">
-            {titles.length} title{titles.length === 1 ? "" : "s"}
+            {availableTitles.length} title{availableTitles.length === 1 ? "" : "s"}
           </div>
         </div>
       </section>
 
       <section className="-mt-20 space-y-9 px-5 pb-16 sm:px-8 lg:px-10">
-        {titles.length > 0 ? (
+        {availableTitles.length > 0 ? (
           <ContentRow
             layout="vertical"
             title={`${category.name} Programs`}
-            titles={titles}
+            titles={availableTitles}
             viewAllHref={`/browse?category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Programs`)}`}
           />
         ) : (
