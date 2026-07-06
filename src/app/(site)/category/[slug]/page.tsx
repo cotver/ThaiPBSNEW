@@ -1,7 +1,8 @@
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ContentRow } from "@/components/ContentRow";
-import { buildTitleCollections, getCategoryPage } from "@/lib/payload-content";
+import { buildTitleCollections, getCategoryPage, type PostRoomGroupTile } from "@/lib/payload-content";
 import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
 import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
 import { cookies } from "next/headers";
@@ -10,10 +11,13 @@ export const dynamic = "force-dynamic";
 
 export default async function CategoryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ postRoomGroup?: string }>;
 }) {
   const { slug } = await params;
+  const query = await searchParams;
   const cookieStore = await cookies();
   const continueWatchingSlugs = parseWatchHistoryCookie(cookieStore.get(watchHistoryCookieName)?.value);
   const savedTitleSlugs = parseSavedTitlesCookie(cookieStore.get(savedTitlesCookieName)?.value);
@@ -28,9 +32,14 @@ export default async function CategoryPage({
   const collections = buildTitleCollections(titles, continueWatchingSlugs, savedTitleSlugs);
   const showHeaderSection = category.showHeaderSection !== false;
   const showTitle = category.showTitle !== false;
-  const postRoomImages = category.postRoomImages?.filter((item) => item.imageUrl) ?? [];
+  const postRoomGroups = category.postRoomGroups ?? [];
+  const selectedPostRoomGroup = query?.postRoomGroup
+    ? postRoomGroups.find((group) => group.id === query.postRoomGroup)
+    : undefined;
   const countLabel = category.postRoom
-    ? `${postRoomImages.length} image${postRoomImages.length === 1 ? "" : "s"}`
+    ? selectedPostRoomGroup
+      ? `${selectedPostRoomGroup.images.length} image${selectedPostRoomGroup.images.length === 1 ? "" : "s"}`
+      : `${postRoomGroups.length} group${postRoomGroups.length === 1 ? "" : "s"}`
     : `${availableTitles.length} title${availableTitles.length === 1 ? "" : "s"}`;
   const contentOffsetClass = showHeaderSection && !category.postRoom ? "-mt-20" : "pt-8";
 
@@ -79,7 +88,11 @@ export default async function CategoryPage({
         ) : null}
 
         {category.postRoom ? (
-          <PostRoomGallery images={postRoomImages} />
+          selectedPostRoomGroup ? (
+            <PostRoomGallery categorySlug={category.slug} group={selectedPostRoomGroup} />
+          ) : (
+            <PostRoomGroupGrid categorySlug={category.slug} groups={postRoomGroups} />
+          )
         ) : (
           <>
             {availableTitles.length > 0 ? (
@@ -147,11 +160,65 @@ export default async function CategoryPage({
   );
 }
 
-function PostRoomGallery({
-  images,
+function PostRoomGroupGrid({
+  categorySlug,
+  groups,
 }: {
-  images: { id: string; imageHeight?: number; imageUrl?: string; imageWidth?: number }[];
+  categorySlug: string;
+  groups: PostRoomGroupTile[];
 }) {
+  if (groups.length === 0) {
+    return (
+      <div className="rounded-[8px] border border-white/10 bg-white/6 p-8 text-white/70">
+        No Post Room groups have been added yet.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-lg font-black md:text-xl">Post Room</h2>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {groups.map((group) => (
+          <Link
+            className="group block overflow-hidden rounded-[8px] border border-white/10 bg-white/6 shadow-xl shadow-black/20 outline-none transition hover:border-white/35 focus-visible:ring-2 focus-visible:ring-cyan-200"
+            href={`/category/${encodeURIComponent(categorySlug)}?postRoomGroup=${encodeURIComponent(group.id)}`}
+            key={group.id}
+          >
+            <div className="relative aspect-[4/3] bg-white/6">
+              {group.coverImage?.imageUrl ? (
+                <Image
+                  alt=""
+                  className="object-cover transition duration-300 group-hover:scale-105"
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                  src={group.coverImage.imageUrl}
+                />
+              ) : null}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#030714]/86 via-[#030714]/16 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-4">
+                <h3 className="line-clamp-2 text-lg font-black">{group.title}</h3>
+                <p className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-white/56">
+                  {group.images.length} image{group.images.length === 1 ? "" : "s"}
+                </p>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PostRoomGallery({
+  categorySlug,
+  group,
+}: {
+  categorySlug: string;
+  group: PostRoomGroupTile;
+}) {
+  const images = group.images;
+
   if (images.length === 0) {
     return (
       <div className="rounded-[8px] border border-white/10 bg-white/6 p-8 text-white/70">
@@ -162,7 +229,18 @@ function PostRoomGallery({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-black md:text-xl">Post Room</h2>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-200">Post Room</p>
+          <h2 className="mt-1 text-lg font-black md:text-xl">{group.title}</h2>
+        </div>
+        <Link
+          className="text-xs font-black uppercase text-white/58 transition hover:text-white"
+          href={`/category/${encodeURIComponent(categorySlug)}`}
+        >
+          Back to groups
+        </Link>
+      </div>
       <div className="columns-1 gap-4 sm:columns-2 xl:columns-3">
         {images.map((item, index) => {
           const imageWidth = item.imageWidth ?? 1200;

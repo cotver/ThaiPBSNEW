@@ -109,26 +109,49 @@ export const Categories: CollectionConfig = {
       admin: { description: 'Enable Post Room images for this category' },
     },
     {
-      name: 'postRoomImages',
-      label: 'Post Room images',
+      name: 'postRoomGroups',
+      label: 'Post Room groups',
       type: 'array',
       labels: {
-        singular: 'Post Room image',
-        plural: 'Post Room images',
+        singular: 'Post Room group',
+        plural: 'Post Room groups',
       },
       admin: {
-        description: 'Add as many Post Room images as needed',
+        description: 'Add image groups for Post Room',
         condition: (_data, siblingData) =>
           Boolean(siblingData?.postRoom) ||
-          (Array.isArray(siblingData?.postRoomImages) && siblingData.postRoomImages.length > 0),
+          (Array.isArray(siblingData?.postRoomGroups) && siblingData.postRoomGroups.length > 0),
       },
       fields: [
         {
-          name: 'image',
+          name: 'title',
+          type: 'text',
+          admin: { description: 'Group title' },
+        },
+        {
+          name: 'coverImage',
+          label: 'Group cover image',
           type: 'upload',
           relationTo: 'media',
-          required: true,
-          admin: { description: 'Post Room image' },
+          admin: { description: 'Cover image shown before opening the group' },
+        },
+        {
+          name: 'images',
+          type: 'array',
+          labels: {
+            singular: 'Image',
+            plural: 'Images',
+          },
+          admin: { description: 'Images inside this Post Room group' },
+          fields: [
+            {
+              name: 'image',
+              type: 'upload',
+              relationTo: 'media',
+              required: true,
+              admin: { description: 'Post Room image' },
+            },
+          ],
         },
       ],
     },

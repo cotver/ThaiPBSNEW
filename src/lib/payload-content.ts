@@ -35,12 +35,19 @@ export type CategoryTile = {
   imageUrl?: string;
   name: string;
   postRoom?: boolean;
-  postRoomImages?: PostRoomImageTile[];
+  postRoomGroups?: PostRoomGroupTile[];
   showHeaderSection?: boolean;
   showTitle?: boolean;
   slug: string;
   videoMimeType?: string;
   videoUrl?: string;
+};
+
+export type PostRoomGroupTile = {
+  coverImage?: PostRoomImageTile;
+  id: string;
+  images: PostRoomImageTile[];
+  title: string;
 };
 
 export type PostRoomImageTile = {
@@ -755,20 +762,23 @@ function categoryToTile(category: Category): CategoryTile | null {
     imageUrl: mediaUrl(category.image),
     name,
     postRoom: Boolean(category.postRoom),
-    postRoomImages: Array.isArray(category.postRoomImages)
-      ? category.postRoomImages
-          .map((item) => {
-            const image = item?.image;
-            const media = image && typeof image !== "number" ? (image as Media) : null;
+    postRoomGroups: Array.isArray(category.postRoomGroups)
+      ? category.postRoomGroups
+          .map((group, index) => {
+            const images = Array.isArray(group?.images)
+              ? group.images.map((item) => postRoomImageToTile(item?.image, item?.id)).filter(isPostRoomImageTile)
+              : [];
+            const coverImage = postRoomImageToTile(group?.coverImage, `${group?.id ?? index}-cover`) ?? images[0];
+            const title = cleanText(group?.title) || `Post Room ${index + 1}`;
 
             return {
-              id: String(item?.id ?? ""),
-              imageHeight: validDimension(media?.height),
-              imageUrl: mediaUrl(image as Category["image"]),
-              imageWidth: validDimension(media?.width),
+              coverImage,
+              id: String(group?.id ?? `post-room-${index + 1}`),
+              images,
+              title,
             };
           })
-          .filter((item) => Boolean(item.id || item.imageUrl))
+          .filter((group) => Boolean(group.coverImage || group.images.length > 0))
       : undefined,
     showHeaderSection: category.showHeaderSection !== false,
     showTitle: category.showTitle !== false,
@@ -776,6 +786,26 @@ function categoryToTile(category: Category): CategoryTile | null {
     videoMimeType: videoMimeType(category.video),
     videoUrl: videoUrl(category.video),
   };
+}
+
+function postRoomImageToTile(image: unknown, id?: string | null): PostRoomImageTile | undefined {
+  const media = image && typeof image !== "number" ? (image as Media) : null;
+  const imageUrl = mediaUrl(image as Category["image"]);
+
+  if (!imageUrl) {
+    return undefined;
+  }
+
+  return {
+    id: String(id ?? imageUrl),
+    imageHeight: validDimension(media?.height),
+    imageUrl,
+    imageWidth: validDimension(media?.width),
+  };
+}
+
+function isPostRoomImageTile(image: PostRoomImageTile | undefined): image is PostRoomImageTile {
+  return Boolean(image);
 }
 
 function typeToTile(type: TypeDoc): TypeTile | null {

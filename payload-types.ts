@@ -1839,14 +1839,30 @@ export interface Category {
    */
   postRoom?: boolean | null;
   /**
-   * Add as many Post Room images as needed
+   * Add image groups for Post Room
    */
-  postRoomImages?:
+  postRoomGroups?:
     | {
         /**
-         * Post Room image
+         * Group title
          */
-        image: number | Media;
+        title?: string | null;
+        /**
+         * Cover image shown before opening the group
+         */
+        coverImage?: (number | null) | Media;
+        /**
+         * Images inside this Post Room group
+         */
+        images?:
+          | {
+              /**
+               * Post Room image
+               */
+              image: number | Media;
+              id?: string | null;
+            }[]
+          | null;
         id?: string | null;
       }[]
     | null;
@@ -3160,10 +3176,17 @@ export interface CategoriesSelect<T extends boolean = true> {
   showHeaderSection?: T;
   showTitle?: T;
   postRoom?: T;
-  postRoomImages?:
+  postRoomGroups?:
     | T
     | {
-        image?: T;
+        title?: T;
+        coverImage?: T;
+        images?:
+          | T
+          | {
+              image?: T;
+              id?: T;
+            };
         id?: T;
       };
   link?: T;
