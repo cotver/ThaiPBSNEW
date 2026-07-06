@@ -235,7 +235,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                   </Link>
                   <Link
                     className="rounded-[6px] border border-white/16 bg-white/12 px-8 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
-                    href={titleHref(current.slug)}
+                    href={`${titleHref(current.slug)}#episodes`}
                   >
                     Details
                   </Link>

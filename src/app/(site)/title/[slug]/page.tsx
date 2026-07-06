@@ -20,7 +20,7 @@ export default async function TitlePage({
   const { slug } = await params;
   const [loadedTitle, cookieStore] = await Promise.all([getCatalogTitle(slug), cookies()]);
 
-  if (!loadedTitle) {
+  if (!loadedTitle || loadedTitle.isDiscontinued) {
     notFound();
   }
 
@@ -133,12 +133,12 @@ export default async function TitlePage({
                   <PlayIcon />
                   Play
                 </Link>
-                <Link
+                <a
                   className="inline-flex h-12 items-center rounded-[6px] border border-white/16 bg-white/12 px-8 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
-                  href={titleHref(title.slug)}
+                  href="#episodes"
                 >
                   Details
-                </Link>
+                </a>
                 <SaveForLaterButton
                   className="grid size-12 place-items-center rounded-full border border-white/18 bg-black/35 text-2xl font-light transition hover:bg-white/18"
                   savedClassName="grid size-12 place-items-center rounded-full border border-cyan-200/40 bg-cyan-200 text-lg font-black text-[#030714] transition hover:bg-white"
@@ -150,7 +150,7 @@ export default async function TitlePage({
         ) : null}
       </section>
 
-      <section className="relative z-10 bg-[#030714] px-5 pb-16 pt-2 text-white sm:px-8 lg:px-10">
+      <section className="relative z-10 scroll-mt-6 bg-[#030714] px-5 pb-16 pt-2 text-white sm:px-8 lg:px-10" id="episodes">
         <TitleDetails title={title} />
       </section>
     </>

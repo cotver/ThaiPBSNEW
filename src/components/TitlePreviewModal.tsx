@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import type { MouseEvent } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { titleEyebrow, titleHref, type Title } from "@/lib/content";
 import { DiscontinuedBadge } from "./DiscontinuedBadge";
@@ -18,27 +20,74 @@ export function TitlePreviewModal({
   open: boolean;
   title: Title | null;
 }) {
+  const router = useRouter();
+  const hasPreviewUrlRef = useRef(false);
+  const previousUrlRef = useRef<string | null>(null);
+
+  const closeWithHistory = useCallback(() => {
+    if (hasPreviewUrlRef.current) {
+      window.history.back();
+      return;
+    }
+
+    onClose();
+  }, [onClose]);
+
+  const closeForNavigation = useCallback(() => {
+    const previousUrl = previousUrlRef.current;
+
+    if (hasPreviewUrlRef.current && previousUrl) {
+      window.history.replaceState(null, "", previousUrl);
+    }
+
+    hasPreviewUrlRef.current = false;
+    previousUrlRef.current = null;
+    onClose();
+  }, [onClose]);
+
+  const navigateFromModal = useCallback((event: MouseEvent<HTMLAnchorElement>, href: string) => {
+    event.preventDefault();
+    closeForNavigation();
+    router.push(href);
+  }, [closeForNavigation, router]);
+
   useEffect(() => {
-    if (!open) {
+    if (!open || !title) {
       return;
     }
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
+    if (!title.isDiscontinued && !hasPreviewUrlRef.current) {
+      previousUrlRef.current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      window.history.pushState(null, "", titleHref(title.slug));
+      hasPreviewUrlRef.current = true;
+    }
+
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
+        closeWithHistory();
+      }
+    }
+
+    function closeOnPopstate() {
+      if (hasPreviewUrlRef.current) {
+        hasPreviewUrlRef.current = false;
+        previousUrlRef.current = null;
         onClose();
       }
     }
 
     window.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("popstate", closeOnPopstate);
 
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("popstate", closeOnPopstate);
     };
-  }, [onClose, open]);
+  }, [closeWithHistory, onClose, open, title]);
 
   if (!open || !title || typeof document === "undefined") {
     return null;
@@ -58,7 +107,7 @@ export function TitlePreviewModal({
     <div
       aria-modal="true"
       className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/78 px-3 py-6 backdrop-blur-sm sm:px-6 sm:py-10"
-      onClick={onClose}
+      onClick={closeWithHistory}
       role="dialog"
     >
       <article
@@ -68,7 +117,7 @@ export function TitlePreviewModal({
         <button
           aria-label="Close title details"
           className="absolute right-4 top-4 z-30 grid size-10 place-items-center rounded-full bg-black/58 text-white ring-1 ring-white/16 transition hover:bg-white hover:text-[#030714]"
-          onClick={onClose}
+          onClick={closeWithHistory}
           type="button"
         >
           <CloseIcon />
@@ -162,15 +211,15 @@ export function TitlePreviewModal({
                   <Link
                     className="inline-flex h-12 items-center gap-2 rounded-[6px] bg-white px-7 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
                     href={titleHref(title.slug)}
-                    onClick={onClose}
+                    onClick={(event) => navigateFromModal(event, titleHref(title.slug))}
                   >
                     <PlayIcon />
                     Play
                   </Link>
                   <Link
                     className="inline-flex h-12 items-center rounded-[6px] border border-white/16 bg-white/12 px-6 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
-                    href={titleHref(title.slug)}
-                    onClick={onClose}
+                    href={`${titleHref(title.slug)}#episodes`}
+                    onClick={(event) => navigateFromModal(event, `${titleHref(title.slug)}#episodes`)}
                   >
                     Details
                   </Link>
