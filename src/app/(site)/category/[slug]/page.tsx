@@ -49,7 +49,7 @@ export default async function CategoryPage({
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-sky-900 to-cyan-500" />
           )}
-          {category.imageUrl ? (
+          {category.imageUrl && showTitle ? (
             <div className="absolute inset-0 bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.76)_32%,rgba(3,7,20,0.24)_68%,rgba(3,7,20,0.72)_100%)]" />
           ) : null}
 
