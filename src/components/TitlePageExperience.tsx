@@ -50,6 +50,22 @@ function isInternalVideoUrl(rawUrl: string): boolean {
   }
 }
 
+function getLatestSeasonTrailer(seasons: NonNullable<Title["seasons"]>) {
+  const seasonsWithTrailer = seasons.filter((season) => season.trailerUrl);
+  const numberedSeasons = seasonsWithTrailer.filter((season) => typeof season.seasonNumber === "number");
+
+  if (numberedSeasons.length > 0) {
+    return numberedSeasons.reduce((latest, season) =>
+      (season.seasonNumber ?? Number.NEGATIVE_INFINITY) >
+      (latest.seasonNumber ?? Number.NEGATIVE_INFINITY)
+        ? season
+        : latest,
+    );
+  }
+
+  return seasonsWithTrailer[seasonsWithTrailer.length - 1];
+}
+
 export function TitlePageExperience({ title }: { title: Title }) {
   const heroRef = useRef<HTMLDivElement | null>(null);
   const trailerIframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -58,7 +74,10 @@ export function TitlePageExperience({ title }: { title: Title }) {
   const [seasonSelection, setSeasonSelection] = useState({ slug: "", id: "" });
   const selectedSeasonId = seasonSelection.slug === title.slug ? seasonSelection.id : seasons[0]?.id ?? "";
   const selectedSeason = seasons.find((season) => season.id === selectedSeasonId) ?? seasons[0];
-  const activeTrailerUrl = selectedSeason?.trailerUrl || title.trailerUrl || seasons.find((season) => season.trailerUrl)?.trailerUrl || "";
+  const latestSeasonTrailer = getLatestSeasonTrailer(seasons);
+  const firstSeasonTrailer = seasons.find((season) => season.trailerUrl);
+  const fallbackSeasonTrailer = latestSeasonTrailer ?? firstSeasonTrailer;
+  const activeTrailerUrl = selectedSeason?.trailerUrl || title.trailerUrl || fallbackSeasonTrailer?.trailerUrl || "";
   const [trailerPlayback, setTrailerPlayback] = useState({
     ended: false,
     failed: false,
@@ -220,7 +239,6 @@ export function TitlePageExperience({ title }: { title: Title }) {
   }, [activeTrailerUrl, trailerEnded]);
 
   const heroAsset = title.heroImage || title.posterImage;
-  const fallbackSeasonTrailer = seasons.find((season) => season.trailerUrl);
   const effectiveTrailerUrl = selectedSeason?.trailerUrl || title.trailerUrl || fallbackSeasonTrailer?.trailerUrl;
   const effectiveTrailerMimeType = selectedSeason?.trailerUrl
     ? selectedSeason.trailerMimeType
@@ -233,10 +251,10 @@ export function TitlePageExperience({ title }: { title: Title }) {
   const trailerIsInternal = hasTrailer ? isInternalVideoUrl(trailerUrl) : false;
   const imageClassName = title.isDiscontinued ? "object-fill grayscale" : "object-fill";
   const isGifTrailer = effectiveTrailerMimeType === "image/gif";
-  const hasInlineTrailer = hasTrailer && (Boolean(trailerEmbedUrl) || (trailerIsInternal && !trailerFailed));
+  const hasInlineTrailer = hasTrailer && (isGifTrailer || Boolean(trailerEmbedUrl) || (trailerIsInternal && !trailerFailed));
   const keepTrailerMounted = hasInlineTrailer && !trailerEnded;
   const showInlineTrailer = keepTrailerMounted && trailerLoaded;
-  const hasExternalTrailerFallback = hasTrailer && !trailerEmbedUrl && !trailerIsInternal;
+  const hasExternalTrailerFallback = hasTrailer && !isGifTrailer && !trailerEmbedUrl && !trailerIsInternal;
   const showImageFade = title.showHeroDetails !== false;
   const useFullImage = title.source === "heroImage" && title.showHeroDetails === false;
   const titleLines = titleDisplayLines(title);
@@ -266,6 +284,18 @@ export function TitlePageExperience({ title }: { title: Title }) {
               referrerPolicy="strict-origin-when-cross-origin"
               src={`${trailerEmbedUrl}?autoplay=1&mute=${trailerMuted ? 1 : 0}&playsinline=1&rel=0&enablejsapi=1`}
               title="Trailer player"
+            />
+          ) : keepTrailerMounted && isGifTrailer ? (
+            <Image
+              alt=""
+              className={`absolute inset-0 h-full w-full object-cover object-center ${
+                showInlineTrailer ? "opacity-100" : "opacity-0"
+              } transition-opacity duration-700 ease-out`}
+              fill
+              onLoad={() => markTrailerLoaded(trailerUrl)}
+              sizes="100vw"
+              src={trailerUrl}
+              unoptimized
             />
           ) : trailerIsInternal && trailerUrl && !trailerFailed ? (
             <video
@@ -333,7 +363,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
             } transition-opacity duration-700 ease-out`}
           >
             {heroAsset ? (
-              <div className={useFullImage ? "absolute inset-0" : "absolute inset-0 flex items-center justify-end"}>
+              <div className={useFullImage ? "absolute inset-0" : "absolute inset-0 flex items-start justify-end"}>
                 <div className={useFullImage ? "absolute inset-0" : "relative aspect-video w-[min(100%,calc(100vh*16/9))] max-h-full"}>
                   <Image
                     alt=""

@@ -22,6 +22,70 @@ export type ActivePreview = {
   width: number;
 };
 
+function toYouTubeEmbedUrl(rawUrl: string): string | null {
+  const input = rawUrl.trim();
+  if (!input) return null;
+
+  try {
+    const url = new URL(input);
+    const host = url.hostname.replace(/^www\./, "").toLowerCase();
+    let id: string | null = null;
+
+    if (host === "youtu.be") {
+      id = url.pathname.replace(/^\/+/, "").split("/")[0] || null;
+    } else if (host === "youtube.com" || host === "m.youtube.com") {
+      if (url.pathname.startsWith("/watch")) id = url.searchParams.get("v");
+      else if (url.pathname.startsWith("/embed/")) id = url.pathname.split("/")[2] || null;
+      else if (url.pathname.startsWith("/shorts/")) id = url.pathname.split("/")[2] || null;
+    }
+
+    return id && /^[A-Za-z0-9_-]{6,}$/.test(id)
+      ? `https://www.youtube-nocookie.com/embed/${id}`
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function isInternalVideoUrl(rawUrl: string): boolean {
+  const input = rawUrl.trim();
+  if (!input) return false;
+  if (input.startsWith("/api/videos/file") || input.startsWith("/api/airflow/video")) return true;
+
+  try {
+    const url = new URL(input);
+    return (
+      typeof window !== "undefined" &&
+      url.origin === window.location.origin &&
+      (url.pathname.startsWith("/api/videos/file") || url.pathname.startsWith("/api/airflow/video"))
+    );
+  } catch {
+    return false;
+  }
+}
+
+function getHoverTrailerSource(title: Title): { mimeType?: string; url: string } {
+  if (title.trailerUrl) {
+    return { mimeType: title.trailerMimeType, url: title.trailerUrl };
+  }
+
+  const seasonsWithTrailer = title.seasons?.filter((season) => season.trailerUrl) ?? [];
+  const numberedSeasons = seasonsWithTrailer.filter((season) => typeof season.seasonNumber === "number");
+  const latestSeasonTrailer =
+    numberedSeasons.length > 0
+      ? numberedSeasons.reduce((latest, season) =>
+          (season.seasonNumber ?? Number.NEGATIVE_INFINITY) >
+          (latest.seasonNumber ?? Number.NEGATIVE_INFINITY)
+            ? season
+            : latest,
+        )
+      : seasonsWithTrailer[seasonsWithTrailer.length - 1];
+  const firstSeasonTrailer = seasonsWithTrailer[0];
+  const seasonTrailer = latestSeasonTrailer ?? firstSeasonTrailer;
+
+  return { mimeType: seasonTrailer?.trailerMimeType, url: seasonTrailer?.trailerUrl ?? "" };
+}
+
 export function ContentRow({
   layout = "vertical",
   matchSourceTitles = [],
@@ -449,10 +513,12 @@ export function RowFloatingPreview({
 }) {
   const { title } = active;
   const imageSrc = title.heroImage || title.posterImage;
-  const imageClassName = title.isDiscontinued ? "object-cover grayscale" : "object-cover";
   const previewScaleX = Math.max(0.72, Math.min(1, active.anchorWidth / active.width));
   const matchPercent = calculateTitleMatch(title, matchSourceTitles ?? []);
   const displayTitle = titleInlineText(title);
+  const trailerSource = getHoverTrailerSource(title);
+  const trailerUrl = trailerSource.url;
+  const trailerMimeType = trailerSource.mimeType;
 
   return (
     <div className="pointer-events-none absolute inset-0 z-[80] overflow-visible">
@@ -486,16 +552,28 @@ export function RowFloatingPreview({
             <EraserIcon />
           </button>
         ) : null}
-        <button
+        <div
           aria-label={`Open details for ${title.title}`}
-          className="block w-full text-left outline-none"
+          className="block w-full cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-cyan-200"
           onClick={() => onOpenTitle(title)}
-          type="button"
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              onOpenTitle(title);
+            }
+          }}
+          role="button"
+          tabIndex={0}
         >
           <div className={`relative aspect-video bg-gradient-to-br ${title.tone}`}>
-            {imageSrc ? (
-              <Image alt="" className={imageClassName} fill sizes={`${Math.ceil(active.width)}px`} src={imageSrc} />
-            ) : null}
+            <HoverTrailerMedia
+              imageSrc={imageSrc}
+              isDiscontinued={Boolean(title.isDiscontinued)}
+              tone={title.tone}
+              trailerMimeType={trailerMimeType}
+              trailerUrl={trailerUrl}
+              width={active.width}
+            />
             <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(17,24,39,0.58),transparent_54%),radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.20),transparent_24%)]" />
             {title.isDiscontinued ? (
               <DiscontinuedBadge className="absolute left-4 top-4 z-10" />
@@ -507,7 +585,7 @@ export function RowFloatingPreview({
               <h3 className="mt-1 line-clamp-1 text-xl font-black leading-tight">{displayTitle}</h3>
             </div>
           </div>
-        </button>
+        </div>
 
         <div className="space-y-3 p-4">
           <div className="flex items-center gap-2">
@@ -686,6 +764,282 @@ function EraserIcon() {
       <path d="m12 8 4 4" />
       <path d="M7 21h14" />
     </svg>
+  );
+}
+
+function MutedIcon() {
+  return (
+    <svg aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2.1" viewBox="0 0 24 24">
+      <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+      <path d="m17 9 4 6" />
+      <path d="m21 9-4 6" />
+    </svg>
+  );
+}
+
+function VolumeIcon() {
+  return (
+    <svg aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2.1" viewBox="0 0 24 24">
+      <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+      <path d="M15.5 8.5a4 4 0 0 1 0 7" />
+      <path d="M18 6a7 7 0 0 1 0 12" />
+    </svg>
+  );
+}
+
+function HoverTrailerMedia({
+  imageSrc,
+  isDiscontinued,
+  tone,
+  trailerMimeType,
+  trailerUrl,
+  width,
+}: {
+  imageSrc?: string;
+  isDiscontinued: boolean;
+  tone: string;
+  trailerMimeType?: string;
+  trailerUrl: string;
+  width: number;
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [mediaState, setMediaState] = useState({
+    ended: false,
+    failed: false,
+    ready: false,
+    url: "",
+  });
+  const [mutedState, setMutedState] = useState({
+    muted: true,
+    url: "",
+  });
+  const trailerEmbedUrl = trailerUrl ? toYouTubeEmbedUrl(trailerUrl) : null;
+  const trailerIsInternal = trailerUrl ? isInternalVideoUrl(trailerUrl) : false;
+  const isGifTrailer = trailerMimeType === "image/gif";
+  const stateMatches = mediaState.url === trailerUrl;
+  const trailerReady = stateMatches ? mediaState.ready : false;
+  const trailerEnded = stateMatches ? mediaState.ended : false;
+  const trailerFailed = stateMatches ? mediaState.failed : false;
+  const muted = mutedState.url === trailerUrl ? mutedState.muted : true;
+  const showInlineTrailer =
+    Boolean(trailerUrl) &&
+    !trailerEnded &&
+    (isGifTrailer || Boolean(trailerEmbedUrl) || (trailerIsInternal && !trailerFailed)) &&
+    trailerReady;
+  const imageClassName = isDiscontinued ? "object-cover grayscale" : "object-cover";
+  const mediaClassName = isDiscontinued
+    ? "absolute inset-0 h-full w-full object-cover object-center grayscale"
+    : "absolute inset-0 h-full w-full object-cover object-center";
+
+  const markReady = useCallback(() => {
+    setMediaState((state) => ({
+      ...state,
+      failed: false,
+      ready: true,
+      url: trailerUrl,
+    }));
+  }, [trailerUrl]);
+
+  const postIframeCommand = useCallback((func: string, args: unknown[] = []) => {
+    const iframe = iframeRef.current;
+    if (!iframe?.contentWindow) return;
+
+    try {
+      iframe.contentWindow.postMessage(JSON.stringify({ event: "command", func, args }), "*");
+    } catch {}
+  }, []);
+
+  const applyMuted = useCallback(
+    (nextMuted: boolean) => {
+      const video = videoRef.current;
+      if (video) {
+        video.muted = nextMuted;
+        video.volume = nextMuted ? 0 : 1;
+        video.play().catch(() => {});
+      }
+
+      postIframeCommand(nextMuted ? "mute" : "unMute");
+      if (!nextMuted) {
+        postIframeCommand("setVolume", [100]);
+        postIframeCommand("playVideo");
+      }
+    },
+    [postIframeCommand],
+  );
+
+  useEffect(() => {
+    if (!trailerIsInternal || !trailerUrl || trailerFailed || trailerEnded) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = muted;
+    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      markReady();
+    }
+
+    video.play()
+      .then(markReady)
+      .catch(() => {
+        if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+          markReady();
+        }
+      });
+  }, [markReady, muted, trailerEnded, trailerFailed, trailerIsInternal, trailerUrl]);
+
+  useEffect(() => {
+    if (!trailerEmbedUrl || trailerEnded) return;
+    applyMuted(muted);
+  }, [applyMuted, muted, trailerEmbedUrl, trailerEnded]);
+
+  useEffect(() => {
+    if (!trailerEmbedUrl || trailerEnded) return;
+    const iframe = iframeRef.current;
+    if (!iframe?.contentWindow) return;
+
+    try {
+      iframe.contentWindow.postMessage(
+        JSON.stringify({ event: "command", func: "addEventListener", args: ["onStateChange"] }),
+        "*",
+      );
+    } catch {}
+
+    function onMessage(event: MessageEvent) {
+      const origin = event.origin.toLowerCase();
+      if (!origin.includes("youtube")) return;
+
+      let payload: unknown = event.data;
+      if (typeof payload === "string") {
+        try {
+          payload = JSON.parse(payload) as unknown;
+        } catch {
+          return;
+        }
+      }
+
+      if (
+        payload &&
+        typeof payload === "object" &&
+        "event" in payload &&
+        "info" in payload &&
+        payload.event === "onStateChange" &&
+        payload.info === 0
+      ) {
+        setMediaState((state) => ({
+          ...state,
+          ended: true,
+          url: trailerUrl,
+        }));
+      }
+    }
+
+    window.addEventListener("message", onMessage);
+
+    return () => window.removeEventListener("message", onMessage);
+  }, [trailerEmbedUrl, trailerEnded, trailerUrl]);
+
+  return (
+    <>
+      {trailerEmbedUrl && !trailerEnded ? (
+        <iframe
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          aria-hidden="true"
+          className={`absolute inset-0 h-full w-full ${
+            showInlineTrailer ? "opacity-100" : "opacity-0"
+          } transition-opacity duration-500 ease-out`}
+          onLoad={markReady}
+          ref={iframeRef}
+          referrerPolicy="strict-origin-when-cross-origin"
+          src={`${trailerEmbedUrl}?autoplay=1&mute=1&playsinline=1&rel=0&controls=0&modestbranding=1&enablejsapi=1`}
+          title="Trailer preview"
+        />
+      ) : trailerIsInternal && trailerUrl && !trailerFailed && !trailerEnded ? (
+        <video
+          aria-hidden="true"
+          autoPlay
+          className={`${mediaClassName} ${
+            showInlineTrailer ? "opacity-100" : "opacity-0"
+          } transition-opacity duration-500 ease-out`}
+          disablePictureInPicture
+          disableRemotePlayback
+          draggable={false}
+          muted={muted}
+          onCanPlay={markReady}
+          onContextMenu={(event) => event.preventDefault()}
+          onEnded={() => {
+            setMediaState((state) => ({
+              ...state,
+              ended: true,
+              url: trailerUrl,
+            }));
+          }}
+          onError={() => {
+            videoRef.current?.pause();
+            setMediaState((state) => ({
+              ...state,
+              failed: true,
+              ready: false,
+              url: trailerUrl,
+            }));
+          }}
+          onLoadedData={() => {
+            markReady();
+            videoRef.current?.play().catch(() => {});
+          }}
+          onPlaying={markReady}
+          playsInline
+          poster={imageSrc}
+          preload="auto"
+          ref={videoRef}
+          src={trailerUrl}
+        />
+      ) : isGifTrailer && trailerUrl && !trailerEnded ? (
+        <Image
+          alt=""
+          className={`${mediaClassName} ${
+            showInlineTrailer ? "opacity-100" : "opacity-0"
+          } transition-opacity duration-500 ease-out`}
+          fill
+          onLoad={markReady}
+          sizes={`${Math.ceil(width)}px`}
+          src={trailerUrl}
+          unoptimized
+        />
+      ) : null}
+
+      <div
+        className={`absolute inset-0 ${
+          showInlineTrailer ? "pointer-events-none opacity-0" : "opacity-100"
+        } transition-opacity duration-500 ease-out`}
+      >
+        {imageSrc ? (
+          <Image alt="" className={imageClassName} fill sizes={`${Math.ceil(width)}px`} src={imageSrc} />
+        ) : (
+          <div className={`absolute inset-0 bg-gradient-to-br ${tone}`} />
+        )}
+      </div>
+      {showInlineTrailer && !isGifTrailer ? (
+        <button
+          aria-label={muted ? "Unmute trailer" : "Mute trailer"}
+          className="absolute bottom-2 right-2 z-20 grid size-8 place-items-center rounded-full bg-black/58 text-white ring-1 ring-white/16 transition hover:bg-black/74"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const nextMuted = !muted;
+            setMutedState({
+              muted: nextMuted,
+              url: trailerUrl,
+            });
+            applyMuted(nextMuted);
+          }}
+          title={muted ? "Unmute" : "Mute"}
+          type="button"
+        >
+          {muted ? <MutedIcon /> : <VolumeIcon />}
+        </button>
+      ) : null}
+    </>
   );
 }
 
