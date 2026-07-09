@@ -48,6 +48,8 @@ export type TitleSeason = {
   image?: string;
   seasonNumber?: number;
   title: string;
+  trailerMimeType?: string;
+  trailerUrl?: string;
 };
 
 export type NavItem = {

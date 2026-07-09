@@ -4,12 +4,54 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { titleDisplayLines, titleEyebrow, titleHref, type Title } from "@/lib/content";
 import { DiscontinuedBadge } from "./DiscontinuedBadge";
 import { SaveForLaterButton } from "./SaveForLaterButton";
 import { TitleDetails } from "./TitleDetails";
+
+function toYouTubeEmbedUrl(rawUrl: string): string | null {
+  const input = rawUrl.trim();
+  if (!input) return null;
+
+  try {
+    const url = new URL(input);
+    const host = url.hostname.replace(/^www\./, "").toLowerCase();
+    let id: string | null = null;
+
+    if (host === "youtu.be") {
+      id = url.pathname.replace(/^\/+/, "").split("/")[0] || null;
+    } else if (host === "youtube.com" || host === "m.youtube.com") {
+      if (url.pathname.startsWith("/watch")) id = url.searchParams.get("v");
+      else if (url.pathname.startsWith("/embed/")) id = url.pathname.split("/")[2] || null;
+      else if (url.pathname.startsWith("/shorts/")) id = url.pathname.split("/")[2] || null;
+    }
+
+    return id && /^[A-Za-z0-9_-]{6,}$/.test(id)
+      ? `https://www.youtube-nocookie.com/embed/${id}`
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function isInternalVideoUrl(rawUrl: string): boolean {
+  const input = rawUrl.trim();
+  if (!input) return false;
+  if (input.startsWith("/api/videos/file") || input.startsWith("/api/airflow/video")) return true;
+
+  try {
+    const url = new URL(input);
+    return (
+      typeof window !== "undefined" &&
+      url.origin === window.location.origin &&
+      (url.pathname.startsWith("/api/videos/file") || url.pathname.startsWith("/api/airflow/video"))
+    );
+  } catch {
+    return false;
+  }
+}
 
 export function TitlePreviewModal({
   onClose,
@@ -22,7 +64,29 @@ export function TitlePreviewModal({
 }) {
   const router = useRouter();
   const hasPreviewUrlRef = useRef(false);
+  const heroRef = useRef<HTMLDivElement | null>(null);
   const previousUrlRef = useRef<string | null>(null);
+  const trailerIframeRef = useRef<HTMLIFrameElement | null>(null);
+  const trailerVideoRef = useRef<HTMLVideoElement | null>(null);
+  const seasons = useMemo(() => title?.seasons ?? [], [title?.seasons]);
+  const [seasonSelection, setSeasonSelection] = useState({ slug: "", id: "" });
+  const selectedSeasonId =
+    title && seasonSelection.slug === title.slug ? seasonSelection.id : seasons[0]?.id ?? "";
+  const selectedSeason = seasons.find((season) => season.id === selectedSeasonId) ?? seasons[0];
+  const activeTrailerUrl = selectedSeason?.trailerUrl || title?.trailerUrl || seasons.find((season) => season.trailerUrl)?.trailerUrl || "";
+  const [trailerPlayback, setTrailerPlayback] = useState({
+    ended: false,
+    failed: false,
+    loaded: false,
+    muted: true,
+    url: "",
+  });
+  const trailerPlaybackMatches = trailerPlayback.url === activeTrailerUrl;
+  const trailerEnded = trailerPlaybackMatches ? trailerPlayback.ended : false;
+  const trailerFailed = trailerPlaybackMatches ? trailerPlayback.failed : false;
+  const trailerLoaded = trailerPlaybackMatches ? trailerPlayback.loaded : false;
+  const trailerMuted = trailerPlaybackMatches ? trailerPlayback.muted : true;
+  const [heroInView, setHeroInView] = useState(true);
 
   const closeWithHistory = useCallback(() => {
     if (hasPreviewUrlRef.current) {
@@ -89,15 +153,125 @@ export function TitlePreviewModal({
     };
   }, [closeWithHistory, onClose, open, title]);
 
+  useEffect(() => {
+    const video = trailerVideoRef.current;
+    if (!video) return;
+
+    video.muted = trailerMuted;
+    if (!open || !heroInView || trailerEnded || trailerFailed) {
+      video.pause();
+      return;
+    }
+
+    video.play().catch(() => {});
+  }, [open, activeTrailerUrl, heroInView, trailerEnded, trailerFailed, trailerMuted]);
+
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        setHeroInView(entry.isIntersecting && entry.intersectionRatio >= 0.35);
+      },
+      { threshold: [0, 0.2, 0.35, 0.5, 1] },
+    );
+
+    observer.observe(hero);
+
+    return () => observer.disconnect();
+  }, [open, title?.slug]);
+
+  useEffect(() => {
+    if (!open) return;
+    const iframe = trailerIframeRef.current;
+    if (!iframe?.contentWindow) return;
+
+    try {
+      iframe.contentWindow.postMessage(
+        JSON.stringify({ event: "command", func: trailerMuted ? "mute" : "unMute", args: [] }),
+        "*",
+      );
+      if (!trailerMuted) {
+        iframe.contentWindow.postMessage(
+          JSON.stringify({ event: "command", func: "setVolume", args: [100] }),
+          "*",
+        );
+      }
+    } catch {}
+  }, [open, activeTrailerUrl, trailerMuted]);
+
+  useEffect(() => {
+    if (!open || trailerEnded) return;
+    const iframe = trailerIframeRef.current;
+    if (!iframe?.contentWindow) return;
+
+    try {
+      iframe.contentWindow.postMessage(
+        JSON.stringify({ event: "command", func: "addEventListener", args: ["onStateChange"] }),
+        "*",
+      );
+    } catch {}
+
+    function onMessage(event: MessageEvent) {
+      const origin = event.origin.toLowerCase();
+      if (!origin.includes("youtube")) return;
+
+      let payload: unknown = event.data;
+      if (typeof payload === "string") {
+        try {
+          payload = JSON.parse(payload) as unknown;
+        } catch {
+          return;
+        }
+      }
+
+      if (
+        payload &&
+        typeof payload === "object" &&
+        "event" in payload &&
+        "info" in payload &&
+        payload.event === "onStateChange" &&
+        payload.info === 0
+      ) {
+        setTrailerPlayback((playback) => ({
+          ...playback,
+          ended: true,
+          url: activeTrailerUrl,
+        }));
+      }
+    }
+
+    window.addEventListener("message", onMessage);
+
+    return () => window.removeEventListener("message", onMessage);
+  }, [open, activeTrailerUrl, trailerEnded]);
+
   if (!open || !title || typeof document === "undefined") {
     return null;
   }
 
   const heroAsset = title.heroImage || title.posterImage;
-  const hasTrailer = title.source === "program" && Boolean(title.trailerUrl);
+  const fallbackSeasonTrailer = seasons.find((season) => season.trailerUrl);
+  const effectiveTrailerUrl = selectedSeason?.trailerUrl || title.trailerUrl || fallbackSeasonTrailer?.trailerUrl;
+  const effectiveTrailerMimeType = selectedSeason?.trailerUrl
+    ? selectedSeason.trailerMimeType
+    : title.trailerUrl
+      ? title.trailerMimeType
+      : fallbackSeasonTrailer?.trailerMimeType;
+  const hasTrailer = title.source === "program" && Boolean(effectiveTrailerUrl);
+  const trailerUrl = effectiveTrailerUrl ?? "";
+  const trailerEmbedUrl = hasTrailer ? toYouTubeEmbedUrl(trailerUrl) : null;
+  const trailerIsInternal = hasTrailer ? isInternalVideoUrl(trailerUrl) : false;
   const mediaClassName = title.isDiscontinued ? "absolute inset-0 h-full w-full object-cover object-center grayscale" : "absolute inset-0 h-full w-full object-cover object-center";
-  const imageClassName = title.isDiscontinued ? "object-fill grayscale" : "object-fill";
-  const isGifTrailer = title.trailerMimeType === "image/gif";
+  const imageClassName = title.isDiscontinued ? "object-cover grayscale" : "object-cover";
+  const isGifTrailer = effectiveTrailerMimeType === "image/gif";
+  const hasInlineTrailer = hasTrailer && (Boolean(trailerEmbedUrl) || (trailerIsInternal && !trailerFailed));
+  const keepTrailerMounted = hasInlineTrailer && !trailerEnded;
+  const showInlineTrailer = keepTrailerMounted && heroInView && trailerLoaded;
+  const hasExternalTrailerFallback = hasTrailer && !trailerEmbedUrl && !trailerIsInternal;
   const showImageFade = title.showHeroDetails !== false;
   const useFullImage = title.source === "heroImage" && title.showHeroDetails === false;
   const titleLines = titleDisplayLines(title);
@@ -123,29 +297,106 @@ export function TitlePreviewModal({
           <CloseIcon />
         </button>
 
-        <div className="relative h-[clamp(520px,min(56.25vw,78vh),720px)] overflow-hidden">
+        <div ref={heroRef} className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-black">
           <div className="absolute inset-0 bg-[#030714]">
-            {hasTrailer && title.trailerUrl ? (
-              isGifTrailer ? (
-                <img
-                  alt=""
-                  className={mediaClassName}
-                  src={title.trailerUrl}
-                />
-              ) : (
-                <video
+            {trailerEmbedUrl && keepTrailerMounted ? (
+                <iframe
+                  key={trailerEmbedUrl}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
                   aria-hidden="true"
-                  autoPlay
-                  className={mediaClassName}
-                  loop
-                  muted
+                  className={`absolute inset-0 h-full w-full ${
+                    showInlineTrailer ? "opacity-100" : "opacity-0"
+                  } transition-opacity duration-700 ease-out`}
+                  onLoad={() => {
+                    setTrailerPlayback((playback) => ({
+                      ...playback,
+                      loaded: true,
+                      url: trailerUrl,
+                    }));
+                  }}
+                  ref={trailerIframeRef}
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  src={`${trailerEmbedUrl}?autoplay=1&mute=${trailerMuted ? 1 : 0}&playsinline=1&rel=0&enablejsapi=1`}
+                  title="Trailer player"
+                />
+            ) : trailerIsInternal && trailerUrl && !trailerFailed ? (
+                <video
+                  key={trailerUrl}
+                  aria-hidden="true"
+                  autoPlay={trailerMuted}
+                  className={`${mediaClassName} ${
+                    showInlineTrailer ? "opacity-100" : "opacity-0"
+                  } transition-opacity duration-700 ease-out`}
+                  disablePictureInPicture
+                  disableRemotePlayback
+                  draggable={false}
+                  muted={trailerMuted}
+                  onContextMenu={(event) => event.preventDefault()}
+                  onEnded={() => {
+                    setTrailerPlayback((playback) => ({
+                      ...playback,
+                      ended: true,
+                      url: trailerUrl,
+                    }));
+                  }}
+                  onError={() => {
+                    trailerVideoRef.current?.pause();
+                    setTrailerPlayback((playback) => ({
+                      ...playback,
+                      ended: true,
+                      failed: true,
+                      loaded: false,
+                      url: trailerUrl,
+                    }));
+                  }}
+                  onLoadedData={() => {
+                    const video = trailerVideoRef.current;
+                    if (!video) return;
+                    video.muted = trailerMuted;
+                    setTrailerPlayback((playback) => ({
+                      ...playback,
+                      loaded: true,
+                      url: trailerUrl,
+                    }));
+                    video.play().catch(() => {});
+                  }}
+                  onCanPlay={() => {
+                    setTrailerPlayback((playback) => ({
+                      ...playback,
+                      loaded: true,
+                      url: trailerUrl,
+                    }));
+                  }}
+                  onPlaying={() => {
+                    setTrailerPlayback((playback) => ({
+                      ...playback,
+                      loaded: true,
+                      url: trailerUrl,
+                    }));
+                  }}
+                  onStalled={() => {
+                    setTrailerPlayback((playback) => ({
+                      ...playback,
+                      failed: true,
+                      loaded: false,
+                      url: trailerUrl,
+                    }));
+                  }}
                   playsInline
                   poster={heroAsset}
-                  preload="metadata"
-                  src={title.trailerUrl}
+                  preload="auto"
+                  ref={trailerVideoRef}
+                  src={trailerUrl}
                 />
-              )
-            ) : heroAsset ? (
+            ) : null}
+
+            <div
+              className={`absolute inset-0 ${
+                showInlineTrailer ? "pointer-events-none opacity-0" : "opacity-100"
+              } transition-opacity duration-700 ease-out`}
+            >
+              {heroAsset ? (
               <div className={useFullImage ? "absolute inset-0" : "absolute inset-0 flex items-start justify-end"}>
                 <div className={useFullImage ? "absolute inset-0" : "relative aspect-video w-[min(100%,calc(78vh*16/9))] max-h-full"}>
                   <Image
@@ -164,11 +415,50 @@ export function TitlePreviewModal({
                   )}
                 </div>
               </div>
-            ) : (
-              <div className={`absolute inset-0 bg-gradient-to-br ${title.tone}`} />
-            )}
-            {!heroAsset && !hasTrailer ? (
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_76%_28%,rgba(255,255,255,0.22),transparent_22%),radial-gradient(circle_at_55%_68%,rgba(34,211,238,0.18),transparent_28%)]" />
+              ) : (
+                <>
+                  <div className={`absolute inset-0 bg-gradient-to-br ${title.tone}`} />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_76%_28%,rgba(255,255,255,0.22),transparent_22%),radial-gradient(circle_at_55%_68%,rgba(34,211,238,0.18),transparent_28%)]" />
+                </>
+              )}
+              {hasExternalTrailerFallback ? (
+                <button
+                  className="absolute inset-0 z-10 flex items-center justify-center bg-black/35 text-white"
+                  onClick={() => window.open(trailerUrl, "_blank", "noopener,noreferrer")}
+                  type="button"
+                >
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-5 py-2.5 text-sm font-black uppercase text-[#030714] transition hover:bg-white">
+                    <PlayIcon />
+                    Trailer
+                  </span>
+                </button>
+              ) : null}
+            </div>
+            {showInlineTrailer && !isGifTrailer ? (
+              <>
+                <div
+                  aria-hidden
+                  className="absolute inset-0 z-[1]"
+                  onContextMenu={(event) => event.preventDefault()}
+                  onDragStart={(event) => event.preventDefault()}
+                />
+                <button
+                  aria-label={trailerMuted ? "Unmute trailer" : "Mute trailer"}
+                  className="absolute bottom-4 right-4 z-20 grid size-10 place-items-center rounded-full bg-black/55 text-white ring-1 ring-white/16 transition hover:bg-black/72"
+                  onClick={() => {
+                    setTrailerPlayback((playback) => ({
+                      ...playback,
+                      muted: trailerPlaybackMatches ? !playback.muted : false,
+                      url: trailerUrl,
+                    }));
+                    trailerVideoRef.current?.play().catch(() => {});
+                  }}
+                  title={trailerMuted ? "Unmute" : "Mute"}
+                  type="button"
+                >
+                  {trailerMuted ? <MutedIcon /> : <VolumeIcon />}
+                </button>
+              </>
             ) : null}
             {title.showHeroDetails !== false ? (
               <div className="absolute inset-0 bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_10%,rgba(3,7,20,0.7)_20%,rgba(3,7,20,0.22)_30%,transparent_78%)]" />
@@ -234,7 +524,12 @@ export function TitlePreviewModal({
           ) : null}
         </div>
 
-        <TitleDetails compact title={title} />
+        <TitleDetails
+          compact
+          onSelectedSeasonChange={(id) => setSeasonSelection({ slug: title.slug, id })}
+          selectedSeasonId={selectedSeason?.id ?? ""}
+          title={title}
+        />
       </article>
     </div>,
     document.body,
@@ -253,6 +548,26 @@ function CloseIcon() {
   return (
     <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2.4" viewBox="0 0 24 24">
       <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+function MutedIcon() {
+  return (
+    <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2.1" viewBox="0 0 24 24">
+      <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+      <path d="m17 9 4 6" />
+      <path d="m21 9-4 6" />
+    </svg>
+  );
+}
+
+function VolumeIcon() {
+  return (
+    <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2.1" viewBox="0 0 24 24">
+      <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+      <path d="M15.5 8.5a4 4 0 0 1 0 7" />
+      <path d="M18 6a7 7 0 0 1 0 12" />
     </svg>
   );
 }

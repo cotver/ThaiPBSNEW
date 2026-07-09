@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { Title, TitleSeason } from "@/lib/content";
 import { DiscontinuedBadge } from "./DiscontinuedBadge";
 
@@ -9,32 +9,45 @@ type DetailTab = "episodes" | "details";
 
 export function TitleDetails({
   compact = false,
+  onSelectedSeasonChange,
+  selectedSeasonId: controlledSelectedSeasonId,
   title,
 }: {
   compact?: boolean;
+  onSelectedSeasonChange?: (id: string) => void;
+  selectedSeasonId?: string;
   title: Title;
 }) {
-  const seasons = title.seasons ?? [];
-  const [activeTab, setActiveTab] = useState<DetailTab>("episodes");
-  const [selectedSeasonId, setSelectedSeasonId] = useState(seasons[0]?.id ?? "");
+  const seasons = useMemo(() => title.seasons ?? [], [title.seasons]);
+  const [activeTabState, setActiveTabState] = useState<{ slug: string; tab: DetailTab }>({
+    slug: title.slug,
+    tab: "episodes",
+  });
+  const [internalSeasonSelection, setInternalSeasonSelection] = useState<{ slug: string; id: string }>({
+    slug: title.slug,
+    id: seasons[0]?.id ?? "",
+  });
+  const activeTab = activeTabState.slug === title.slug ? activeTabState.tab : "episodes";
+  const internalSelectedSeasonId =
+    internalSeasonSelection.slug === title.slug ? internalSeasonSelection.id : seasons[0]?.id ?? "";
+  const selectedSeasonId = controlledSelectedSeasonId ?? internalSelectedSeasonId;
   const selectedSeason = useMemo(
     () => seasons.find((season) => season.id === selectedSeasonId) ?? seasons[0],
     [seasons, selectedSeasonId],
   );
   const hasEpisodes = Boolean(selectedSeason && selectedSeason.episodes.length > 0);
-
-  useEffect(() => {
-    setSelectedSeasonId(seasons[0]?.id ?? "");
-    setActiveTab("episodes");
-  }, [seasons, title.slug]);
+  const setSelectedSeasonId = (id: string) => {
+    setInternalSeasonSelection({ slug: title.slug, id });
+    onSelectedSeasonChange?.(id);
+  };
 
   return (
     <div className={compact ? "space-y-7 px-5 py-6 sm:px-9" : "space-y-8 px-5 py-7 sm:px-9 lg:px-10"}>
       <div className="flex gap-7 border-b border-white/10 text-sm font-black uppercase tracking-[0.16em] text-white/42">
-        <TabButton active={activeTab === "episodes"} onClick={() => setActiveTab("episodes")}>
+        <TabButton active={activeTab === "episodes"} onClick={() => setActiveTabState({ slug: title.slug, tab: "episodes" })}>
           Episodes
         </TabButton>
-        <TabButton active={activeTab === "details"} onClick={() => setActiveTab("details")}>
+        <TabButton active={activeTab === "details"} onClick={() => setActiveTabState({ slug: title.slug, tab: "details" })}>
           Details
         </TabButton>
       </div>

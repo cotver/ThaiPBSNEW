@@ -2,6 +2,8 @@ import type { Category, Episode, HeroImage, Landing, Media, Program, Season, Vid
 import type { NavItem, Title } from "@/lib/content";
 import { getPayloadClient } from "@/lib/payload-client";
 
+const AIRFLOW_BASE = process.env.AIRFLOW_BASE || "https://airflow.thaipbs.or.th:8005";
+
 export type TitleCollections = {
   continuePrograms: Title[];
   continueWatching: Title[];
@@ -651,7 +653,12 @@ function getProgramPosterImage(program: Program) {
 }
 
 function getProgramTrailerUrl(program: Program) {
-  return videoUrl(program.trailer) || cleanUrl(program.trailerLink) || thumbnailPath(program.TrailerAirflowProxyPath);
+  return (
+    videoUrl(program.trailer) ||
+    airflowVideoUrlFromProxyPath(program.trailerLink) ||
+    cleanUrl(program.trailerLink) ||
+    airflowVideoUrlFromProxyPath(program.TrailerAirflowProxyPath)
+  );
 }
 
 function getProgramHomeYear(program: Program) {
@@ -712,6 +719,12 @@ function seasonToTitleSeason(season: Season): NonNullable<Title["seasons"]>[numb
     image: mediaUrl(season.coverImage) || thumbnailPath(season.videoThumbnailAirflowProxyPath),
     seasonNumber,
     title: cleanText(season.seasonName) || cleanText(season.seasonNameEn) || fallbackTitle,
+    trailerMimeType: videoMimeType(season.trailer),
+    trailerUrl:
+      videoUrl(season.trailer) ||
+      airflowVideoUrlFromProxyPath(season.trailerLink) ||
+      cleanUrl(season.trailerLink) ||
+      airflowVideoUrlFromProxyPath(season.TrailerAirflowProxyPath),
   };
 }
 
@@ -852,6 +865,43 @@ function thumbnailPath(path?: string | null) {
   }
 
   return cleanPath.startsWith("http") || cleanPath.startsWith("/") ? cleanPath : undefined;
+}
+
+function airflowVideoUrlFromProxyPath(path?: string | null) {
+  const cleanPath = cleanText(path);
+
+  if (!cleanPath) {
+    return undefined;
+  }
+
+  if (cleanPath.startsWith("/api/airflow/video")) {
+    return cleanPath;
+  }
+
+  if (/^https?:\/\//i.test(cleanPath)) {
+    try {
+      const url = new URL(cleanPath);
+      const airflowBase = new URL(AIRFLOW_BASE);
+
+      if (url.origin === airflowBase.origin && url.pathname.startsWith("/static/")) {
+        return `/api/airflow/video?url=${encodeURIComponent(cleanPath)}`;
+      }
+    } catch {
+      return undefined;
+    }
+
+    return undefined;
+  }
+
+  const safePath = cleanPath
+    .replace(/^\/?static\/+/, "")
+    .replace(/^\/+/, "")
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+  const fullUrl = `${AIRFLOW_BASE}/static/${safePath}`;
+
+  return `/api/airflow/video?url=${encodeURIComponent(fullUrl)}`;
 }
 
 function formatDuration(duration: number | null | undefined, type: Title["type"]) {
