@@ -54,11 +54,7 @@ function isInternalVideoUrl(rawUrl: string): boolean {
 
   try {
     const url = new URL(input);
-    return (
-      typeof window !== "undefined" &&
-      url.origin === window.location.origin &&
-      (url.pathname.startsWith("/api/videos/file") || url.pathname.startsWith("/api/airflow/video"))
-    );
+    return url.pathname.startsWith("/api/videos/file") || url.pathname.startsWith("/api/airflow/video");
   } catch {
     return false;
   }

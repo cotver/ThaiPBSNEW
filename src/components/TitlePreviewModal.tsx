@@ -43,11 +43,7 @@ function isInternalVideoUrl(rawUrl: string): boolean {
 
   try {
     const url = new URL(input);
-    return (
-      typeof window !== "undefined" &&
-      url.origin === window.location.origin &&
-      (url.pathname.startsWith("/api/videos/file") || url.pathname.startsWith("/api/airflow/video"))
-    );
+    return url.pathname.startsWith("/api/videos/file") || url.pathname.startsWith("/api/airflow/video");
   } catch {
     return false;
   }
@@ -320,7 +316,7 @@ export function TitlePreviewModal({
                   src={`${trailerEmbedUrl}?autoplay=1&mute=${trailerMuted ? 1 : 0}&playsinline=1&rel=0&enablejsapi=1`}
                   title="Trailer player"
                 />
-            ) : trailerIsInternal && trailerUrl && !trailerFailed ? (
+            ) : trailerIsInternal && trailerUrl && keepTrailerMounted ? (
                 <video
                   key={trailerUrl}
                   aria-hidden="true"

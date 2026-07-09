@@ -2,12 +2,20 @@ export const runtime = "nodejs";
 
 import { getCookieCached, isSameOrigin } from "@/lib/airflow-auth";
 
+function isDirectNavigation(req: Request): boolean {
+  const fetchDest = req.headers.get("sec-fetch-dest")?.toLowerCase();
+  const fetchMode = req.headers.get("sec-fetch-mode")?.toLowerCase();
+
+  return fetchDest === "document" || fetchMode === "navigate";
+}
+
 /**
  * GET /api/airflow/video?url=<encoded-full-url>
  * Proxies video request to Airflow static URL with auth cookie.
  * Only allows same-origin requests (no direct link access).
  */
 export async function GET(req: Request) {
+  if (isDirectNavigation(req)) return new Response("Forbidden", { status: 403 });
   if (!isSameOrigin(req)) return new Response("Forbidden", { status: 403 });
 
   const { searchParams } = new URL(req.url);
