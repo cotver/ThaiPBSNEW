@@ -699,24 +699,35 @@ function getProgramSeasons(program: Program): Title["seasons"] {
   const seasons = Array.isArray(program.seasons)
     ? program.seasons.filter((season): season is Season => typeof season === "object" && season !== null)
     : [];
+  const programImage = mediaUrl(program.image) || thumbnailPath(program.videoThumbnailAirflowProxyPath);
+  const programCover = mediaUrl(program.coverImage);
 
   return seasons
-    .map(seasonToTitleSeason)
+    .map((season) => seasonToTitleSeason(season, programImage || programCover))
     .sort((a, b) => (a.seasonNumber ?? 9999) - (b.seasonNumber ?? 9999));
 }
 
-function seasonToTitleSeason(season: Season): NonNullable<Title["seasons"]>[number] {
+function seasonToTitleSeason(
+  season: Season,
+  programFallbackImage?: string,
+): NonNullable<Title["seasons"]>[number] {
   const seasonNumber = typeof season.season === "number" ? season.season : undefined;
   const fallbackTitle = seasonNumber ? `Season ${seasonNumber}` : "Season";
   const episodes = Array.isArray(season.episodes)
     ? season.episodes.filter((episode): episode is Episode => typeof episode === "object" && episode !== null)
     : [];
+  const seasonImage =
+    mediaUrl(season.coverImage) ||
+    thumbnailPath(season.videoThumbnailAirflowProxyPath) ||
+    thumbnailPath(season.TrailerThumbnailAirflowProxyPath);
 
   return {
     id: String(season.id),
     description: cleanText(season.synopsisTh) || cleanText(season.synopsisEn) || undefined,
-    episodes: episodes.map(episodeToTitleEpisode).sort((a, b) => (a.episodeNumber ?? 9999) - (b.episodeNumber ?? 9999)),
-    image: mediaUrl(season.coverImage) || thumbnailPath(season.videoThumbnailAirflowProxyPath),
+    episodes: episodes
+      .map((episode) => episodeToTitleEpisode(episode, seasonImage || programFallbackImage))
+      .sort((a, b) => (a.episodeNumber ?? 9999) - (b.episodeNumber ?? 9999)),
+    image: seasonImage,
     seasonNumber,
     title: cleanText(season.seasonName) || cleanText(season.seasonNameEn) || fallbackTitle,
     trailerMimeType: videoMimeType(season.trailer),
@@ -728,7 +739,10 @@ function seasonToTitleSeason(season: Season): NonNullable<Title["seasons"]>[numb
   };
 }
 
-function episodeToTitleEpisode(episode: Episode): NonNullable<Title["seasons"]>[number]["episodes"][number] {
+function episodeToTitleEpisode(
+  episode: Episode,
+  fallbackImage?: string,
+): NonNullable<Title["seasons"]>[number]["episodes"][number] {
   const episodeNumber = typeof episode.ep === "number" ? episode.ep : undefined;
   const fallbackTitle = episodeNumber ? `Episode ${episodeNumber}` : "Episode";
 
@@ -740,9 +754,19 @@ function episodeToTitleEpisode(episode: Episode): NonNullable<Title["seasons"]>[
       "Episode details will be available soon.",
     duration: "Episode",
     episodeNumber,
-    image: mediaUrl(episode.coverImage) || thumbnailPath(episode.videoThumbnailAirflowProxyPath),
+    image:
+      mediaUrl(episode.coverImage) ||
+      thumbnailPath(episode.videoThumbnailAirflowProxyPath) ||
+      thumbnailPath(episode.TrailerThumbnailAirflowProxyPath) ||
+      fallbackImage,
     releaseDate: dateLabel(episode.firstRun),
     title: cleanText(episode.epNameTh) || cleanText(episode.epNameEn) || fallbackTitle,
+    videoMimeType: videoMimeType(episode.video),
+    videoUrl:
+      videoUrl(episode.video) ||
+      airflowVideoUrlFromProxyPath(episode.videoLink) ||
+      cleanUrl(episode.videoLink) ||
+      airflowVideoUrlFromProxyPath(episode.videoAirflowProxyPath),
   };
 }
 
@@ -864,7 +888,29 @@ function thumbnailPath(path?: string | null) {
     return undefined;
   }
 
-  return cleanPath.startsWith("http") || cleanPath.startsWith("/") ? cleanPath : undefined;
+  if (cleanPath.startsWith("/api/airflow/static")) {
+    return cleanPath;
+  }
+
+  if (/^https?:\/\//i.test(cleanPath)) {
+    try {
+      const url = new URL(cleanPath);
+      const airflowBase = new URL(AIRFLOW_BASE);
+
+      if (url.origin === airflowBase.origin && url.pathname.startsWith("/static/")) {
+        const proxyPath = url.pathname.replace(/^\/static\/+/, "");
+        return `/api/airflow/static?path=${encodeURIComponent(proxyPath)}`;
+      }
+    } catch {
+      return cleanPath;
+    }
+
+    return cleanPath;
+  }
+
+  const proxyPath = cleanPath.replace(/^\/?static\/+/, "").replace(/^\/+/, "");
+
+  return proxyPath ? `/api/airflow/static?path=${encodeURIComponent(proxyPath)}` : undefined;
 }
 
 function airflowVideoUrlFromProxyPath(path?: string | null) {

@@ -79,10 +79,12 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   const didDragRef = useRef(false);
   const dragStartScrollRef = useRef(0);
   const dragStartXRef = useRef(0);
+  const heroRef = useRef<HTMLElement | null>(null);
   const railRef = useRef<HTMLDivElement | null>(null);
   const trailerIframeRef = useRef<HTMLIFrameElement | null>(null);
   const trailerVideoRef = useRef<HTMLVideoElement | null>(null);
   const [isDraggingThumbs, setIsDraggingThumbs] = useState(false);
+  const [heroInView, setHeroInView] = useState(true);
   const [manualAdvanceKey, setManualAdvanceKey] = useState(0);
   const [trailerPlayback, setTrailerPlayback] = useState({
     ended: false,
@@ -123,7 +125,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   }, []);
 
   useEffect(() => {
-    if (titles.length === 0) {
+    if (titles.length === 0 || !heroInView) {
       return;
     }
 
@@ -134,7 +136,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
     const timer = window.setTimeout(advanceHero, AUTO_SLIDE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [active, activeHasInlineTrailer, activeTrailerIsGif, advanceHero, manualAdvanceKey, titles.length, trailerEnded]);
+  }, [active, activeHasInlineTrailer, activeTrailerIsGif, advanceHero, heroInView, manualAdvanceKey, titles.length, trailerEnded]);
 
   useEffect(() => {
     if (!activeTrailerUrl) {
@@ -155,16 +157,13 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   }, [active, activeTrailerUrl]);
 
   const playTrailerVideo = useCallback(
-    (force = false) => {
+    () => {
       const video = trailerVideoRef.current;
       if (!video) return;
 
       video.muted = trailerMuted;
-      if (!force || trailerEnded || trailerFailed) {
-        if (trailerEnded || trailerFailed) video.pause();
-      }
-
-      if (trailerEnded || trailerFailed) {
+      if (!heroInView || trailerEnded || trailerFailed) {
+        video.pause();
         return;
       }
 
@@ -180,21 +179,21 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
           }
         });
     },
-    [activeTrailerUrl, markTrailerLoaded, trailerEnded, trailerFailed, trailerMuted],
+    [activeTrailerUrl, heroInView, markTrailerLoaded, trailerEnded, trailerFailed, trailerMuted],
   );
 
   useEffect(() => {
-    if (!activeTrailerUrl || !activeTrailerIsInternal || trailerFailed) return;
+    if (!activeTrailerUrl || !heroInView || !activeTrailerIsInternal || trailerFailed) return;
 
-    const frame = window.requestAnimationFrame(() => playTrailerVideo(true));
+    const frame = window.requestAnimationFrame(() => playTrailerVideo());
     const timers = [
-      window.setTimeout(() => playTrailerVideo(true), 250),
-      window.setTimeout(() => playTrailerVideo(true), 900),
+      window.setTimeout(() => playTrailerVideo(), 250),
+      window.setTimeout(() => playTrailerVideo(), 900),
     ];
 
     function retryWhenActive() {
       if (document.hidden) return;
-      playTrailerVideo(true);
+      playTrailerVideo();
     }
 
     window.addEventListener("focus", retryWhenActive);
@@ -206,13 +205,35 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
       window.removeEventListener("focus", retryWhenActive);
       document.removeEventListener("visibilitychange", retryWhenActive);
     };
-  }, [activeTrailerIsInternal, activeTrailerUrl, playTrailerVideo, trailerFailed]);
+  }, [activeTrailerIsInternal, activeTrailerUrl, heroInView, playTrailerVideo, trailerFailed]);
+
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        setHeroInView(entry.isIntersecting && entry.intersectionRatio >= 0.5);
+      },
+      { threshold: [0, 0.25, 0.5, 0.75, 1] },
+    );
+
+    observer.observe(hero);
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const iframe = trailerIframeRef.current;
     if (!iframe?.contentWindow) return;
 
     try {
+      iframe.contentWindow.postMessage(
+        JSON.stringify({ event: "command", func: heroInView && !trailerEnded ? "playVideo" : "pauseVideo", args: [] }),
+        "*",
+      );
       iframe.contentWindow.postMessage(
         JSON.stringify({ event: "command", func: trailerMuted ? "mute" : "unMute", args: [] }),
         "*",
@@ -224,7 +245,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         );
       }
     } catch {}
-  }, [activeTrailerUrl, trailerMuted]);
+  }, [activeTrailerUrl, heroInView, trailerEnded, trailerMuted]);
 
   useEffect(() => {
     if (!activeTrailerUrl || trailerEnded) return;
@@ -355,7 +376,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   const currentIsDisabled = current.isDiscontinued;
 
   return (
-    <section className="relative h-[clamp(620px,min(56.25vw,100vh),2160px)] overflow-hidden px-5 pb-24 sm:px-8 lg:px-10">
+    <section ref={heroRef} className="relative h-[clamp(620px,min(56.25vw,100vh),2160px)] overflow-hidden px-5 pb-24 sm:px-8 lg:px-10">
       {titles.map((title, index) => {
         const heroAsset = title.heroImage || title.posterImage;
         const mediaClassName = title.isDiscontinued ? "absolute inset-0 h-full w-full object-cover object-center grayscale" : "absolute inset-0 h-full w-full object-cover object-center";
@@ -377,7 +398,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
           Boolean(trailerUrl) &&
           !slideTrailerEnded &&
           (isGifTrailer || Boolean(trailerEmbedUrl) || (trailerIsInternal && !slideTrailerFailed));
-        const showInlineTrailer = keepTrailerMounted && slideTrailerLoaded;
+        const showInlineTrailer = keepTrailerMounted && heroInView && slideTrailerLoaded;
         const hasExternalTrailerFallback =
           isActive && Boolean(trailerUrl) && !isGifTrailer && !trailerEmbedUrl && !trailerIsInternal;
 
@@ -414,7 +435,6 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                 onLoad={() => markTrailerLoaded(trailerUrl)}
                 sizes="100vw"
                 src={trailerUrl}
-                unoptimized
               />
             ) : keepTrailerMounted && trailerIsInternal ? (
               <video
@@ -430,7 +450,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                 muted={trailerMuted}
                 onCanPlay={() => {
                   markTrailerLoaded(trailerUrl);
-                  playTrailerVideo(true);
+                  playTrailerVideo();
                 }}
                 onContextMenu={(event) => event.preventDefault()}
                 onEnded={() => {
@@ -456,7 +476,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                   if (!video) return;
                   video.muted = trailerMuted;
                   markTrailerLoaded(trailerUrl);
-                  playTrailerVideo(true);
+                  playTrailerVideo();
                 }}
                 onPlaying={() => markTrailerLoaded(trailerUrl)}
                 onStalled={() => {

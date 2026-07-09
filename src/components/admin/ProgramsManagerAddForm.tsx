@@ -765,11 +765,15 @@ function AwardUploadPreview({
   return (
     <div className={`w-full rounded border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900 ${alignClass}`}>
       {src ? (
-        <img
-          src={normalizeImageSrc(src)}
-          alt={doc?.title || doc?.filename || ''}
-          className="block aspect-video max-h-56 w-full rounded-t bg-black/5 object-contain"
-        />
+        <div className="relative aspect-video max-h-56 w-full overflow-hidden rounded-t bg-black/5">
+          <Image
+            src={normalizeImageSrc(src)}
+            alt={doc?.title || doc?.filename || ''}
+            fill
+            sizes="(max-width: 768px) 100vw, 640px"
+            className="object-contain"
+          />
+        </div>
       ) : (
         <div className="flex aspect-video max-h-56 items-center justify-center rounded-t bg-gray-100 text-sm text-gray-500 dark:bg-gray-800">
           Loading image...
@@ -853,7 +857,15 @@ function AwardImageGroupPreview({
           return (
             <div key={`${id ?? index}`} className="overflow-hidden rounded bg-white ring-1 ring-black/10 dark:bg-gray-800">
               {src ? (
-                <img src={normalizeImageSrc(src)} alt={item.alt || doc?.title || doc?.filename || ''} className="block aspect-video w-full object-contain bg-black/5" />
+                <div className="relative aspect-video w-full bg-black/5">
+                  <Image
+                    src={normalizeImageSrc(src)}
+                    alt={item.alt || doc?.title || doc?.filename || ''}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-contain"
+                  />
+                </div>
               ) : (
                 <div className="flex aspect-video items-center justify-center bg-gray-100 text-sm text-gray-500 dark:bg-gray-800">Loading image...</div>
               )}
@@ -944,7 +956,15 @@ function ArticleEmbedPreview({
         </button>
       </div>
       {data.type === 'image' && src ? (
-        <img src={normalizeImageSrc(src)} alt={data.title || doc?.title || doc?.filename || ''} className="block max-h-72 w-full rounded bg-black/5 object-contain" />
+        <div className="relative aspect-video max-h-72 w-full overflow-hidden rounded bg-black/5">
+          <Image
+            src={normalizeImageSrc(src)}
+            alt={data.title || doc?.title || doc?.filename || ''}
+            fill
+            sizes="(max-width: 768px) 100vw, 768px"
+            className="object-contain"
+          />
+        </div>
       ) : (
         <div className="rounded bg-white px-3 py-2 text-sm text-gray-700 ring-1 ring-black/10 dark:bg-gray-800 dark:text-gray-200">
           <span className="font-semibold">{data.platform || data.type}</span>

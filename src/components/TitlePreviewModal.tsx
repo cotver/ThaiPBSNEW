@@ -170,9 +170,9 @@ export function TitlePreviewModal({
       (entries) => {
         const entry = entries[0];
         if (!entry) return;
-        setHeroInView(entry.isIntersecting && entry.intersectionRatio >= 0.35);
+        setHeroInView(entry.isIntersecting && entry.intersectionRatio >= 0.5);
       },
-      { threshold: [0, 0.2, 0.35, 0.5, 1] },
+      { threshold: [0, 0.25, 0.5, 0.75, 1] },
     );
 
     observer.observe(hero);
@@ -522,6 +522,7 @@ export function TitlePreviewModal({
 
         <TitleDetails
           compact
+          episodeLayout="legacy"
           onSelectedSeasonChange={(id) => setSeasonSelection({ slug: title.slug, id })}
           selectedSeasonId={selectedSeason?.id ?? ""}
           title={title}

@@ -98,12 +98,12 @@ export function TitlePageExperience({ title }: { title: Title }) {
   }, []);
 
   const playTrailerVideo = useCallback(
-    (force = false) => {
+    () => {
       const video = trailerVideoRef.current;
       if (!video) return;
 
       video.muted = trailerMuted;
-      if (!force && (!heroInView || trailerEnded || trailerFailed)) {
+      if (!heroInView || trailerEnded || trailerFailed) {
         video.pause();
         return;
       }
@@ -128,17 +128,17 @@ export function TitlePageExperience({ title }: { title: Title }) {
   }, [playTrailerVideo]);
 
   useEffect(() => {
-    if (!activeTrailerUrl || !isInternalVideoUrl(activeTrailerUrl) || trailerFailed) return;
+    if (!activeTrailerUrl || !heroInView || !isInternalVideoUrl(activeTrailerUrl) || trailerFailed) return;
 
-    const frame = window.requestAnimationFrame(() => playTrailerVideo(true));
+    const frame = window.requestAnimationFrame(() => playTrailerVideo());
     const timers = [
-      window.setTimeout(() => playTrailerVideo(true), 250),
-      window.setTimeout(() => playTrailerVideo(true), 900),
+      window.setTimeout(() => playTrailerVideo(), 250),
+      window.setTimeout(() => playTrailerVideo(), 900),
     ];
 
     function retryWhenActive() {
       if (document.hidden) return;
-      playTrailerVideo(true);
+      playTrailerVideo();
     }
 
     window.addEventListener("focus", retryWhenActive);
@@ -150,7 +150,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
       window.removeEventListener("focus", retryWhenActive);
       document.removeEventListener("visibilitychange", retryWhenActive);
     };
-  }, [activeTrailerUrl, playTrailerVideo, trailerFailed]);
+  }, [activeTrailerUrl, heroInView, playTrailerVideo, trailerFailed]);
 
   useEffect(() => {
     const hero = heroRef.current;
@@ -160,9 +160,9 @@ export function TitlePageExperience({ title }: { title: Title }) {
       (entries) => {
         const entry = entries[0];
         if (!entry) return;
-        setHeroInView(entry.isIntersecting);
+        setHeroInView(entry.isIntersecting && entry.intersectionRatio >= 0.5);
       },
-      { threshold: [0, 0.01, 0.2, 0.5, 1] },
+      { threshold: [0, 0.25, 0.5, 0.75, 1] },
     );
 
     observer.observe(hero);
@@ -176,6 +176,10 @@ export function TitlePageExperience({ title }: { title: Title }) {
 
     try {
       iframe.contentWindow.postMessage(
+        JSON.stringify({ event: "command", func: heroInView && !trailerEnded ? "playVideo" : "pauseVideo", args: [] }),
+        "*",
+      );
+      iframe.contentWindow.postMessage(
         JSON.stringify({ event: "command", func: trailerMuted ? "mute" : "unMute", args: [] }),
         "*",
       );
@@ -186,7 +190,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
         );
       }
     } catch {}
-  }, [activeTrailerUrl, trailerMuted]);
+  }, [activeTrailerUrl, heroInView, trailerEnded, trailerMuted]);
 
   useEffect(() => {
     if (trailerEnded) return;
@@ -249,7 +253,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
   const isGifTrailer = effectiveTrailerMimeType === "image/gif";
   const hasInlineTrailer = hasTrailer && (isGifTrailer || Boolean(trailerEmbedUrl) || (trailerIsInternal && !trailerFailed));
   const keepTrailerMounted = hasInlineTrailer && !trailerEnded;
-  const showInlineTrailer = keepTrailerMounted && trailerLoaded;
+  const showInlineTrailer = keepTrailerMounted && heroInView && trailerLoaded;
   const hasExternalTrailerFallback = hasTrailer && !isGifTrailer && !trailerEmbedUrl && !trailerIsInternal;
   const showImageFade = title.showHeroDetails !== false;
   const useFullImage = title.source === "heroImage" && title.showHeroDetails === false;
@@ -291,7 +295,6 @@ export function TitlePageExperience({ title }: { title: Title }) {
               onLoad={() => markTrailerLoaded(trailerUrl)}
               sizes="100vw"
               src={trailerUrl}
-              unoptimized
             />
           ) : trailerIsInternal && trailerUrl && keepTrailerMounted ? (
             <video
@@ -328,11 +331,11 @@ export function TitlePageExperience({ title }: { title: Title }) {
                 if (!video) return;
                 video.muted = trailerMuted;
                 markTrailerLoaded(trailerUrl);
-                playTrailerVideo(true);
+                playTrailerVideo();
               }}
               onCanPlay={() => {
                 markTrailerLoaded(trailerUrl);
-                playTrailerVideo(true);
+                playTrailerVideo();
               }}
               onPlaying={() => {
                 markTrailerLoaded(trailerUrl);
@@ -488,6 +491,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
 
       <section className="relative z-10 scroll-mt-6 bg-[#030714] px-5 pb-16 pt-2 text-white sm:px-8 lg:px-10" id="episodes">
         <TitleDetails
+          episodeLayout="legacy"
           onSelectedSeasonChange={(id) => setSeasonSelection({ slug: title.slug, id })}
           selectedSeasonId={selectedSeason?.id ?? ""}
           title={title}

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import type { CategoryTile } from "@/lib/payload-content";
@@ -49,23 +50,23 @@ export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
             }}
           >
             {category.imageUrl && (
-              <img
+              <Image
                 alt=""
                 className="absolute inset-0 z-10 h-full w-full object-cover"
-                decoding="async"
-                loading="lazy"
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
                 src={category.imageUrl}
               />
             )}
 
             {hasRequestedVideo && category.videoUrl && isGif && (
-              <img
+              <Image
                 alt=""
                 className={`absolute inset-0 h-full w-full object-cover transition duration-300 ${
                   showVideo ? "opacity-100" : "opacity-0"
                 }`}
-                decoding="async"
-                loading="lazy"
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
                 onLoad={() =>
                   setLoadedVideos((current) => {
                     const next = new Set(current);

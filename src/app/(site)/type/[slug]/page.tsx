@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ContentRow } from "@/components/ContentRow";
 import { getCatalogCollections, getTypePage } from "@/lib/payload-content";
@@ -31,9 +32,12 @@ export default async function TypePage({
     <>
       <section className="relative min-h-[620px] px-5 pb-16 sm:px-8 lg:min-h-[700px] lg:px-10">
         {type.imageUrl ? (
-          <img
+          <Image
             alt=""
             className="absolute inset-0 h-full w-full object-cover object-center"
+            fill
+            priority
+            sizes="100vw"
             src={type.imageUrl}
           />
         ) : (

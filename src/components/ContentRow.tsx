@@ -141,10 +141,8 @@ export function ContentRow({
       const anchor = element.getBoundingClientRect();
       const root = rootRef.current.getBoundingClientRect();
       const rail = railRef.current.getBoundingClientRect();
-      const arrowSafeRight = canScrollRight ? 60 : 0;
-      const safePad = layout === "vertical" ? 12 : 16;
-      const safeMinLeft = Math.max(0, rail.left - root.left) + safePad;
-      const safeMaxRight = Math.min(root.width, rail.right - root.left) - arrowSafeRight - safePad;
+      const safeMinLeft = Math.max(0, rail.left - root.left);
+      const safeMaxRight = Math.min(root.width, rail.right - root.left);
       const requestedWidth =
         layout === "wide"
           ? anchor.width * 1.22
@@ -173,7 +171,7 @@ export function ContentRow({
         width,
       });
     },
-    [canScrollRight, clearPreviewTimer, layout],
+    [clearPreviewTimer, layout],
   );
 
   function updateScrollState() {
@@ -1000,7 +998,6 @@ function HoverTrailerMedia({
           onLoad={markReady}
           sizes={`${Math.ceil(width)}px`}
           src={trailerUrl}
-          unoptimized
         />
       ) : null}
 

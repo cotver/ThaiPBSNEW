@@ -39,6 +39,8 @@ export type TitleEpisode = {
   image?: string;
   releaseDate?: string;
   title: string;
+  videoMimeType?: string;
+  videoUrl?: string;
 };
 
 export type TitleSeason = {
