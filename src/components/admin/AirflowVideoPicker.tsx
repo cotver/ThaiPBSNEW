@@ -8,8 +8,47 @@ const API_BASE = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, '') || ''
 
 type AnyResult = Record<string, unknown>
 
+type AirflowClipData = {
+  asset?: {
+    asset_type_text?: unknown
+    thumbnail_path?: unknown
+  }
+  clip_id?: unknown
+  display_fileext?: unknown
+  display_name?: unknown
+  metadata?: {
+    clip_name?: unknown
+  }
+  proxy_path?: unknown
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' ? value as Record<string, unknown> : null
+}
+
+function asString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined
+}
+
+function getClipData(result: AnyResult): AirflowClipData {
+  return asRecord(result.data) as AirflowClipData | null ?? {}
+}
+
 function isClip(r: AnyResult) {
-  return (r as any)?.data?.asset?.asset_type_text === 'clip'
+  return getClipData(r).asset?.asset_type_text === 'clip'
+}
+
+function getCacheId(value: unknown) {
+  const record = asRecord(value)
+  const data = asRecord(record?.data)
+  return asString(data?.cache_id)
+}
+
+function getSearchResults(value: unknown): AnyResult[] {
+  const record = asRecord(value)
+  const data = asRecord(record?.data)
+  const results = data?.results
+  return Array.isArray(results) ? results.filter(asRecord) : []
 }
 
 function staticProxyUrl(thumbnailPath: string) {
@@ -19,6 +58,46 @@ function staticProxyUrl(thumbnailPath: string) {
 function videoProxyUrl(proxyPath: string) {
   const full = `${AIRFLOW_ORIGIN}/static/${proxyPath.replace(/^\/+/, '')}`
   return `${API_BASE}/api/airflow/video?url=${encodeURIComponent(full)}`
+}
+
+function normalizeAirflowStaticPath(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+
+  try {
+    const url = new URL(trimmed)
+    const proxiedPath = url.searchParams.get('path')
+    if (url.pathname.endsWith('/api/airflow/static') && proxiedPath) {
+      return proxiedPath.replace(/^\/+/, '')
+    }
+    if (url.pathname.startsWith('/static/')) {
+      return url.pathname.replace(/^\/static\/+/, '')
+    }
+  } catch {
+    // Plain Airflow paths are expected here.
+  }
+
+  return trimmed.replace(/^\/?static\/+/, '').replace(/^\/+/, '')
+}
+
+function normalizeAirflowVideoPath(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+
+  try {
+    const url = new URL(trimmed)
+    const proxiedUrl = url.searchParams.get('url')
+    if (url.pathname.endsWith('/api/airflow/video') && proxiedUrl) {
+      return normalizeAirflowVideoPath(proxiedUrl)
+    }
+    if (url.pathname.startsWith('/static/')) {
+      return url.pathname.replace(/^\/static\/+/, '')
+    }
+  } catch {
+    // Plain Airflow paths are expected here.
+  }
+
+  return trimmed.replace(/^\/?static\/+/, '').replace(/^\/+/, '')
 }
 
 export type AirflowSharedSearch = {
@@ -85,20 +164,20 @@ export function AirflowVideoPicker({
       })
       const data1 = await res1.json().catch(async () => ({ raw: await res1.text() }))
       if (!res1.ok) throw new Error(`Search failed: HTTP ${res1.status}`)
-      const cacheId = data1?.data?.cache_id
+      const cacheId = getCacheId(data1)
       if (!cacheId) throw new Error('No cache_id in response')
 
       const qs = 'start=0&max_results=50&wait_for_results=true&wait_timeout=31&sort_by=MODIFIED&sort_order=descending'
       const res2 = await fetch(`${API_BASE}/api/airflow/search/${encodeURIComponent(cacheId)}?${qs}`)
       const data2 = await res2.json().catch(async () => ({ raw: await res2.text() }))
       if (!res2.ok) throw new Error(`Results failed: HTTP ${res2.status}`)
-      setResults((data2 as any)?.data?.results ?? [])
+      setResults(getSearchResults(data2))
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
       setLoading(false)
     }
-  }, [q])
+  }, [q, setResults])
 
   return (
     <div className={className}>
@@ -107,9 +186,15 @@ export function AirflowVideoPicker({
         <input
           type="text"
           value={value}
-          readOnly
+          onChange={(e) => {
+            onChange(
+              pickThumbnail
+                ? normalizeAirflowStaticPath(e.target.value)
+                : normalizeAirflowVideoPath(e.target.value),
+            )
+          }}
           placeholder="No video selected"
-          className="flex-1 min-w-[120px] rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 text-sm"
+          className="flex-1 min-w-[120px] rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
         />
         <button
           type="button"
@@ -192,18 +277,18 @@ export function AirflowVideoPicker({
               {clips.length > 0 && (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {clips.map((r, idx) => {
-                    const d = (r as any).data
-                    const baseName = d?.display_name ?? d?.metadata?.clip_name ?? `clip-${idx}`
-                    const fileExt = d?.display_fileext
+                    const d = getClipData(r)
+                    const baseName = asString(d.display_name) ?? asString(d.metadata?.clip_name) ?? `clip-${idx}`
+                    const fileExt = asString(d.display_fileext)
                     const name = fileExt ? `${baseName}.${fileExt}` : baseName
-                    const thumbPath = d?.asset?.thumbnail_path
-                    const proxyPath = d?.proxy_path as string | undefined
+                    const thumbPath = asString(d.asset?.thumbnail_path)
+                    const proxyPath = asString(d.proxy_path)
                     if (!proxyPath && !pickThumbnail) return null
                     const valueToSave = pickThumbnail ? (thumbPath ?? '') : proxyPath!
                     const canSelect = pickThumbnail ? true : !!proxyPath
                     return (
                       <div
-                        key={d?.clip_id ?? idx}
+                        key={asString(d.clip_id) ?? idx}
                         className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800"
                       >
                         <div className="px-3 py-2 font-medium text-gray-900 dark:text-gray-100 text-sm truncate" title={name}>
@@ -324,14 +409,14 @@ export function AirflowVideoAndThumbnailPicker({
       })
       const data1 = await res1.json().catch(async () => ({ raw: await res1.text() }))
       if (!res1.ok) throw new Error(`Search failed: HTTP ${res1.status}`)
-      const cacheId = data1?.data?.cache_id
+      const cacheId = getCacheId(data1)
       if (!cacheId) throw new Error('No cache_id in response')
 
       const qs = 'start=0&max_results=50&wait_for_results=true&wait_timeout=31&sort_by=MODIFIED&sort_order=descending'
       const res2 = await fetch(`${API_BASE}/api/airflow/search/${encodeURIComponent(cacheId)}?${qs}`)
       const data2 = await res2.json().catch(async () => ({ raw: await res2.text() }))
       if (!res2.ok) throw new Error(`Results failed: HTTP ${res2.status}`)
-      setResults((data2 as any)?.data?.results ?? [])
+      setResults(getSearchResults(data2))
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -356,9 +441,9 @@ export function AirflowVideoAndThumbnailPicker({
           <input
             type="text"
             value={valueVideo}
-            readOnly
+            onChange={(e) => onChangeVideo(normalizeAirflowVideoPath(e.target.value))}
             placeholder="No video selected"
-            className="flex-1 min-w-[120px] rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 text-sm"
+            className="flex-1 min-w-[120px] rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
           />
           {valueVideo ? (
             <button type="button" onClick={() => onChangeVideo('')} className="text-sm text-red-600 dark:text-red-400 hover:underline">
@@ -373,9 +458,9 @@ export function AirflowVideoAndThumbnailPicker({
           <input
             type="text"
             value={valueThumbnail}
-            readOnly
+            onChange={(e) => onChangeThumbnail(normalizeAirflowStaticPath(e.target.value))}
             placeholder="No thumbnail selected"
-            className="flex-1 min-w-[120px] rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 text-sm"
+            className="flex-1 min-w-[120px] rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
           />
           {valueThumbnail ? (
             <button type="button" onClick={() => onChangeThumbnail('')} className="text-sm text-red-600 dark:text-red-400 hover:underline">
@@ -448,16 +533,16 @@ export function AirflowVideoAndThumbnailPicker({
               {clips.length > 0 && (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {clips.map((r, idx) => {
-                    const d = (r as any).data
-                    const baseName = d?.display_name ?? d?.metadata?.clip_name ?? `clip-${idx}`
-                    const fileExt = d?.display_fileext
+                    const d = getClipData(r)
+                    const baseName = asString(d.display_name) ?? asString(d.metadata?.clip_name) ?? `clip-${idx}`
+                    const fileExt = asString(d.display_fileext)
                     const name = fileExt ? `${baseName}.${fileExt}` : baseName
-                    const thumbPath = d?.asset?.thumbnail_path ?? ''
-                    const proxyPath = d?.proxy_path as string | undefined
+                    const thumbPath = asString(d.asset?.thumbnail_path) ?? ''
+                    const proxyPath = asString(d.proxy_path)
                     if (!proxyPath) return null
                     return (
                       <div
-                        key={d?.clip_id ?? idx}
+                        key={asString(d.clip_id) ?? idx}
                         className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800"
                       >
                         <div className="px-3 py-2 font-medium text-gray-900 dark:text-gray-100 text-sm truncate" title={name}>
