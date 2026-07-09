@@ -556,7 +556,9 @@ function EpisodeVideoPlayer({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[99999] bg-black text-white"
+      className={`fixed inset-0 z-[99999] bg-black text-white ${
+        controlsVisible ? "" : "cursor-none"
+      }`}
       data-title-episode-player
       ref={playerRef}
       onClick={(event) => event.stopPropagation()}
@@ -570,7 +572,7 @@ function EpisodeVideoPlayer({
           <iframe
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
-            className="h-full w-full"
+            className={`h-full w-full ${controlsVisible ? "" : "cursor-none"}`}
             referrerPolicy="strict-origin-when-cross-origin"
             src={`${playingEpisode.embedUrl}?autoplay=1&playsinline=1&rel=0`}
             title="Episode player"
@@ -578,7 +580,7 @@ function EpisodeVideoPlayer({
         ) : (
           <video
             autoPlay
-            className="h-full w-full object-contain"
+            className={`h-full w-full object-contain ${controlsVisible ? "" : "cursor-none"}`}
             disableRemotePlayback
             onClick={togglePlayback}
             onContextMenu={(event) => event.preventDefault()}
