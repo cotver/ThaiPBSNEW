@@ -56,9 +56,8 @@ export function SearchExperience({ initialQuery = "", titles }: { initialQuery?:
       clearPreviewTimer();
       const anchor = element.getBoundingClientRect();
       const root = rootRef.current.getBoundingClientRect();
-      const safePad = 12;
-      const safeMinLeft = safePad;
-      const safeMaxRight = root.width - safePad;
+      const safeMinLeft = 0;
+      const safeMaxRight = root.width;
       const requestedWidth = Math.max(anchor.width * 2.04, 332);
       const maxWidth = Math.max(anchor.width, safeMaxRight - safeMinLeft);
       const width = Math.min(Math.max(requestedWidth, anchor.width + 48), maxWidth);
