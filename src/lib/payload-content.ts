@@ -10,13 +10,9 @@ export type TitleCollections = {
   discontinuedPrograms: Title[];
   heroes: Title[];
   internationalPrograms: Title[];
-  movies: Title[];
-  originals: Title[];
   posterMockups: Title[];
   recommended: Title[];
-  series: Title[];
   thaiPrograms: Title[];
-  trending: Title[];
   typeRows: TypeProgramRow[];
   watchlist: Title[];
   yearRows: YearProgramRow[];
@@ -81,11 +77,7 @@ const emptyCollections: TitleCollections = {
   recommended: [],
   continueWatching: [],
   discontinuedPrograms: [],
-  trending: [],
-  originals: [],
-  movies: [],
   posterMockups: [],
-  series: [],
   watchlist: [],
   heroes: [],
   internationalPrograms: [],
@@ -313,78 +305,6 @@ export async function getCategoryPage(slug: string): Promise<{ category: Categor
   }
 }
 
-export async function getTypePage(slug: string): Promise<{ type: TypeTile; titles: Title[] } | null> {
-  try {
-    const payload = await getPayloadClient();
-    const cleanSlug = normalizeSlugLookupKey(slug);
-    const typeResult = await payload.find({
-      collection: "categories",
-      depth: 2,
-      limit: 1,
-      overrideAccess: true,
-      where: {
-        and: [
-          {
-            or: [
-              {
-                slug: {
-                  equals: slug,
-                },
-              },
-              {
-                slug: {
-                  equals: cleanSlug,
-                },
-              },
-            ],
-          },
-          {
-            or: [
-              {
-                isActive: {
-                  equals: true,
-                },
-              },
-              {
-                appShellActive: {
-                  equals: true,
-                },
-              },
-            ],
-          },
-        ],
-      },
-    });
-    const typeDoc = typeResult.docs[0] as TypeDoc | undefined;
-    const tile = typeDoc ? typeToTile(typeDoc) : null;
-
-    if (!typeDoc || !tile) {
-      return null;
-    }
-
-    const programsResult = await payload.find({
-      collection: "programs",
-      depth: 3,
-      limit: 80,
-      overrideAccess: true,
-      sort: "-updatedAt",
-      where: {
-        categories: {
-          contains: typeDoc.id,
-        },
-      },
-    });
-
-    return {
-      type: tile,
-      titles: sortTitlesByAvailability(programsResult.docs.map(programToTitle).filter((title): title is Title => Boolean(title))),
-    };
-  } catch (error) {
-    console.warn(`Unable to load Payload type "${slug}"`, error);
-    return null;
-  }
-}
-
 async function getPayloadTitles(): Promise<Title[]> {
   try {
     const payload = await getPayloadClient();
@@ -530,9 +450,6 @@ export function buildTitleCollections(
   const availableTitles = collectionTitles.filter(isAvailableTitle);
 
   const featured = availableTitles.filter((title) => title.featured);
-  const originals = availableTitles.filter((title) => title.type === "Original");
-  const movies = availableTitles.filter((title) => title.type === "Movie" || title.type === "Original");
-  const series = availableTitles.filter((title) => title.type === "Series");
   const titlesBySlug = new Map(collectionTitles.map((title) => [title.slug, title]));
   const continueWatching = continueWatchingSlugs
     .map((slug) => titlesBySlug.get(slug))
@@ -550,12 +467,8 @@ export function buildTitleCollections(
     recommended: availableTitles.filter((title) => title.isNew).slice(0, 12),
     continueWatching: sortTitlesByAvailability(continueWatching),
     discontinuedPrograms: collectionTitles.filter((title) => title.isDiscontinued).slice(0, 12),
-    trending: availableTitles.filter((title) => title.featured || title.inWatchlist).slice(0, 12),
     typeRows: [],
-    originals: originals.length > 0 ? originals : featured,
-    movies: movies.length > 0 ? movies : availableTitles,
     posterMockups: availableTitles.slice(0, 14),
-    series,
     thaiPrograms: availableTitles.filter((title) => !title.isGlobalProgram).slice(0, 12),
     internationalPrograms: availableTitles.filter((title) => title.isGlobalProgram).slice(0, 12),
     watchlist: sortTitlesByAvailability(watchlist),
