@@ -7,6 +7,7 @@ import { TitlePreviewModal } from "@/components/TitlePreviewModal";
 import type { Title } from "@/lib/content";
 
 const titleLoadBatchSize = 70;
+const suggestionLimit = 8;
 
 export function SearchExperience({ initialQuery = "", titles }: { initialQuery?: string; titles: Title[] }) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -16,22 +17,49 @@ export function SearchExperience({ initialQuery = "", titles }: { initialQuery?:
   const [activePreview, setActivePreview] = useState<ActivePreview | null>(null);
   const [modalTitle, setModalTitle] = useState<Title | null>(null);
   const [visibleCount, setVisibleCount] = useState(titleLoadBatchSize);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+
+  const cleanQuery = query.trim().toLocaleLowerCase();
 
   const results = useMemo(() => {
-    const cleanQuery = query.trim().toLowerCase();
-
     if (!cleanQuery) {
       return titles;
     }
 
     return titles.filter((item) =>
-      [item.title, item.genre, item.type, item.year].some((value) =>
-        value.toLowerCase().includes(cleanQuery),
+      [...titleVariants(item), item.genre, item.type, item.year].some((value) =>
+        value.toLocaleLowerCase().includes(cleanQuery),
       ),
     );
-  }, [query, titles]);
+  }, [cleanQuery, titles]);
+  const suggestions = useMemo(() => {
+    if (!cleanQuery) return [];
+
+    return titles.flatMap((title) => {
+      const matchedTitle = titleVariants(title).find((name) => name.toLocaleLowerCase().includes(cleanQuery));
+
+      return matchedTitle ? [{ matchedTitle, title }] : [];
+    })
+      .slice(0, suggestionLimit);
+  }, [cleanQuery, titles]);
   const visibleResults = results.slice(0, visibleCount);
   const hasMoreResults = visibleCount < results.length;
+
+  const updateQuery = useCallback((value: string) => {
+    setQuery(value);
+    setVisibleCount(titleLoadBatchSize);
+    setActivePreview(null);
+    setActiveSuggestionIndex(-1);
+  }, []);
+
+  const selectSuggestion = useCallback(
+    (title: Title, matchedTitle: string) => {
+      updateQuery(matchedTitle);
+      setShowSuggestions(false);
+    },
+    [updateQuery],
+  );
 
   const clearPreviewTimer = useCallback(() => {
     if (closePreviewTimerRef.current) {
@@ -113,17 +141,68 @@ export function SearchExperience({ initialQuery = "", titles }: { initialQuery?:
       <div className="max-w-4xl">
         <p className="text-sm font-bold uppercase text-cyan-200">Search</p>
         <h1 className="mt-3 text-4xl font-black sm:text-6xl">Find movies and series</h1>
-        <input
-          autoFocus
-          className="mt-8 h-14 w-full rounded-[8px] border border-white/12 bg-white/10 px-5 text-lg font-semibold text-white outline-none transition placeholder:text-white/36 focus:border-cyan-200 focus:bg-white/14"
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setVisibleCount(titleLoadBatchSize);
-            setActivePreview(null);
-          }}
-          placeholder="Search by title, genre, year, or type"
-          value={query}
-        />
+        <div className="relative mt-8">
+          <input
+            aria-activedescendant={activeSuggestionIndex >= 0 ? `search-suggestion-${activeSuggestionIndex}` : undefined}
+            aria-autocomplete="list"
+            aria-controls="search-suggestions"
+            aria-expanded={showSuggestions && suggestions.length > 0}
+            autoComplete="off"
+            autoFocus
+            className="h-14 w-full rounded-[8px] border border-white/12 bg-white/10 px-5 text-lg font-semibold text-white outline-none transition placeholder:text-white/36 focus:border-cyan-200 focus:bg-white/14"
+            onBlur={() => {
+              setShowSuggestions(false);
+              setActiveSuggestionIndex(-1);
+            }}
+            onChange={(event) => {
+              updateQuery(event.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown" && suggestions.length > 0) {
+                event.preventDefault();
+                setActiveSuggestionIndex((index) => (index + 1) % suggestions.length);
+              } else if (event.key === "ArrowUp" && suggestions.length > 0) {
+                event.preventDefault();
+                setActiveSuggestionIndex((index) => (index <= 0 ? suggestions.length - 1 : index - 1));
+              } else if (event.key === "Enter" && activeSuggestionIndex >= 0) {
+                event.preventDefault();
+                selectSuggestion(
+                  suggestions[activeSuggestionIndex].title,
+                  suggestions[activeSuggestionIndex].matchedTitle,
+                );
+              } else if (event.key === "Escape") {
+                setShowSuggestions(false);
+                setActiveSuggestionIndex(-1);
+              }
+            }}
+            placeholder="Search by Thai or English title, genre, year, or type"
+            role="combobox"
+            value={query}
+          />
+          {showSuggestions && suggestions.length > 0 ? (
+            <ul
+              className="absolute z-30 mt-2 max-h-96 w-full overflow-y-auto rounded-[8px] border border-white/12 bg-slate-950 p-1 shadow-2xl"
+              id="search-suggestions"
+              role="listbox"
+            >
+              {suggestions.map(({ matchedTitle, title }, index) => (
+                  <li
+                    aria-selected={activeSuggestionIndex === index}
+                    className={`flex cursor-pointer flex-col rounded-md px-4 py-3 text-left transition hover:bg-white/10 ${activeSuggestionIndex === index ? "bg-white/10" : ""}`}
+                    id={`search-suggestion-${index}`}
+                    key={title.slug}
+                    onClick={() => selectSuggestion(title, matchedTitle)}
+                    onMouseDown={(event) => event.preventDefault()}
+                    role="option"
+                  >
+                    <span className="font-semibold text-white">{matchedTitle}</span>
+                  </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
       </div>
 
       <div className="relative mt-10 overflow-visible" ref={rootRef}>
@@ -165,4 +244,10 @@ export function SearchExperience({ initialQuery = "", titles }: { initialQuery?:
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function titleVariants(title: Title) {
+  const titles = title.heroTitleLines?.length ? title.heroTitleLines : [title.title];
+
+  return titles.map((name) => name.replace(/\\n|\r?\n/g, " ").replace(/\s+/g, " ").trim()).filter(Boolean);
 }
