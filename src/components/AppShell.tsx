@@ -25,7 +25,6 @@ export function AppShell({
       activeElement.blur();
     }
 
-    setSidebarExpanded(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -51,7 +50,7 @@ export function AppShell({
     };
   }, []);
 
-  if (pathname === "/") {
+  if (pathname === "/" || pathname === "/prototype" || pathname.startsWith("/prototype/style-")) {
     return <main className="min-h-screen bg-black text-white">{children}</main>;
   }
 
@@ -68,7 +67,7 @@ export function AppShell({
           aria-label="ThaiPBS Parvilions home"
           className="ml-5 flex w-12 shrink-0 flex-col items-center justify-start"
           href="/"
-          onClick={(event) => event.currentTarget.blur()}
+          onClick={(event) => { event.currentTarget.blur(); setSidebarExpanded(false); }}
         >
           <Image
             alt="ThaiPBS Parvilions"
@@ -104,7 +103,7 @@ export function AppShell({
                 }`}
                 href={item.href}
                 key={item.href}
-                onClick={(event) => event.currentTarget.blur()}
+                onClick={(event) => { event.currentTarget.blur(); setSidebarExpanded(false); }}
                 onFocus={() => setSidebarExpanded(true)}
               >
                 <span
