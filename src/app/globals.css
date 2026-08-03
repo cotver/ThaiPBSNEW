@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=Inter:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -48,6 +49,143 @@ a {
 .disney-sidebar.w-\[292px\] .disney-nav-label {
   opacity: 1;
   transform: translateX(0);
+}
+
+/* Drift landing prototype */
+.drift-page {
+  --drift-ink: #321c04;
+  --drift-cream: #f6e4cf;
+  --drift-paper: #fff9f2;
+  --drift-muted: #d9c4aa;
+  overflow: clip;
+  background: #16110d;
+  color: var(--drift-paper);
+  font-family: "Inter", Arial, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.drift-page button,
+.drift-page a { -webkit-tap-highlight-color: transparent; }
+.drift-page button { cursor: pointer; }
+.drift-hero { min-height: 100svh; position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: flex-end; padding: 8rem 1.25rem 3.25rem; }
+.drift-hero__video, .drift-hero__wash, .drift-hero__grain { position: absolute; inset: 0; width: 100%; height: 100%; }
+.drift-hero__video { z-index: -3; object-fit: cover; object-position: center; background: #55402d; }
+.drift-hero__wash { z-index: -2; background: linear-gradient(180deg, rgba(16,10,4,.35) 0%, rgba(16,10,4,.02) 35%, rgba(16,10,4,.62) 100%), rgba(0,0,0,.2); }
+.drift-hero__grain { z-index: -1; opacity: .12; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E"); }
+.drift-nav-wrap { position: absolute; z-index: 10; top: 1.5rem; left: 50%; width: min(100% - 2.5rem, 27rem); transform: translateX(-50%); }
+.drift-nav-pill { align-items: center; background: rgba(255,249,242,.95); border-radius: 999px; box-shadow: 0 12px 32px rgba(0,0,0,.16); color: #160e08; display: flex; height: 3.65rem; justify-content: space-between; padding: .45rem .55rem .45rem 1.45rem; }
+.drift-wordmark { color: inherit; font-size: 1.15rem; font-weight: 600; letter-spacing: -.07em; text-decoration: none; }
+.drift-wordmark span { color: #b16439; }
+.drift-menu-button { background: #160e08; border: 0; border-radius: 50%; display: grid; gap: .26rem; height: 2.75rem; place-content: center; width: 2.75rem; }
+.drift-menu-button span { background: #fff9f2; display: block; height: 1px; transition: transform 300ms cubic-bezier(.77,0,.175,1), opacity 180ms ease; width: 1.05rem; }
+.drift-menu-button.is-open span:first-child { transform: translateY(3px) rotate(45deg); }
+.drift-menu-button.is-open span:last-child { transform: translateY(-3px) rotate(-45deg); }
+.drift-nav-dropdown { background: rgba(255,249,242,.98); border-radius: 1.4rem; box-shadow: 0 18px 40px rgba(0,0,0,.17); color: #160e08; display: grid; gap: .2rem; margin: .55rem 0 0 auto; opacity: 0; padding: .6rem; pointer-events: none; transform: translateY(-.5rem) scale(.98); transform-origin: top right; transition: opacity 200ms ease, transform 200ms ease; width: min(100%, 14rem); }
+.drift-nav-dropdown.is-open { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
+.drift-nav-dropdown button, .drift-nav-dropdown a { align-items: center; background: none; border: 0; border-radius: .85rem; color: inherit; display: flex; font: inherit; justify-content: space-between; padding: .7rem .8rem; text-align: left; text-decoration: none; transition: background 180ms ease; }
+.drift-nav-dropdown button:hover, .drift-nav-dropdown a:hover { background: #f0e0cd; }
+.drift-nav-dropdown svg { height: 1rem; width: 1rem; }
+.drift-hero__content { margin: 0 auto; max-width: 72rem; text-align: center; width: 100%; }
+.drift-kicker { color: var(--drift-ink); font-size: .66rem; font-weight: 600; letter-spacing: .16em; margin: 0 0 1.2rem; text-transform: uppercase; }
+.drift-kicker--light { color: rgba(255,249,242,.67); }
+.drift-hero h1 { color: #fff9f2; font-size: clamp(3.35rem, 9vw, 6rem); font-weight: 400; letter-spacing: -.075em; line-height: .98; margin: 0; }
+.drift-hero h1 em { color: #fae6d1; font-family: "Instrument Serif", Georgia, serif; font-style: italic; letter-spacing: -.055em; }
+.drift-hero__subtitle { color: rgba(255,249,242,.78); font-size: .92rem; line-height: 1.55; margin: 1.6rem auto 1.7rem; max-width: 29rem; }
+.drift-cta-bar { align-items: center; background: rgba(10,8,5,.3); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.11); border-radius: 1rem; display: inline-flex; gap: 1.4rem; max-width: calc(100vw - 2.5rem); padding: .3rem .3rem .3rem 1.2rem; }
+.drift-cta-bar span { color: #fff9f2; font-size: .7rem; font-weight: 500; white-space: nowrap; }
+.drift-cta-bar__mobile { display: none; }
+.drift-button { align-items: center; border: 0; border-radius: .78rem; display: inline-flex; font: inherit; font-size: .72rem; font-weight: 600; gap: .6rem; justify-content: center; letter-spacing: -.01em; padding: .85rem 1.1rem; transition: transform 180ms ease, background 180ms ease; white-space: nowrap; }
+.drift-button:hover { transform: translateY(-2px); }
+.drift-button svg { height: 1rem; width: 1rem; }
+.drift-button--light { background: #fff9f2; color: #160e08; }
+.drift-button--light:hover { background: #fff; }
+.drift-scroll-cue { align-items: center; bottom: 2.2rem; color: rgba(255,249,242,.6); display: flex; font-size: .63rem; gap: .6rem; left: 1.4rem; letter-spacing: .13em; position: absolute; text-transform: uppercase; }
+.drift-scroll-cue span { border: 1px solid rgba(255,249,242,.7); border-radius: 50%; height: 1.3rem; position: relative; width: 1.3rem; }
+.drift-scroll-cue span:after { border-bottom: 1px solid #fff9f2; border-right: 1px solid #fff9f2; content: ""; height: .27rem; left: .48rem; position: absolute; top: .38rem; transform: rotate(45deg); width: .27rem; }
+
+.drift-about { background: var(--drift-cream); border-radius: 1.55rem 1.55rem 0 0; color: var(--drift-ink); margin-top: -1.55rem; min-height: 42rem; padding: 7.5rem max(1.5rem, 5vw) 8rem; position: relative; z-index: 2; }
+.drift-about__intro { margin: 0 auto; max-width: 37rem; text-align: center; }
+.drift-about__lead { font-size: clamp(1.2rem, 2.8vw, 1.65rem); letter-spacing: -.045em; line-height: 1.38; margin: 0 auto 2rem; max-width: 31rem; }
+.drift-about__actions { align-items: center; display: flex; flex-wrap: wrap; gap: .65rem; justify-content: center; }
+.drift-pill { align-items: center; border: 0; border-radius: 999px; display: inline-flex; font: inherit; font-size: .68rem; font-weight: 600; gap: .65rem; letter-spacing: .11em; padding: .35rem 1.15rem .35rem .35rem; text-transform: uppercase; transition: background 180ms ease, transform 180ms ease; }
+.drift-pill:hover { transform: translateY(-2px); }
+.drift-pill--dark { background: var(--drift-ink); color: var(--drift-paper); text-decoration: none; }
+.drift-pill--muted { background: var(--drift-muted); color: var(--drift-ink); }
+.drift-pill--muted:hover { background: #ceba9e; }
+.drift-pill__icon { align-items: center; background: var(--drift-paper); border-radius: 50%; display: inline-flex; height: 2.05rem; justify-content: center; width: 2.05rem; }
+.drift-pill--dark .drift-pill__icon { color: var(--drift-ink); }
+.drift-pill--muted .drift-pill__icon { color: var(--drift-ink); }
+.drift-pill svg { height: 1rem; width: 1rem; }
+.drift-form-note { font-size: .72rem; margin: 1rem 0 0; opacity: .62; }
+.drift-divider { align-items: center; display: flex; gap: .35rem; margin: 7rem 0 6.5rem; }
+.drift-divider span { background: var(--drift-muted); border-radius: 50%; flex: 0 0 .4rem; height: .4rem; }
+.drift-divider i { background: var(--drift-muted); display: block; flex: 1; height: 1px; }
+.drift-about__statement { align-items: flex-start; display: grid; gap: 5rem; grid-template-columns: minmax(9rem, 1fr) minmax(0, 3.25fr); margin: 0 auto; max-width: 73rem; }
+.drift-mark-lockup { align-items: flex-start; display: flex; gap: .9rem; }
+.drift-mark { fill: var(--drift-ink); height: 2.5rem; width: 2.5rem; }
+.drift-mark--light { fill: rgba(255,249,242,.82); }
+.drift-mark-lockup span { font-size: .61rem; font-weight: 600; letter-spacing: .12em; line-height: 1.3; text-transform: uppercase; }
+.drift-about__statement p { font-size: clamp(1.85rem, 4.1vw, 3.15rem); letter-spacing: -.065em; line-height: 1.14; margin: -.35rem 0 0; max-width: 60rem; }
+
+.drift-features { background: #231a14; isolation: isolate; min-height: 100rem; overflow: hidden; padding: 7.5rem max(1.25rem, 4vw) 3rem; position: relative; }
+.drift-features__backdrop { background: linear-gradient(180deg, rgba(24,17,12,.72), rgba(24,17,12,.94)), url("https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260709_082449_46df5cc4-ad98-4541-9236-a2659c1478a4.png&w=1920&q=85") center / cover; inset: 0; opacity: .9; position: absolute; z-index: -2; }
+.drift-features__backdrop:after { background: radial-gradient(circle at 20% 10%, rgba(201,133,85,.22), transparent 32%), radial-gradient(circle at 90% 65%, rgba(131,96,62,.16), transparent 34%); content: ""; inset: 0; position: absolute; }
+.drift-features__inner { display: grid; gap: clamp(3rem, 8vw, 12rem); grid-template-columns: minmax(18rem, 28rem) minmax(0, 1fr); margin: 0 auto; max-width: 92rem; }
+.drift-features__sticky { display: flex; flex-direction: column; height: calc(100svh - 7.5rem); justify-content: space-between; padding: 2.5rem 0; position: sticky; top: 0; }
+.drift-features__sticky h2 { color: #fff9f2; font-size: clamp(2rem, 3.7vw, 3rem); font-weight: 400; letter-spacing: -.065em; line-height: 1.04; margin: 0; max-width: 26rem; }
+.drift-feature-nav { display: grid; gap: .2rem; margin-top: 3rem; }
+.drift-feature-nav button { align-items: baseline; background: rgba(0,0,0,.18); border: 0; border-radius: .3rem; color: rgba(255,249,242,.4); display: flex; font: inherit; font-size: .77rem; gap: .8rem; padding: .78rem .8rem; text-align: left; transition: color 180ms ease, background 180ms ease, padding 180ms ease; }
+.drift-feature-nav button span { color: rgba(255,249,242,.36); font-size: .62rem; }
+.drift-feature-nav button:hover, .drift-feature-nav button.is-active { background: rgba(0,0,0,.28); color: #fff9f2; padding-left: 1.1rem; }
+.drift-feature-nav button.is-active span { color: #e1aa82; }
+.drift-features__sidebar-cta { align-items: flex-start; display: flex; flex-direction: column; gap: 1.2rem; max-width: 15rem; }
+.drift-features__sidebar-cta p { color: rgba(255,249,242,.55); font-size: .72rem; line-height: 1.45; margin: 0; }
+.drift-feature-cards { display: grid; gap: 6rem; padding: 2.5rem 0 7.5rem; }
+.drift-feature-card { background: rgba(0,0,0,.2); backdrop-filter: blur(9px); border: 1px solid rgba(255,249,242,.12); border-radius: 1.7rem; opacity: 0; padding: clamp(1.3rem, 3vw, 2.5rem); transform: translateX(4rem); transition: opacity 700ms ease, transform 700ms ease, border-color 300ms ease; }
+.drift-feature-card.is-visible { opacity: 1; transform: translateX(0); }
+.drift-feature-card:hover { border-color: rgba(255,249,242,.27); }
+.drift-feature-card__header { align-items: center; display: flex; gap: .85rem; }
+.drift-feature-card__header span { color: rgba(255,249,242,.52); font-size: .64rem; font-weight: 500; letter-spacing: .13em; text-transform: uppercase; }
+.drift-feature-card h3 { color: #fff9f2; font-size: clamp(1.45rem, 2.6vw, 2.2rem); font-weight: 500; letter-spacing: -.06em; line-height: 1.1; margin: 1.35rem 0 1.4rem; }
+.drift-feature-card__video { aspect-ratio: 16/9; background: #39281c; border-radius: 1.1rem; overflow: hidden; position: relative; }
+.drift-feature-card__video video { height: 100%; object-fit: cover; opacity: .83; position: relative; width: 100%; }
+.drift-video-glow { background: radial-gradient(circle at 45% 45%, rgba(224,159,106,.42), transparent 23%), linear-gradient(140deg, #74604d, #201812 70%); inset: 0; position: absolute; }
+.drift-video-label { background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.18); border-radius: 999px; bottom: .8rem; color: rgba(255,249,242,.82); font-size: .58rem; left: .8rem; letter-spacing: .12em; padding: .42rem .68rem; position: absolute; text-transform: uppercase; }
+.drift-feature-card > p { color: rgba(255,249,242,.56); font-size: .85rem; line-height: 1.6; margin: 1.35rem 0 0; max-width: 34rem; }
+.drift-footer { align-items: center; border-top: 1px solid rgba(255,249,242,.16); color: rgba(255,249,242,.5); display: flex; font-size: .65rem; justify-content: space-between; margin: 0 auto; max-width: 92rem; padding: 1.25rem 0; }
+.drift-footer a { align-items: center; color: #fff9f2; display: inline-flex; gap: .45rem; text-decoration: none; }
+.drift-footer svg { height: .85rem; width: .85rem; }
+
+@media (max-width: 900px) {
+  .drift-features__inner { display: block; }
+  .drift-features__sticky { height: auto; padding: 1rem 0 4.2rem; position: static; }
+  .drift-feature-nav, .drift-features__sidebar-cta { display: none; }
+  .drift-feature-cards { gap: 2rem; padding: 0 0 5rem; }
+  .drift-feature-card { opacity: 1; transform: none; }
+}
+
+@media (max-width: 600px) {
+  .drift-hero { padding-bottom: 2.25rem; }
+  .drift-hero__subtitle { font-size: .84rem; margin-top: 1.2rem; }
+  .drift-cta-bar { gap: .55rem; padding-left: .95rem; }
+  .drift-cta-bar__desktop { display: none; }
+  .drift-cta-bar__mobile { display: inline !important; white-space: normal !important; text-align: left; }
+  .drift-button { padding: .78rem .85rem; }
+  .drift-scroll-cue { bottom: .9rem; left: auto; right: 1.25rem; }
+  .drift-about { padding-top: 6rem; }
+  .drift-divider { margin: 5.5rem 0 4.5rem; }
+  .drift-about__statement { gap: 2.5rem; grid-template-columns: 1fr; }
+  .drift-about__statement p { font-size: 2rem; }
+  .drift-features { padding-top: 5.5rem; }
+  .drift-features__sticky h2 { max-width: 19rem; }
+  .drift-feature-card { border-radius: 1.25rem; }
+  .drift-feature-card__video { border-radius: .9rem; }
+  .drift-footer { align-items: flex-start; flex-direction: column; gap: .9rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drift-page *, .drift-page *::before, .drift-page *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
 
 @keyframes previewFloatIn {
