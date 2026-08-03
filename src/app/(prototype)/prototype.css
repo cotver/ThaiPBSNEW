@@ -243,8 +243,8 @@
 .bp-brand-tiles { display: grid; gap: 1rem; grid-template-columns: repeat(6,minmax(0,1fr)); }
 .bp-brand-tile { aspect-ratio: 16/9; background: var(--bp-ink); border: 1px solid var(--bp-line); border-radius: 6px; min-width: 0; overflow: hidden; position: relative; text-decoration: none; transform: translateZ(0); transition: border-color .3s ease,transform .3s ease; }
 .bp-brand-tile:hover { border-color: currentColor; transform: translateY(-4px) scale(1.035); z-index: 2; }
-.bp-brand-tile__image { z-index:1; }
-.bp-brand-tile__motion { height: 100%; inset: 0; object-fit: cover; opacity: 0; position: absolute; transition: opacity .3s ease; width: 100%; z-index: 2; }
+.bp-brand-tile__image { z-index:10; }
+.bp-brand-tile__motion { height: 100%; inset: 0; object-fit: cover; opacity: 0; position: absolute; transition: opacity .3s ease; width: 100%; z-index: 1; }
 .bp-brand-tile__motion.is-visible { opacity: 1; }
 .bp-brand-tile__fallback { background:linear-gradient(145deg,#111827,#075985 58%,#06b6d4); inset:0; opacity:.7; position:absolute; transition:opacity .3s ease; }
 .bp-brand-tile__fallback.show-motion { opacity:.24; }
