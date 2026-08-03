@@ -1,18 +1,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { titleEyebrow, titleInlineText, type Title } from "@/lib/content";
-import type { CategoryTile } from "@/lib/payload-content";
+import type { CategoryTile, TitleCollections } from "@/lib/payload-content";
 import { EditorialCategoryTiles } from "./EditorialCategoryTiles";
-import { getEditorialSections, getPrototypeCategories, titleCategories, type PrototypeCategory, type PrototypeStyle } from "./blog-data";
+import { getPrototypeCategories, titleCategories, type PrototypeCategory, type PrototypeStyle } from "./blog-data";
 
-type HomeProps = { categoryTiles: CategoryTile[]; titles: Title[] };
+type HomeProps = { categoryTiles: CategoryTile[]; collections: TitleCollections; titles: Title[] };
 type CategoryProps = { category: PrototypeCategory; titles: Title[] };
 type ArticleProps = { related: Title[]; title: Title };
 
-export function StyleOneHome({ categoryTiles, titles }: HomeProps) {
+export function StyleOneHome({ categoryTiles, collections, titles }: HomeProps) {
   const featured = titles.find((title) => title.featured) ?? titles[0];
   const supporting = titles.filter((title) => title.slug !== featured?.slug).slice(0, 2);
-  const recommended = getEditorialSections(titles).find((section) => section.id === "new")?.titles ?? [];
+  const additionalSections = homeSections(collections);
   return (
     <StyleOneFrame categories={getPrototypeCategories(titles)}>
       {featured ? <StyleOneHero featured={featured} supporting={supporting} /> : null}
@@ -21,7 +21,7 @@ export function StyleOneHome({ categoryTiles, titles }: HomeProps) {
         <EditorialIntro count={titles.length} index="01" kicker="From the field" title="Latest stories" />
         <div className="s1-story-stack">{titles.slice(0, 7).map((title, index) => <StyleOneStory index={index} key={title.slug} title={title} />)}</div>
       </section>
-      {recommended.length ? <StyleOneRecommendations titles={recommended} /> : null}
+      {additionalSections.map((section, index) => <StyleOneCollectionSection index={String(index + 2).padStart(2, "0")} key={section.id} title={section.title} titles={section.titles} />)}
     </StyleOneFrame>
   );
 }
@@ -52,9 +52,10 @@ export function StyleOneArticle({ related, title }: ArticleProps) {
   );
 }
 
-export function StyleTwoHome({ categoryTiles, titles }: HomeProps) {
+export function StyleTwoHome({ categoryTiles, collections, titles }: HomeProps) {
   const featured = titles.find((title) => title.featured) ?? titles[0];
   const supporting = titles.filter((title) => title.slug !== featured?.slug).slice(0, 2);
+  const additionalSections = homeSections(collections);
   return (
     <StyleTwoFrame categories={getPrototypeCategories(titles)}>
       {featured ? <StyleTwoHero featured={featured} supporting={supporting} /> : null}
@@ -63,6 +64,7 @@ export function StyleTwoHome({ categoryTiles, titles }: HomeProps) {
         <EditorialIntro count={titles.length} index="Signal / 01" kicker="Current feed" title="Stories in motion" />
         <div className="s2-bento">{titles.slice(0, 8).map((title, index) => <StyleTwoCard featured={index === 0} key={title.slug} title={title} />)}</div>
       </section>
+      {additionalSections.map((section, index) => <StyleTwoCollectionSection index={index + 2} key={section.id} title={section.title} titles={section.titles} />)}
       <StyleTwoTicker categories={getPrototypeCategories(titles)} />
     </StyleTwoFrame>
   );
@@ -90,14 +92,16 @@ export function StyleTwoArticle({ related, title }: ArticleProps) {
   );
 }
 
-export function StyleThreeHome({ categoryTiles, titles }: HomeProps) {
+export function StyleThreeHome({ categoryTiles, collections, titles }: HomeProps) {
   const featured = titles.find((title) => title.featured) ?? titles[0];
   const supporting = titles.filter((title) => title.slug !== featured?.slug).slice(0, 3);
+  const additionalSections = homeSections(collections);
   return (
     <StyleThreeFrame categories={getPrototypeCategories(titles)}>
       {featured ? <StyleThreeHero featured={featured} supporting={supporting} /> : null}
       <ExploreBlock categories={categoryTiles} style="style-3" />
       <section className="s3-news"><div className="s3-section-bar"><span>01</span><h2>Latest stories</h2><small>{titles.length.toLocaleString("th-TH")} items</small></div><div className="s3-news-grid">{titles.slice(0, 9).map((title, index) => <StyleThreeCard index={index} key={title.slug} title={title} />)}</div></section>
+      {additionalSections.map((section, index) => <StyleThreeCollectionSection index={index + 2} key={section.id} title={section.title} titles={section.titles} />)}
     </StyleThreeFrame>
   );
 }
@@ -126,27 +130,15 @@ export function StyleThreeArticle({ related, title }: ArticleProps) {
 }
 
 function StyleOneFrame({ categories, children }: { categories: PrototypeCategory[]; children: React.ReactNode }) {
-  return <div className="prototype-v2 style-one"><StyleOneHeader categories={categories} /><main>{children}</main><StyleOneFooter categories={categories} /></div>;
+  return <div className="prototype-v2 style-one"><main>{children}</main><StyleOneFooter categories={categories} /></div>;
 }
 
 function StyleTwoFrame({ categories, children }: { categories: PrototypeCategory[]; children: React.ReactNode }) {
-  return <div className="prototype-v2 style-two"><StyleTwoHeader categories={categories} /><main>{children}</main><StyleTwoFooter categories={categories} /></div>;
+  return <div className="prototype-v2 style-two"><main>{children}</main><StyleTwoFooter categories={categories} /></div>;
 }
 
 function StyleThreeFrame({ categories, children }: { categories: PrototypeCategory[]; children: React.ReactNode }) {
-  return <div className="prototype-v2 style-three"><StyleThreeHeader categories={categories} /><main>{children}</main><StyleThreeFooter categories={categories} /></div>;
-}
-
-function StyleOneHeader({ categories }: { categories: PrototypeCategory[] }) {
-  return <header className="s1-header"><Link className="s1-wordmark" href="/prototype/style-1">Thai PBS <em>Field Notes</em></Link><nav>{categories.slice(0, 3).map((category) => <Link href={`/prototype/style-1/category/${category.slug}`} key={category.slug}>{category.label}</Link>)}</nav><details><summary aria-label="Open navigation"><span /><span /></summary><div><Link href="/prototype/style-1">Home</Link>{categories.slice(0, 5).map((category) => <Link href={`/prototype/style-1/category/${category.slug}`} key={category.slug}>{category.label}</Link>)}<Link href="/prototype">Compare styles</Link></div></details></header>;
-}
-
-function StyleTwoHeader({ categories }: { categories: PrototypeCategory[] }) {
-  return <header className="s2-header"><Link className="s2-brand" href="/prototype/style-2"><BrandGlyph /> <span>Thai PBS Signal</span></Link><nav>{categories.slice(0, 4).map((category) => <Link href={`/prototype/style-2/category/${category.slug}`} key={category.slug}>{category.label}</Link>)}</nav><Link className="s2-switch" href="/prototype">Style 2 <Arrow /></Link><details><summary>Menu</summary><div><Link href="/prototype/style-2">Home</Link>{categories.slice(0, 5).map((category) => <Link href={`/prototype/style-2/category/${category.slug}`} key={category.slug}>{category.label}</Link>)}</div></details></header>;
-}
-
-function StyleThreeHeader({ categories }: { categories: PrototypeCategory[] }) {
-  return <><header className="s3-header"><Link href="/prototype/style-3"><BrandGlyph /><span>Thai PBS<br />Daily Grid</span></Link><nav><Link href="/prototype/style-3">Latest</Link>{categories.slice(0, 3).map((category) => <Link href={`/prototype/style-3/category/${category.slug}`} key={category.slug}>{category.label}</Link>)}</nav><Link href="/prototype">03 / Compare</Link><details><summary aria-label="Open navigation">☰</summary><div><Link href="/prototype/style-3">Latest</Link>{categories.slice(0, 5).map((category) => <Link href={`/prototype/style-3/category/${category.slug}`} key={category.slug}>{category.label}</Link>)}</div></details></header><div className="s3-running-line"><span>Independent stories</span><span>Culture · Knowledge · Documentary</span><span>Thai PBS / 2026</span></div></>;
+  return <div className="prototype-v2 style-three"><main>{children}</main><StyleThreeFooter categories={categories} /></div>;
 }
 
 function StyleOneHero({ featured, supporting }: { featured: Title; supporting: Title[] }) {
@@ -169,8 +161,8 @@ function StyleOneStory({ index, title }: { index: number; title: Title }) {
   return <article className="s1-story"><Link href={`/prototype/style-1/article/${title.slug}`}><StoryArt className="s1-story-art" orientation="horizontal" title={title} /><div><span>{String(index + 1).padStart(2, "0")} / {titleCategories(title)[0]?.label}</span><h3>{titleInlineText(title)}</h3><p>{title.description}</p><small>{storyMeta(title)}</small></div></Link></article>;
 }
 
-function StyleOneRecommendations({ titles }: { titles: Title[] }) {
-  return <section className="s1-recommended"><EditorialIntro count={titles.length} index="02" kicker="Freshly added" title="Recommended" /><div>{titles.slice(0, 4).map((title) => <Link href={`/prototype/style-1/article/${title.slug}`} key={title.slug}><StoryArt orientation="vertical" title={title} /><span>{titleCategories(title)[0]?.label}</span><h3>{titleInlineText(title)}</h3></Link>)}</div></section>;
+function StyleOneCollectionSection({ index, title, titles }: { index: string; title: string; titles: Title[] }) {
+  return <section className="s1-collection"><EditorialIntro count={titles.length} index={index} kicker="Thai PBS collection" title={title} /><div className="s1-poster-row">{titles.slice(0, 8).map((item) => <Link href={`/prototype/style-1/article/${item.slug}`} key={item.slug}><StoryArt orientation="vertical" title={item} /><span>{titleCategories(item)[0]?.label}</span><h3>{titleInlineText(item)}</h3><small>{storyMeta(item)}</small></Link>)}</div></section>;
 }
 
 function StyleOneRelated({ titles }: { titles: Title[] }) {
@@ -188,12 +180,20 @@ function StyleTwoTicker({ categories }: { categories: PrototypeCategory[] }) {
   return <div className="s2-ticker" aria-label="Browse categories"><div>{[...categories, ...categories].map((category, index) => <Link href={`/prototype/style-2/category/${category.slug}`} key={`${category.slug}-${index}`}>{category.label}<span>✦</span></Link>)}</div></div>;
 }
 
+function StyleTwoCollectionSection({ index, title, titles }: { index: number; title: string; titles: Title[] }) {
+  return <section className="s2-collection"><EditorialIntro count={titles.length} index={`Signal / ${String(index).padStart(2, "0")}`} kicker="Thai PBS collection" title={title} /><div className="s2-collection-grid">{titles.slice(0, 6).map((item, itemIndex) => <StyleTwoCard featured={itemIndex === 0} key={item.slug} title={item} />)}</div></section>;
+}
+
 function StyleThreeCard({ index, title }: { index: number; title: Title }) {
   return <article className={`s3-card ${index === 0 ? "is-lead" : ""}`}><Link href={`/prototype/style-3/article/${title.slug}`}><StoryArt className="s3-card-art" orientation={index === 0 ? "horizontal" : "vertical"} title={title} /><div><span>{String(index + 1).padStart(2, "0")} / {titleCategories(title)[0]?.label}</span><h3>{titleInlineText(title)}</h3><small>{storyMeta(title)}</small></div></Link></article>;
 }
 
 function StyleThreeRow({ index, title }: { index: number; title: Title }) {
   return <article className="s3-row"><Link href={`/prototype/style-3/article/${title.slug}`}><span>{String(index + 1).padStart(2, "0")}</span><strong>{titleCategories(title)[0]?.label}</strong><h2>{titleInlineText(title)}</h2><small>{storyMeta(title)}</small><Arrow /></Link></article>;
+}
+
+function StyleThreeCollectionSection({ index, title, titles }: { index: number; title: string; titles: Title[] }) {
+  return <section className={`s3-collection ${index % 2 === 0 ? "is-alt" : ""}`}><div className="s3-section-bar"><span>{String(index).padStart(2, "0")}</span><h2>{title}</h2><small>{titles.length.toLocaleString("th-TH")} items</small></div><div className="s3-collection-grid">{titles.slice(0, 7).map((item, itemIndex) => <StyleThreeCard index={itemIndex} key={item.slug} title={item} />)}</div></section>;
 }
 
 function EditorialIntro({ count, index, kicker, title }: { count: number; index: string; kicker: string; title: string }) {
@@ -222,3 +222,17 @@ function BrandGlyph() { return <svg aria-hidden="true" viewBox="0 0 40 40"><path
 function Arrow() { return <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>; }
 function storyMeta(title: Title) { return [title.year || title.homeYear, title.duration].filter(Boolean).join(" · "); }
 function hashCode(value: string) { return [...value].reduce((total, character) => ((total << 5) - total) + character.charCodeAt(0), 0); }
+
+function homeSections(collections: TitleCollections) {
+  const sections: Array<{ id: string; title: string; titles: Title[] }> = [];
+  const add = (id: string, title: string, titles: Title[]) => { if (titles.length) sections.push({ id, title, titles }); };
+  add("recommended", "Recommended For You", collections.recommended);
+  for (const row of collections.typeRows) add(`type-${row.type.id}`, row.type.name, row.titles);
+  add("continue-watching", "Continue Watching", collections.continueWatching);
+  add("continue-programs", "Continue Programs", collections.continuePrograms);
+  add("discontinued", "Discontinued Programs", collections.discontinuedPrograms);
+  for (const row of collections.yearRows) add(`year-${row.year}`, `ThaiPBS Year ${row.year}`, row.titles);
+  add("thai", "Thai Programs", collections.thaiPrograms);
+  add("international", "International Programs", collections.internationalPrograms);
+  return sections;
+}

@@ -21,16 +21,18 @@ export function EditorialCategoryTiles({ categories, style }: { categories: Cate
       </div>
       <div className="bp-brand-tiles" data-brand-rail>
         {categories.map((category) => {
+          const hasImage = Boolean(category.imageUrl);
           const hasLoadedVideo = loadedVideos.has(category.id);
           const hasRequestedVideo = requestedVideos.has(category.id);
           const isHovered = hoveredId === category.id;
           const isGif = category.videoMimeType === "image/gif";
           const showVideo = isHovered && Boolean(category.videoUrl) && hasLoadedVideo;
+          const showOnlyName = !hasImage && (!isHovered || !category.videoUrl || !hasLoadedVideo);
 
           return (
             <Link
               aria-label={`Open ${category.name}`}
-              className="bp-brand-tile"
+              className={`bp-brand-tile ${hasImage ? "has-image" : "is-name-only"}`}
               href={`/prototype/${style}/category/${encodeURIComponent(category.slug)}`}
               key={category.id}
               onMouseEnter={(event) => {
@@ -45,15 +47,21 @@ export function EditorialCategoryTiles({ categories, style }: { categories: Cate
                 event.currentTarget.querySelector("video")?.pause();
               }}
             >
-              {category.imageUrl ? <Image alt="" className="bp-cover" fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw" src={category.imageUrl} /> : <div className="bp-art-fallback" data-tone={category.id % 4} />}
+              {category.imageUrl ? <Image alt="" className="bp-cover bp-brand-tile__image" fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw" src={category.imageUrl} /> : null}
               {hasRequestedVideo && category.videoUrl && isGif ? (
                 <Image alt="" className={`bp-brand-tile__motion ${showVideo ? "is-visible" : ""}`} fill onLoad={() => setLoadedVideos((current) => new Set(current).add(category.id))} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw" src={category.videoUrl} />
               ) : null}
               {hasRequestedVideo && category.videoUrl && !isGif ? (
                 <video aria-hidden="true" autoPlay className={`bp-brand-tile__motion ${showVideo ? "is-visible" : ""}`} loop muted onCanPlay={() => setLoadedVideos((current) => new Set(current).add(category.id))} playsInline poster={category.imageUrl} preload="auto" src={category.videoUrl} />
               ) : null}
-              <div className="bp-brand-tile__shade" />
-              <strong>{category.name}</strong>
+              {!hasImage ? (
+                <>
+                  {!showVideo ? <div className={`bp-brand-tile__fallback ${showOnlyName ? "show-name" : "show-motion"}`} data-tone={category.id % 4} /> : null}
+                  <div className="bp-brand-tile__sheen" />
+                  <div className="bp-brand-tile__fade" />
+                  <strong>{category.name}</strong>
+                </>
+              ) : null}
             </Link>
           );
         })}

@@ -1,5 +1,5 @@
 import type { Title } from "@/lib/content";
-import type { CategoryTile } from "@/lib/payload-content";
+import type { CategoryTile, TitleCollections } from "@/lib/payload-content";
 import type { PrototypeCategory, PrototypeStyle } from "./blog-data";
 import {
   StyleOneArticle,
@@ -13,10 +13,10 @@ import {
   StyleTwoHome,
 } from "./StylePrototypes";
 
-export function BlogPrototypeHome({ categoryTiles, style, titles }: { categoryTiles: CategoryTile[]; style: PrototypeStyle; titles: Title[] }) {
-  if (style === "style-1") return <StyleOneHome categoryTiles={categoryTiles} titles={titles} />;
-  if (style === "style-2") return <StyleTwoHome categoryTiles={categoryTiles} titles={titles} />;
-  return <StyleThreeHome categoryTiles={categoryTiles} titles={titles} />;
+export function BlogPrototypeHome({ categoryTiles, collections, style, titles }: { categoryTiles: CategoryTile[]; collections: TitleCollections; style: PrototypeStyle; titles: Title[] }) {
+  if (style === "style-1") return <StyleOneHome categoryTiles={categoryTiles} collections={collections} titles={titles} />;
+  if (style === "style-2") return <StyleTwoHome categoryTiles={categoryTiles} collections={collections} titles={titles} />;
+  return <StyleThreeHome categoryTiles={categoryTiles} collections={collections} titles={titles} />;
 }
 
 export function BlogPrototypeCategory({ category, style, titles }: { category: PrototypeCategory; style: PrototypeStyle; titles: Title[] }) {

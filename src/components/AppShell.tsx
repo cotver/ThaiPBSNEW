@@ -50,12 +50,12 @@ export function AppShell({
     };
   }, []);
 
-  if (pathname === "/" || pathname === "/prototype" || pathname.startsWith("/prototype/style-")) {
+  if (pathname === "/" || pathname === "/prototype") {
     return <main className="min-h-screen bg-black text-white">{children}</main>;
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#030714] text-white">
+    <main className="min-h-screen overflow-x-clip bg-[#030714] text-white">
       <aside
         className={`disney-sidebar fixed left-0 top-0 z-40 hidden h-screen flex-col bg-gradient-to-r from-[#030714] via-[#030714]/98 to-transparent py-7 lg:flex ${
           sidebarExpanded ? "w-[292px]" : "w-[92px]"
