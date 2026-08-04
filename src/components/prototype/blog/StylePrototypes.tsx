@@ -3,6 +3,7 @@ import Link from "next/link";
 import { titleEyebrow, titleInlineText, type Title } from "@/lib/content";
 import type { CategoryTile, TitleCollections } from "@/lib/payload-content";
 import { EditorialCategoryTiles } from "./EditorialCategoryTiles";
+import { StyleOneHeroCarousel } from "./StyleOneHeroCarousel";
 import { getPrototypeCategories, titleCategories, type PrototypeCategory, type PrototypeStyle } from "./blog-data";
 
 type HomeProps = { categoryTiles: CategoryTile[]; collections: TitleCollections; titles: Title[] };
@@ -10,12 +11,12 @@ type CategoryProps = { category: PrototypeCategory; titles: Title[] };
 type ArticleProps = { related: Title[]; title: Title };
 
 export function StyleOneHome({ categoryTiles, collections, titles }: HomeProps) {
-  const featured = titles.find((title) => title.featured) ?? titles[0];
-  const supporting = titles.filter((title) => title.slug !== featured?.slug).slice(0, 2);
+  const featuredTitles = titles.filter((title) => title.featured);
+  const heroTitles = collections.heroes.length ? collections.heroes : featuredTitles.length ? featuredTitles : titles.slice(0, 6);
   const additionalSections = homeSections(collections);
   return (
     <StyleOneFrame categories={getPrototypeCategories(titles)}>
-      {featured ? <StyleOneHero featured={featured} supporting={supporting} /> : null}
+      <div className="s1-main-hero"><StyleOneHeroCarousel titles={heroTitles} /></div>
       <ExploreBlock categories={categoryTiles} style="style-1" />
       <section className="s1-latest">
         <EditorialIntro count={titles.length} index="01" kicker="From the field" title="Latest stories" />
@@ -139,10 +140,6 @@ function StyleTwoFrame({ categories, children }: { categories: PrototypeCategory
 
 function StyleThreeFrame({ categories, children }: { categories: PrototypeCategory[]; children: React.ReactNode }) {
   return <div className="prototype-v2 style-three"><main>{children}</main><StyleThreeFooter categories={categories} /></div>;
-}
-
-function StyleOneHero({ featured, supporting }: { featured: Title; supporting: Title[] }) {
-  return <section className="s1-hero"><StoryArt className="s1-hero-art" orientation="horizontal" priority title={featured} /><div className="s1-hero-shade" /><div className="s1-hero-copy"><p>{titleEyebrow(featured)}</p><h1>{titleInlineText(featured)}</h1><p>{featured.description}</p><Link href={`/prototype/style-1/article/${featured.slug}`}>Read the story <Arrow /></Link></div><div className="s1-hero-support">{supporting.map((title, index) => <Link href={`/prototype/style-1/article/${title.slug}`} key={title.slug}><span>0{index + 2}</span><strong>{titleInlineText(title)}</strong><small>{storyMeta(title)}</small></Link>)}</div><span className="s1-scroll">Scroll to explore ↓</span></section>;
 }
 
 function StyleTwoHero({ featured, supporting }: { featured: Title; supporting: Title[] }) {
