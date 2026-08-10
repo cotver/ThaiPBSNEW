@@ -41,12 +41,9 @@ export function StyleOneArticle({ related, title }: ArticleProps) {
   return (
     <StyleOneFrame categories={getPrototypeCategories([title, ...related])}>
       <article className="s1-article">
-        <header className="s1-article-hero">
-          <StoryArt className="s1-article-image" orientation="horizontal" priority title={title} />
-          <div className="s1-article-overlay" />
-          <div className="s1-article-title"><Link href={`/prototype/style-1/category/${category.slug}`}>← {category.label}</Link><p>{titleEyebrow(title)}</p><h1>{titleInlineText(title)}</h1><span>{storyMeta(title)}</span></div>
-        </header>
-        <div className="s1-article-paper"><p className="s1-article-deck">{title.description}</p><aside><span>Category</span><strong>{category.label}</strong><span>Format</span><strong>{title.type}</strong><span>Published</span><strong>{title.year}</strong></aside></div>
+        <figure className="s1-article-figure"><StoryArt className="s1-article-image" orientation="horizontal" priority title={title} /></figure>
+        <h1 className="s1-article-title">{titleInlineText(title)}</h1>
+        <div className="s1-article-paper"><div className="s1-article-copy"><span>Story overview</span><p className="s1-article-deck">{title.description}</p></div><aside><div><span>Category</span><strong>{category.label}</strong></div><div><span>Format</span><strong>{title.type}</strong></div><div><span>Published</span><strong>{title.year}</strong></div></aside></div>
       </article>
       <StyleOneRelated titles={related} />
     </StyleOneFrame>
@@ -85,7 +82,8 @@ export function StyleTwoArticle({ related, title }: ArticleProps) {
   return (
     <StyleTwoFrame categories={getPrototypeCategories([title, ...related])}>
       <article className="s2-article">
-        <header className="s2-article-card"><div className="s2-article-copy"><Link href={`/prototype/style-2/category/${category.slug}`}>Back to {category.label}</Link><p>{titleEyebrow(title)}</p><h1>{titleInlineText(title)}</h1><span>{storyMeta(title)}</span></div><StoryArt className="s2-article-art" orientation="vertical" priority title={title} /></header>
+        <header className="s2-article-card"><StoryArt className="s2-article-art" orientation="vertical" priority title={title} /></header>
+        <h1 className="s2-article-title">{titleInlineText(title)}</h1>
         <div className="s2-article-body"><div><p>{title.description}</p></div><aside><span>Story details</span><dl><div><dt>Category</dt><dd>{category.label}</dd></div><div><dt>Format</dt><dd>{title.type}</dd></div><div><dt>Published</dt><dd>{title.year}</dd></div></dl></aside></div>
       </article>
       <section className="s2-related"><h2>Keep exploring</h2><div>{related.slice(0, 3).map((item) => <StyleTwoCard key={item.slug} title={item} />)}</div></section>
@@ -121,8 +119,8 @@ export function StyleThreeArticle({ related, title }: ArticleProps) {
   return (
     <StyleThreeFrame categories={getPrototypeCategories([title, ...related])}>
       <article className="s3-article">
-        <header className="s3-article-head"><Link href={`/prototype/style-3/category/${category.slug}`}>← Index / {category.label}</Link><div><p>{titleEyebrow(title)}</p><h1>{titleInlineText(title)}</h1></div><strong>{title.year}</strong></header>
         <StoryArt className="s3-article-image" orientation="horizontal" priority title={title} />
+        <h1 className="s3-article-title">{titleInlineText(title)}</h1>
         <div className="s3-article-body"><p>{title.description}</p><dl><div><dt>Category</dt><dd>{category.label}</dd></div><div><dt>Format</dt><dd>{title.type}</dd></div><div><dt>Runtime</dt><dd>{title.duration || "—"}</dd></div></dl></div>
       </article>
       <section className="s3-related"><div className="s3-section-bar"><span>02</span><h2>Next in the grid</h2><small>{related.length} items</small></div>{related.slice(0, 4).map((item, index) => <StyleThreeRow index={index} key={item.slug} title={item} />)}</section>
