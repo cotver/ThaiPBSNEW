@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { styleDetails, type PrototypeStyle } from "@/components/prototype/blog/blog-data";
 
-const styles: PrototypeStyle[] = ["style-1", "style-2", "style-3", "style-4", "style-5", "style-6"];
+const styles: PrototypeStyle[] = ["style-1", "style-2", "style-3", "style-4", "style-5", "style-8", "style-9", "style-10", "style-11"];
 
 export default function PrototypeComparisonPage() {
   return (
     <main className="prototype-hub">
       <header className="prototype-hub__header">
-        <div><p>Thai PBS · Blog redesign study</p><h1>Six ways to<br/>tell the story.</h1></div>
-        <p>Compare six complete, responsive directions. Each uses the same catalog data, routes and article structure.</p>
+        <div><p>Thai PBS · Blog redesign study</p><h1>Nine ways to<br/>tell the story.</h1></div>
+        <p>Compare nine complete, responsive directions. Each uses the same catalog data, routes and article structure.</p>
       </header>
       <section className="prototype-hub__grid" aria-label="Blog prototype styles">
         {styles.map((style, index) => {

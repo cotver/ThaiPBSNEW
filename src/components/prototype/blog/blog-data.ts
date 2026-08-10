@@ -1,6 +1,6 @@
 import type { Title } from "@/lib/content";
 
-export type PrototypeStyle = "style-1" | "style-2" | "style-3" | "style-4" | "style-5" | "style-6";
+export type PrototypeStyle = "style-1" | "style-2" | "style-3" | "style-4" | "style-5" | "style-8" | "style-9" | "style-10" | "style-11";
 
 export type PrototypeCategory = {
   label: string;
@@ -39,15 +39,30 @@ export const styleDetails: Record<PrototypeStyle, { label: string; name: string;
     name: "Edition",
     note: "Editorial, image-led and fashion-forward",
   },
-  "style-6": {
-    label: "Style 6",
-    name: "Current",
-    note: "A refined, interactive hybrid direction",
+  "style-8": {
+    label: "Style 8",
+    name: "Patchwork",
+    note: "Friendly, playful and lifestyle-editorial",
+  },
+  "style-9": {
+    label: "Style 9",
+    name: "Trail Journal",
+    note: "Spacious, personal and image-led",
+  },
+  "style-10": {
+    label: "Style 10",
+    name: "Playroom",
+    note: "Video-first, relaxed and creator-led",
+  },
+  "style-11": {
+    label: "Style 11",
+    name: "Margin Notes",
+    note: "Calm, human and thoughtfully editorial",
   },
 };
 
 export function parsePrototypeStyle(value: string): PrototypeStyle | undefined {
-  return value === "style-1" || value === "style-2" || value === "style-3" || value === "style-4" || value === "style-5" || value === "style-6" ? value : undefined;
+  return value === "style-1" || value === "style-2" || value === "style-3" || value === "style-4" || value === "style-5" || value === "style-8" || value === "style-9" || value === "style-10" || value === "style-11" ? value : undefined;
 }
 
 export function categorySlug(value: string) {
