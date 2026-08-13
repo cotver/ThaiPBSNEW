@@ -1,42 +1,10 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
 import { titleEyebrow, titleHref, titleInlineText, type Title } from "@/lib/content";
 
 /** Final-only program-category rail based on the earlier Continue Watching card band. */
 export function FinalProgramBand({ title, titles, viewAllHref }: { title: string; titles: Title[]; viewAllHref: string }) {
-  const railRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  useEffect(() => {
-    const rail = railRef.current;
-    if (!rail) return;
-    const update = () => {
-      const maxScroll = rail.scrollWidth - rail.clientWidth;
-      setCanScrollLeft(rail.scrollLeft > 2);
-      setCanScrollRight(rail.scrollLeft < maxScroll - 2);
-    };
-    update();
-    rail.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    return () => { rail.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
-  }, [titles]);
-
   if (!titles.length) return null;
-
-  function scroll(direction: -1 | 1) {
-    const rail = railRef.current;
-    if (!rail) return;
-    const firstCard = rail.firstElementChild as HTMLElement | null;
-    if (!firstCard) return;
-    const gap = Number.parseFloat(window.getComputedStyle(rail).gap) || 0;
-    const cardStep = firstCard.offsetWidth + gap;
-    const currentCard = Math.round(rail.scrollLeft / cardStep);
-    rail.scrollTo({ behavior: "smooth", left: Math.max(0, (currentCard + direction) * cardStep) });
-  }
 
   return (
     <section className="final-program-band" aria-label={title}>
@@ -44,9 +12,7 @@ export function FinalProgramBand({ title, titles, viewAllHref }: { title: string
         <h2>{title}</h2>
         <Link href={viewAllHref}>View All ↗</Link>
       </header>
-      <div className="final-program-band__stage">
-        {canScrollLeft && <button aria-label={`Scroll ${title} left`} className="final-program-band__arrow is-left" onClick={() => scroll(-1)} type="button">‹</button>}
-        <div className="final-program-band__rail" ref={railRef}>
+      <div className="final-program-band__rail">
         {titles.map((story, index) => {
           const image = story.posterImage || story.heroImage;
           return (
@@ -60,8 +26,6 @@ export function FinalProgramBand({ title, titles, viewAllHref }: { title: string
             </Link>
           );
         })}
-        </div>
-        {canScrollRight && <button aria-label={`Scroll ${title} right`} className="final-program-band__arrow is-right" onClick={() => scroll(1)} type="button">›</button>}
       </div>
     </section>
   );
