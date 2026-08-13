@@ -893,10 +893,10 @@ select {
 .final-program-band__rail { --final-band-pad: max(1.25rem,5vw); cursor: grab; display: flex; gap: 1rem; overflow-x: auto; overscroll-behavior-x: contain; padding: .4rem var(--final-band-pad) .75rem; scroll-behavior: smooth; scroll-padding-inline: var(--final-band-pad); scroll-snap-type: x mandatory; scrollbar-width: none; touch-action: pan-y; }
 .final-program-band__rail::-webkit-scrollbar { display: none; }
 .final-program-band__rail:active { cursor: grabbing; }
-.final-program-band__arrow { align-items: center; background: linear-gradient(90deg, rgb(9 9 10 / 94%), rgb(9 9 10 / 12%)); border: 0; bottom: .75rem; color: #fff; cursor: pointer; display: none; font-size: 3rem; justify-content: center; position: absolute; top: .4rem; transition: color .2s ease; width: 3rem; z-index: 4; }
+.final-program-band__arrow { align-items: center; background: linear-gradient(90deg, #09090a 0%, rgb(9 9 10 / 96%) 36%, rgb(9 9 10 / 72%) 65%, transparent 100%); border: 0; bottom: .75rem; color: #fff; cursor: pointer; display: none; font-size: 3rem; justify-content: flex-start; padding: 0 0 0 max(.75rem,1.5vw); position: absolute; top: .4rem; transition: color .2s ease; width: clamp(4.5rem,7vw,8rem); z-index: 12; }
 .final-program-band__arrow:hover { color: #f47c62; }
 .final-program-band__arrow.is-left { left: 0; }
-.final-program-band__arrow.is-right { background: linear-gradient(270deg, rgb(9 9 10 / 94%), rgb(9 9 10 / 12%)); right: 0; }
+.final-program-band__arrow.is-right { background: linear-gradient(270deg, #09090a 0%, rgb(9 9 10 / 96%) 36%, rgb(9 9 10 / 72%) 65%, transparent 100%); justify-content: flex-end; padding: 0 max(.75rem,1.5vw) 0 0; right: 0; }
 .final-program-band__card { color: inherit; flex: 0 0 calc((100% - 6rem) / 7); min-width: 0; position: relative; scroll-snap-align: start; text-decoration: none; transition: transform .35s ease; }
 .final-program-band__card:nth-child(even) { margin-top: 2.5rem; }
 .final-program-band__card::before { background: #ff3d16; content: ""; height: .25rem; left: 0; position: absolute; top: 0; transform: scaleX(0); transform-origin: left; transition: transform .35s ease; width: 100%; z-index: 2; }
