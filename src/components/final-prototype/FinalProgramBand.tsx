@@ -30,7 +30,12 @@ export function FinalProgramBand({ title, titles, viewAllHref }: { title: string
   function scroll(direction: -1 | 1) {
     const rail = railRef.current;
     if (!rail) return;
-    rail.scrollBy({ behavior: "smooth", left: direction * rail.clientWidth });
+    const firstCard = rail.firstElementChild as HTMLElement | null;
+    if (!firstCard) return;
+    const gap = Number.parseFloat(window.getComputedStyle(rail).gap) || 0;
+    const cardStep = firstCard.offsetWidth + gap;
+    const currentCard = Math.round(rail.scrollLeft / cardStep);
+    rail.scrollTo({ behavior: "smooth", left: Math.max(0, (currentCard + direction) * cardStep) });
   }
 
   return (
