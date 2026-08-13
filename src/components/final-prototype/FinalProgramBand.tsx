@@ -10,6 +10,7 @@ export function FinalProgramBand({ title, titles, viewAllHref }: { title: string
   const railRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const visibleTitles = titles.slice(0, 21);
 
   useEffect(() => {
     const rail = railRef.current;
@@ -53,7 +54,7 @@ export function FinalProgramBand({ title, titles, viewAllHref }: { title: string
       <div className="final-program-band__stage">
         {canScrollLeft && <button aria-label={`Scroll ${title} left`} className="final-program-band__arrow is-left" onClick={() => scroll(-1)} type="button">‹</button>}
         <div className="final-program-band__rail" ref={railRef}>
-        {titles.map((story, index) => {
+        {visibleTitles.map((story, index) => {
           const image = story.posterImage || story.heroImage;
           return (
             <Link className="final-program-band__card" href={titleHref(story.slug)} key={story.slug}>

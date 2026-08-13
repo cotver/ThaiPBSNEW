@@ -30,7 +30,12 @@ export function FinalContinueFeatured({ titles, viewAllHref }: { titles: Title[]
   function scroll(direction: -1 | 1) {
     const rail = railRef.current;
     if (!rail) return;
-    rail.scrollBy({ behavior: "smooth", left: direction * Math.max(320, rail.clientWidth * 0.78) });
+    const firstCard = rail.firstElementChild as HTMLElement | null;
+    if (!firstCard) return;
+    const gap = Number.parseFloat(window.getComputedStyle(rail).gap) || 0;
+    const cardStep = firstCard.offsetWidth + gap;
+    const visibleCards = Math.max(1, Math.round((rail.clientWidth + gap) / cardStep));
+    rail.scrollBy({ behavior: "smooth", left: direction * visibleCards * cardStep });
   }
 
   return (
@@ -47,7 +52,7 @@ export function FinalContinueFeatured({ titles, viewAllHref }: { titles: Title[]
           return (
             <Link className="final-continue-latest__story" href={titleHref(story.slug)} key={story.slug}>
               <div className="final-continue-latest__image">
-                {image ? <Image alt="" fill loading={index < 4 ? "eager" : "lazy"} sizes="(max-width: 640px) 48vw, 31vw" src={image} /> : <i className={`final-continue-latest__fallback bg-gradient-to-br ${story.tone}`} />}
+                {image ? <Image alt="" fill loading={index < 5 ? "eager" : "lazy"} sizes="(max-width: 640px) 82vw, (max-width: 900px) 48vw, (max-width: 1200px) 32vw, (max-width: 1535px) 24vw, 19vw" src={image} /> : <i className={`final-continue-latest__fallback bg-gradient-to-br ${story.tone}`} />}
                 {story.progress && <b style={{ width: story.progress }} />}
               </div>
               <div className="final-continue-latest__copy">

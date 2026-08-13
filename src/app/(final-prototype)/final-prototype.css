@@ -925,7 +925,7 @@ select {
 .final-continue-latest__arrow:hover { color: #d84f52; }
 .final-continue-latest__arrow.is-left { left: 0; }
 .final-continue-latest__arrow.is-right { background: linear-gradient(270deg, rgb(255 255 255 / 94%), rgb(255 255 255 / 12%)); right: 0; }
-.final-continue-latest__story { align-self: start; color: inherit; flex: 0 0 clamp(250px,28vw,430px); scroll-snap-align: start; text-decoration: none; }
+.final-continue-latest__story { align-self: start; color: inherit; flex: 0 0 82vw; min-width: 0; scroll-snap-align: start; text-decoration: none; }
 .final-continue-latest__image { aspect-ratio: 16 / 9; overflow: hidden; position: relative; }
 .final-continue-latest__story:nth-child(2n) { margin-top: 3rem; }
 .final-continue-latest__image img { object-fit: cover; transition: transform .55s cubic-bezier(.2,.7,.2,1); }
@@ -1372,7 +1372,7 @@ select {
   .final-continue-latest__heading > a { justify-self: start; }
   .final-continue-latest__heading h2 { font-size: 3.2rem; letter-spacing: -.1em; }
   .final-continue-latest__grid { padding: .4rem 0 .8rem; }
-  .final-continue-latest__story { flex-basis: 78vw; }
+  .final-continue-latest__story { flex-basis: 82vw; }
   .final-program-journal { gap: 3rem; margin-left: -1rem; margin-right: -1rem; padding: 4.5rem 1rem; }
   .final-program-journal + .final-program-journal { margin-top: -1.75rem; }
   .final-program-journal__cards { gap: 0.8rem; grid-auto-columns: 64vw; grid-auto-flow: column; grid-template-columns: unset; overflow-x: auto; padding-bottom: 0.6rem; scroll-snap-type: x mandatory; }
@@ -1412,18 +1412,26 @@ select {
 
 @media (min-width: 641px) and (max-width: 767px) {
   .final-program-band__card { flex-basis: calc((100% - 2rem) / 3); }
+  .final-continue-latest__story { flex-basis: calc((100% - 1.5rem) / 2); }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
   .final-program-band__card { flex-basis: calc((100% - 3rem) / 4); }
+  .final-continue-latest__story { flex-basis: calc((100% - 3rem) / 3); }
 }
 
 @media (min-width: 1024px) and (max-width: 1279px) {
   .final-program-band__card { flex-basis: calc((100% - 4rem) / 5); }
+  .final-continue-latest__story { flex-basis: calc((100% - 4.5rem) / 4); }
 }
 
 @media (min-width: 1280px) and (max-width: 1535px) {
   .final-program-band__card { flex-basis: calc((100% - 5rem) / 6); }
+  .final-continue-latest__story { flex-basis: calc((100% - 4.5rem) / 4); }
+}
+
+@media (min-width: 1536px) {
+  .final-continue-latest__story { flex-basis: calc((100% - 6rem) / 5); }
 }
 
 @media (min-width: 768px) {
