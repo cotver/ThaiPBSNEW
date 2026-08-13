@@ -28,7 +28,7 @@ export function FinalRecommendedSpotlight({ titles }: { titles: Title[] }) {
   const metadata = [activeTitle.year, activeTitle.duration, activeTitle.rating].filter(Boolean);
   const titleText = titleInlineText(activeTitle);
   const titleLength = titleText.replace(/\s/g, "").length;
-  const titleSize = titleLength > 62 ? "is-very-long" : titleLength > 38 ? "is-long" : "";
+  const titleSize = titleLength > 44 ? "is-very-long" : titleLength > 24 ? "is-long" : "";
 
   return (
     <section className="final-recommended" aria-label="Recommended For You">
