@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { titleDisplayLines, titleEyebrow, titleHref, titleInlineText, type Title } from "@/lib/content";
 import { FinalSaveButton } from "./FinalSaveButton";
 
@@ -61,8 +61,8 @@ export function FinalHero({ heroes }: { heroes: Title[] }) {
   const heroRef = useRef<HTMLElement>(null);
   const trailerIframeRef = useRef<HTMLIFrameElement>(null);
   const trailerVideoRef = useRef<HTMLVideoElement>(null);
-  const visibleHeroes = heroes.slice(0, 3);
-  const heroCount = Math.min(heroes.length, 3);
+  const visibleHeroes = heroes;
+  const heroCount = heroes.length;
   const activeHero = visibleHeroes[activeIndex] ?? visibleHeroes[0];
   const trailerSource = getTrailerSource(activeHero);
   const trailerUrl = trailerSource.url;
@@ -368,16 +368,26 @@ export function FinalHero({ heroes }: { heroes: Title[] }) {
           {visibleHeroes.map((hero, index) => {
             const position = (index - activeIndex + visibleHeroes.length) % visibleHeroes.length;
             const image = hero.heroImage || hero.posterImage;
+            const angle = position === 0 ? 0 : ((position - 1) * 360) / Math.max(1, visibleHeroes.length - 1);
+            const cardStyle = position === 0
+              ? undefined
+              : {
+                  "--final-hero-card-x": `${Math.cos((angle * Math.PI) / 180) * 7.4}rem`,
+                  "--final-hero-card-y": `${Math.sin((angle * Math.PI) / 180) * 2.85}rem`,
+                  "--final-hero-card-rotate": `${angle / 9}deg`,
+                } as CSSProperties;
 
             return (
               <button
                 aria-label={`Show ${titleInlineText(hero)}`}
                 aria-pressed={index === activeIndex}
                 className="final-hero-card"
+                data-active={position === 0}
                 data-index={index}
                 data-position={position}
                 key={`${hero.source ?? "program"}-${hero.slug}`}
                 onClick={() => setActiveIndex(index === activeIndex ? (index + 1) % heroCount : index)}
+                style={cardStyle}
                 type="button"
               >
                 <div className="final-hero-card__image">

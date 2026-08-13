@@ -26,13 +26,16 @@ export function FinalRecommendedSpotlight({ titles }: { titles: Title[] }) {
 
   const image = activeTitle.heroImage || activeTitle.posterImage;
   const metadata = [activeTitle.year, activeTitle.duration, activeTitle.rating].filter(Boolean);
+  const titleText = titleInlineText(activeTitle);
+  const titleLength = titleText.replace(/\s/g, "").length;
+  const titleSize = titleLength > 62 ? "is-very-long" : titleLength > 38 ? "is-long" : "";
 
   return (
     <section className="final-recommended" aria-label="Recommended For You">
       <div className="final-recommended__copy">
         <Link className="final-recommended__details" href={titleHref(activeTitle.slug)}>
           <p>{titleEyebrow(activeTitle)}</p>
-          <h2>{titleInlineText(activeTitle)}</h2>
+          <h2 className={titleSize}>{titleText}</h2>
           {metadata.length > 0 && <small>{metadata.join(" · ")}</small>}
           {activeTitle.description && <span>{activeTitle.description}</span>}
         </Link>

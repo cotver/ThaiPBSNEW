@@ -45,7 +45,7 @@ export function FinalCategoryTiles({ categories }: { categories: CategoryTile[] 
               {category.imageUrl && (
                 <Image
                   alt=""
-                  className={showVideo ? "final-category-tile__image is-hidden" : "final-category-tile__image"}
+                  className="final-category-tile__image"
                   fill
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
                   src={category.imageUrl}
