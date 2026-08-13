@@ -897,7 +897,7 @@ select {
 .final-program-band__arrow:hover { color: #f47c62; }
 .final-program-band__arrow.is-left { left: 0; }
 .final-program-band__arrow.is-right { background: linear-gradient(270deg, #09090a 0%, rgb(9 9 10 / 82%) 42%, transparent 100%); right: 0; }
-.final-program-band__card { color: inherit; flex: 0 0 calc((100% - 6rem) / 7); min-width: 0; position: relative; scroll-snap-align: start; text-decoration: none; transition: transform .35s ease; }
+.final-program-band__card { color: inherit; container-type: inline-size; flex: 0 0 calc((100% - 6rem) / 7); min-width: 0; overflow: hidden; position: relative; scroll-snap-align: start; text-decoration: none; transition: transform .35s ease; }
 .final-program-band__card:nth-child(even) { margin-top: 2.5rem; }
 .final-program-band__card::before { background: #ff3d16; content: ""; height: .25rem; left: 0; position: absolute; top: 0; transform: scaleX(0); transform-origin: left; transition: transform .35s ease; width: 100%; z-index: 2; }
 .final-program-band__card:hover { transform: translateY(-.5rem); }
@@ -906,8 +906,8 @@ select {
 .final-program-band__image img { object-fit: cover; transition: transform .55s cubic-bezier(.2,.7,.2,1); }
 .final-program-band__fallback { display: block; height: 100%; width: 100%; }
 .final-program-band__card:hover img { transform: scale(1.06); }
-.final-program-band__card p, .final-program-band__card small { color: rgba(244,239,225,.63); display: block; font-size: .6rem; font-weight: 800; letter-spacing: .1em; margin: .9rem 0 0; text-transform: uppercase; }
-.final-program-band__card h3 { color: #f4efe1; font-size: clamp(1.5rem,2.5vw,2.7rem); font-weight: 800; letter-spacing: -.08em; line-height: .85; margin: .5rem 0; }
+.final-program-band__card p, .final-program-band__card small { color: rgba(244,239,225,.63); display: block; font-size: .6rem; font-weight: 800; letter-spacing: .08em; margin: .9rem 0 0; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.final-program-band__card h3 { color: #f4efe1; display: -webkit-box; font-size: clamp(1.15rem,10cqw,2.15rem); font-weight: 800; hyphens: auto; letter-spacing: -.055em; line-height: .96; margin: .5rem 0; max-width: 100%; overflow: hidden; overflow-wrap: anywhere; word-break: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
 .final-program-band__card:hover p { color: #ff3d16; }
 
 /* Final-only adaptation of Style 10's Recommended rail. */
