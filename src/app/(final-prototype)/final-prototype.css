@@ -897,7 +897,7 @@ select {
 .final-program-band__arrow:hover { color: #f47c62; }
 .final-program-band__arrow.is-left { left: 0; }
 .final-program-band__arrow.is-right { background: linear-gradient(270deg, rgb(9 9 10 / 94%), rgb(9 9 10 / 12%)); right: 0; }
-.final-program-band__card { color: inherit; flex: 0 0 min(25vw,19rem); position: relative; scroll-snap-align: start; text-decoration: none; transition: transform .35s ease; }
+.final-program-band__card { color: inherit; flex: 0 0 calc((100% - 6rem) / 7); min-width: 0; position: relative; scroll-snap-align: start; text-decoration: none; transition: transform .35s ease; }
 .final-program-band__card:nth-child(even) { margin-top: 2.5rem; }
 .final-program-band__card::before { background: #ff3d16; content: ""; height: .25rem; left: 0; position: absolute; top: 0; transform: scaleX(0); transform-origin: left; transition: transform .35s ease; width: 100%; z-index: 2; }
 .final-program-band__card:hover { transform: translateY(-.5rem); }

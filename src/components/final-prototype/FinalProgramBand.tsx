@@ -30,7 +30,7 @@ export function FinalProgramBand({ title, titles, viewAllHref }: { title: string
   function scroll(direction: -1 | 1) {
     const rail = railRef.current;
     if (!rail) return;
-    rail.scrollBy({ behavior: "smooth", left: direction * Math.max(320, rail.clientWidth * 0.78) });
+    rail.scrollBy({ behavior: "smooth", left: direction * rail.clientWidth });
   }
 
   return (
