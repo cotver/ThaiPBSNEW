@@ -889,8 +889,14 @@ select {
 .final-program-band h2 { font-size: clamp(2.8rem,6vw,6.5rem); font-weight: 900; letter-spacing: -.1em; line-height: .72; margin: 0; text-transform: uppercase; }
 .final-program-band > header a { border-bottom: 1px solid currentColor; color: #f47c62; flex: none; font-size: .62rem; font-weight: 800; letter-spacing: .1em; padding-bottom: .35rem; text-decoration: none; text-transform: uppercase; }
 .final-program-band > header a:hover { color: #f4efe1; }
+.final-program-band__stage { margin: -.4rem 0; overflow: hidden; position: relative; }
 .final-program-band__rail { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: .4rem max(1.25rem,5vw) .75rem; }
+.final-program-band__arrow { align-items: center; background: linear-gradient(90deg, rgb(9 9 10 / 94%), rgb(9 9 10 / 12%)); border: 0; bottom: .75rem; color: #fff; cursor: pointer; display: none; font-size: 3rem; justify-content: center; position: absolute; top: .4rem; transition: color .2s ease; width: 3rem; z-index: 4; }
+.final-program-band__arrow:hover { color: #f47c62; }
+.final-program-band__arrow.is-left { left: 0; }
+.final-program-band__arrow.is-right { background: linear-gradient(270deg, rgb(9 9 10 / 94%), rgb(9 9 10 / 12%)); right: 0; }
 .final-program-band__card { color: inherit; min-width: 0; position: relative; text-decoration: none; transition: transform .35s ease; }
+.final-program-band__card:nth-child(even) { margin-top: 2.5rem; }
 .final-program-band__card::before { background: #ff3d16; content: ""; height: .25rem; left: 0; position: absolute; top: 0; transform: scaleX(0); transform-origin: left; transition: transform .35s ease; width: 100%; z-index: 2; }
 .final-program-band__card:hover { transform: translateY(-.5rem); }
 .final-program-band__card:hover::before { transform: scaleX(1); }
@@ -1423,7 +1429,7 @@ select {
     display: none;
   }
 
-  .final-row-arrow, .final-continue-latest__arrow { display: flex; }
+  .final-row-arrow, .final-program-band__arrow, .final-continue-latest__arrow { display: flex; }
 }
 
 @media (min-width: 640px) { .final-program-band__rail { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
