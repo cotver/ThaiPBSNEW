@@ -19,6 +19,7 @@ export function FinalProgramBand({ title, titles, viewAllHref }: { title: string
       setCanScrollLeft(rail.scrollLeft > 2);
       setCanScrollRight(rail.scrollLeft < maxScroll - 2);
     };
+    rail.scrollLeft = 0;
     update();
     rail.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
@@ -30,7 +31,17 @@ export function FinalProgramBand({ title, titles, viewAllHref }: { title: string
   function scroll(direction: -1 | 1) {
     const rail = railRef.current;
     if (!rail) return;
-    rail.scrollBy({ behavior: "smooth", left: direction * Math.max(320, rail.clientWidth * 0.82) });
+    const firstCard = rail.firstElementChild as HTMLElement | null;
+    if (!firstCard) return;
+    const styles = window.getComputedStyle(rail);
+    const gap = Number.parseFloat(styles.gap) || 0;
+    const paddingLeft = Number.parseFloat(styles.paddingLeft) || 0;
+    const paddingRight = Number.parseFloat(styles.paddingRight) || 0;
+    const step = firstCard.offsetWidth + gap;
+    const visibleCards = Math.max(1, Math.round((rail.clientWidth - paddingLeft - paddingRight + gap) / step));
+    const currentCard = Math.round(rail.scrollLeft / step);
+    const targetCard = Math.max(0, currentCard + direction * Math.max(1, visibleCards - 1));
+    rail.scrollTo({ behavior: "smooth", left: Math.min(rail.scrollWidth - rail.clientWidth, targetCard * step) });
   }
 
   return (
