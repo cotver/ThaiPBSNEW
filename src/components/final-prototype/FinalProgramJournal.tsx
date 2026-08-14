@@ -5,14 +5,16 @@ import Link from "next/link";
 import { useState } from "react";
 import { titleEyebrow, titleHref, titleInlineText, type Title } from "@/lib/content";
 
-const PROGRAMS_PER_PAGE = 4;
+const PROGRAMS_PER_PAGE = 8;
 const MAX_PAGES = 3;
+const MAX_PROGRAMS = PROGRAMS_PER_PAGE * MAX_PAGES;
 
 export function FinalProgramJournal({ title, titles, viewAllHref }: { title: string; titles: Title[]; viewAllHref: string }) {
   const [page, setPage] = useState(0);
-  const pageCount = Math.min(MAX_PAGES, Math.max(1, Math.ceil(titles.length / PROGRAMS_PER_PAGE)));
+  const limitedTitles = titles.slice(0, MAX_PROGRAMS);
+  const pageCount = Math.max(1, Math.ceil(limitedTitles.length / PROGRAMS_PER_PAGE));
   const activePage = Math.min(page, pageCount - 1);
-  const visibleTitles = titles.slice(activePage * PROGRAMS_PER_PAGE, (activePage + 1) * PROGRAMS_PER_PAGE);
+  const visibleTitles = limitedTitles.slice(activePage * PROGRAMS_PER_PAGE, (activePage + 1) * PROGRAMS_PER_PAGE);
 
   if (!titles.length) return null;
 
