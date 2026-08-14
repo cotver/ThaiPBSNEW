@@ -47,7 +47,7 @@ export function FinalHomeSections({ categories, collections }: { categories: Cat
     });
 
     return () => observer.disconnect();
-  }, []);
+  }, [categories, collections]);
 
   return (
     <section className="final-home-sections" ref={rootRef}>
