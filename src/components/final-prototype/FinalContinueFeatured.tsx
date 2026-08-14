@@ -11,6 +11,7 @@ export function FinalContinueFeatured({ titles, viewAllHref }: { titles: Title[]
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [hasOverflow, setHasOverflow] = useState(false);
+  const [rotationOffset, setRotationOffset] = useState(0);
 
   useEffect(() => {
     const rail = railRef.current;
@@ -28,6 +29,7 @@ export function FinalContinueFeatured({ titles, viewAllHref }: { titles: Title[]
   }, [titles]);
 
   if (!titles.length) return null;
+  const displayedTitles = titles.map((_, index) => titles[(index + rotationOffset) % titles.length]);
 
   function scroll(direction: -1 | 1) {
     const rail = railRef.current;
@@ -40,6 +42,24 @@ export function FinalContinueFeatured({ titles, viewAllHref }: { titles: Title[]
     rail.scrollBy({ behavior: "smooth", left: direction * visibleCards * cardStep });
   }
 
+  function navigate(direction: -1 | 1) {
+    const rail = railRef.current;
+    if (!rail) return;
+    if (!hasOverflow) {
+      setRotationOffset((offset) => (offset + direction + titles.length) % titles.length);
+      return;
+    }
+    if (direction < 0 && !canScrollLeft) {
+      rail.scrollTo({ behavior: "smooth", left: rail.scrollWidth - rail.clientWidth });
+      return;
+    }
+    if (direction > 0 && !canScrollRight) {
+      rail.scrollTo({ behavior: "smooth", left: 0 });
+      return;
+    }
+    scroll(direction);
+  }
+
   return (
     <section aria-label="Continue Watching" className="final-continue-latest">
       <header className="final-continue-latest__heading">
@@ -47,9 +67,9 @@ export function FinalContinueFeatured({ titles, viewAllHref }: { titles: Title[]
         <Link href={viewAllHref}>View All ↗</Link>
       </header>
       <div className="final-continue-latest__stage">
-        {hasOverflow && <button aria-label="Previous Continue Watching page" className="final-continue-latest__arrow is-left" disabled={!canScrollLeft} onClick={() => scroll(-1)} type="button">‹</button>}
+        {titles.length > 1 && <button aria-label="Previous Continue Watching page" className="final-continue-latest__arrow is-left" onClick={() => navigate(-1)} type="button">‹</button>}
         <div className="final-continue-latest__grid" ref={railRef}>
-        {titles.map((story, index) => {
+        {displayedTitles.map((story, index) => {
           const image = story.heroImage || story.posterImage;
           return (
             <Link className="final-continue-latest__story" href={titleHref(story.slug)} key={story.slug}>
@@ -66,7 +86,7 @@ export function FinalContinueFeatured({ titles, viewAllHref }: { titles: Title[]
           );
         })}
         </div>
-        {hasOverflow && <button aria-label="Next Continue Watching page" className="final-continue-latest__arrow is-right" disabled={!canScrollRight} onClick={() => scroll(1)} type="button">›</button>}
+        {titles.length > 1 && <button aria-label="Next Continue Watching page" className="final-continue-latest__arrow is-right" onClick={() => navigate(1)} type="button">›</button>}
       </div>
     </section>
   );
