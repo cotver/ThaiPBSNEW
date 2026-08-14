@@ -28,7 +28,13 @@ export function FinalRecommendedSpotlight({ titles }: { titles: Title[] }) {
   const metadata = [activeTitle.year, activeTitle.duration, activeTitle.rating].filter(Boolean);
   const titleText = titleInlineText(activeTitle);
   const titleLength = titleText.replace(/\s/g, "").length;
-  const titleSize = titleLength > 44 ? "is-very-long" : titleLength > 24 ? "is-long" : "";
+  const titleWords = titleText.split(/\s+/).filter(Boolean);
+  const longestWordLength = Math.max(...titleWords.map((word) => word.length));
+  const titleSize = titleLength > 34 || longestWordLength > 16
+    ? "is-very-long"
+    : titleLength > 12 || longestWordLength > 11 || titleWords.length > 2
+      ? "is-long"
+      : "";
 
   return (
     <section className="final-recommended" aria-label="Recommended For You">

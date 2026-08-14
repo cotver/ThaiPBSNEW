@@ -27,12 +27,6 @@ export function FinalHomeSections({ categories, collections }: { categories: Cat
         titles={collections.continueWatching}
         viewAllHref="/browse?section=continue-watching&label=Continue%20Watching"
       />
-      <FinalContentRow
-        layout="portrait"
-        title="Continue Programs"
-        titles={collections.continuePrograms}
-        viewAllHref="/browse?section=continue-programs&label=Continue%20Programs"
-      />
       {collections.yearRows.map((row) => (
         <FinalYearMotion
           key={row.year}
@@ -44,6 +38,12 @@ export function FinalHomeSections({ categories, collections }: { categories: Cat
 
       <FinalProgramJournal title="Thai Programs" titles={collections.thaiPrograms} viewAllHref="/browse?section=thai&label=Thai%20Programs" />
       <FinalProgramJournal title="International Programs" titles={collections.internationalPrograms} viewAllHref="/browse?section=international&label=International%20Programs" />
+      <FinalContentRow
+        layout="portrait"
+        title="Continue Programs"
+        titles={collections.continuePrograms}
+        viewAllHref="/browse?section=continue-programs&label=Continue%20Programs"
+      />
       <FinalContentRow
         layout="portrait"
         title="Discontinued Programs"

@@ -2,12 +2,22 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { titleEyebrow, titleHref, titleInlineText, type Title } from "@/lib/content";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { titleHref, titleInlineText, type Title } from "@/lib/content";
 
 type FinalRowLayout = "landscape" | "portrait" | "wide";
 
-export function FinalContentRow({ layout, title, titles, viewAllHref }: { layout: FinalRowLayout; title: string; titles: Title[]; viewAllHref: string }) {
+export function FinalContentRow({
+  layout,
+  title,
+  titles,
+  viewAllHref,
+}: {
+  layout: FinalRowLayout;
+  title: string;
+  titles: Title[];
+  viewAllHref: string;
+}) {
   const railRef = useRef<HTMLDivElement>(null);
   const dragStartXRef = useRef(0);
   const dragStartScrollRef = useRef(0);
@@ -15,31 +25,52 @@ export function FinalContentRow({ layout, title, titles, viewAllHref }: { layout
   const dragActiveRef = useRef(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [hasOverflow, setHasOverflow] = useState(false);
 
-  function updateScrollState() {
+  const updateScrollState = useCallback(() => {
     const rail = railRef.current;
     if (!rail) return;
-    const max = rail.scrollWidth - rail.clientWidth;
+
+    const maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
+    setHasOverflow(maxScroll > 2);
     setCanScrollLeft(rail.scrollLeft > 2);
-    setCanScrollRight(rail.scrollLeft < max - 2);
-  }
+    setCanScrollRight(rail.scrollLeft < maxScroll - 2);
+  }, []);
 
   useEffect(() => {
     const rail = railRef.current;
     if (!rail) return;
-    const update = () => updateScrollState();
-    update();
-    rail.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    return () => { rail.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
-  }, [titles]);
+
+    rail.scrollLeft = 0;
+    updateScrollState();
+    const resizeObserver = new ResizeObserver(updateScrollState);
+    resizeObserver.observe(rail);
+    Array.from(rail.children).forEach((child) => resizeObserver.observe(child));
+    rail.addEventListener("scroll", updateScrollState, { passive: true });
+
+    return () => {
+      resizeObserver.disconnect();
+      rail.removeEventListener("scroll", updateScrollState);
+    };
+  }, [titles, updateScrollState]);
 
   if (!titles.length) return null;
 
   function scroll(direction: -1 | 1) {
     const rail = railRef.current;
     if (!rail) return;
-    rail.scrollBy({ behavior: "smooth", left: direction * Math.max(320, rail.clientWidth * 0.82) });
+
+    const card = rail.querySelector<HTMLElement>(".final-title-card");
+    const gap = Number.parseFloat(getComputedStyle(rail).columnGap || "16") || 16;
+    const cardWidth = card?.getBoundingClientRect().width ?? rail.clientWidth;
+    const visibleCards = Math.max(1, Math.round((rail.clientWidth + gap) / (cardWidth + gap)));
+    const pageWidth = visibleCards * (cardWidth + gap);
+    const maxScroll = rail.scrollWidth - rail.clientWidth;
+    const target = direction > 0
+      ? (canScrollRight ? Math.min(maxScroll, rail.scrollLeft + pageWidth) : 0)
+      : (canScrollLeft ? Math.max(0, rail.scrollLeft - pageWidth) : maxScroll);
+
+    rail.scrollTo({ behavior: "smooth", left: target });
   }
 
   function startDrag(event: React.PointerEvent<HTMLDivElement>) {
@@ -55,29 +86,46 @@ export function FinalContentRow({ layout, title, titles, viewAllHref }: { layout
     const rail = railRef.current;
     if (!rail || !dragActiveRef.current) return;
     const delta = event.clientX - dragStartXRef.current;
+
     if (Math.abs(delta) > 6) {
       didDragRef.current = true;
-      if (!event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.setPointerCapture(event.pointerId);
+      rail.dataset.dragging = "true";
+      if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
     }
     rail.scrollLeft = dragStartScrollRef.current - delta;
   }
 
   function stopDrag(event: React.PointerEvent<HTMLDivElement>) {
     dragActiveRef.current = false;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    railRef.current?.removeAttribute("data-dragging");
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   }
 
   return (
-    <section className="final-content-row" data-layout={layout}>
+    <section className="final-content-row" data-layout={layout} data-overflow={hasOverflow}>
       <header>
         <h2>{title}</h2>
-        <Link href={viewAllHref}>View All <span>›</span></Link>
+        <Link href={viewAllHref}>View All <span aria-hidden="true">›</span></Link>
       </header>
       <div className="final-content-row__stage">
-        {canScrollLeft && <button aria-label={`Scroll ${title} left`} className="final-row-arrow is-left" onClick={() => scroll(-1)} type="button">‹</button>}
+        {canScrollLeft ? (
+          <button aria-label={`Previous ${title}`} className="final-row-arrow is-left" onClick={() => scroll(-1)} type="button">
+            <span aria-hidden="true">‹</span>
+          </button>
+        ) : null}
         <div
           className="final-content-row__rail"
-          onClickCapture={(event) => { if (didDragRef.current) { event.preventDefault(); event.stopPropagation(); didDragRef.current = false; } }}
+          onClickCapture={(event) => {
+            if (didDragRef.current) {
+              event.preventDefault();
+              event.stopPropagation();
+              didDragRef.current = false;
+            }
+          }}
           onDragStart={(event) => event.preventDefault()}
           onPointerCancel={stopDrag}
           onPointerDown={startDrag}
@@ -85,9 +133,15 @@ export function FinalContentRow({ layout, title, titles, viewAllHref }: { layout
           onPointerUp={stopDrag}
           ref={railRef}
         >
-          {titles.map((item, index) => <FinalTitleCard index={index} key={item.slug} layout={layout} title={item} />)}
+          {titles.map((item, index) => (
+            <FinalTitleCard index={index} key={`${item.slug}-${index}`} layout={layout} title={item} />
+          ))}
         </div>
-        {canScrollRight && <button aria-label={`Scroll ${title} right`} className="final-row-arrow is-right" onClick={() => scroll(1)} type="button">›</button>}
+        {canScrollRight ? (
+          <button aria-label={`Next ${title}`} className="final-row-arrow is-right" onClick={() => scroll(1)} type="button">
+            <span aria-hidden="true">›</span>
+          </button>
+        ) : null}
       </div>
     </section>
   );
@@ -95,18 +149,37 @@ export function FinalContentRow({ layout, title, titles, viewAllHref }: { layout
 
 function FinalTitleCard({ index, layout, title }: { index: number; layout: FinalRowLayout; title: Title }) {
   const image = layout === "portrait" ? title.posterImage || title.heroImage : title.heroImage || title.posterImage;
-  return (
-    <Link className="final-title-card" data-discontinued={title.isDiscontinued} href={titleHref(title.slug)}>
-      <div className="final-title-card__image">
-        {image ? <Image alt="" fill loading={index < 6 ? "eager" : "lazy"} sizes={layout === "portrait" ? "180px" : "300px"} src={image} /> : <span className={`final-title-card__fallback bg-gradient-to-br ${title.tone}`} />}
-        <span className="final-title-card__shade" />
-        {title.progress && <span className="final-title-card__progress" style={{ width: title.progress }} />}
-      </div>
-      <div className="final-title-card__copy">
-        <small>{titleEyebrow(title)}</small>
+  const content = (
+    <div className="final-title-card__image">
+      {image ? (
+        <Image
+          alt=""
+          className={title.isDiscontinued ? "is-discontinued" : undefined}
+          fill
+          loading={index < 7 ? "eager" : "lazy"}
+          sizes={layout === "portrait" ? "(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1280px) 20vw, (max-width: 1536px) 17vw, 15vw" : "300px"}
+          src={image}
+        />
+      ) : (
+        <span className={`final-title-card__fallback bg-gradient-to-br ${title.tone}`} />
+      )}
+      <span className="final-title-card__shade" />
+      {title.isDiscontinued ? <span className="final-title-card__badge">Discontinued</span> : null}
+      <span className="final-title-card__copy">
+        <small>{title.genre}</small>
         <strong>{titleInlineText(title)}</strong>
-        <span>{[title.year, title.duration].filter(Boolean).join(" · ")}</span>
-      </div>
+      </span>
+      {title.progress ? <span className="final-title-card__progress" style={{ width: title.progress }} /> : null}
+    </div>
+  );
+
+  return title.isDiscontinued ? (
+    <article className="final-title-card" data-discontinued="true">
+      {content}
+    </article>
+  ) : (
+    <Link aria-label={`Open details for ${titleInlineText(title)}`} className="final-title-card" href={titleHref(title.slug)}>
+      {content}
     </Link>
   );
 }
