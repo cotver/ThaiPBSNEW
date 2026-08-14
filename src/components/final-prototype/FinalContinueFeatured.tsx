@@ -10,12 +10,14 @@ export function FinalContinueFeatured({ titles, viewAllHref }: { titles: Title[]
   const railRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [hasOverflow, setHasOverflow] = useState(false);
 
   useEffect(() => {
     const rail = railRef.current;
     if (!rail) return;
     const update = () => {
       const maxScroll = rail.scrollWidth - rail.clientWidth;
+      setHasOverflow(maxScroll > 2);
       setCanScrollLeft(rail.scrollLeft > 2);
       setCanScrollRight(rail.scrollLeft < maxScroll - 2);
     };
@@ -45,7 +47,7 @@ export function FinalContinueFeatured({ titles, viewAllHref }: { titles: Title[]
         <Link href={viewAllHref}>View All ↗</Link>
       </header>
       <div className="final-continue-latest__stage">
-        {canScrollLeft && <button aria-label="Scroll Continue Watching left" className="final-continue-latest__arrow is-left" onClick={() => scroll(-1)} type="button">‹</button>}
+        {hasOverflow && <button aria-label="Previous Continue Watching page" className="final-continue-latest__arrow is-left" disabled={!canScrollLeft} onClick={() => scroll(-1)} type="button">‹</button>}
         <div className="final-continue-latest__grid" ref={railRef}>
         {titles.map((story, index) => {
           const image = story.heroImage || story.posterImage;
@@ -64,7 +66,7 @@ export function FinalContinueFeatured({ titles, viewAllHref }: { titles: Title[]
           );
         })}
         </div>
-        {canScrollRight && <button aria-label="Scroll Continue Watching right" className="final-continue-latest__arrow is-right" onClick={() => scroll(1)} type="button">›</button>}
+        {hasOverflow && <button aria-label="Next Continue Watching page" className="final-continue-latest__arrow is-right" disabled={!canScrollRight} onClick={() => scroll(1)} type="button">›</button>}
       </div>
     </section>
   );

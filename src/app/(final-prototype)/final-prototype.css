@@ -921,8 +921,9 @@ select {
 .final-continue-latest__grid { cursor: grab; display: flex; gap: 1.5rem; overflow-x: auto; overscroll-behavior-x: contain; padding: .4rem 0 .8rem; scroll-behavior: smooth; scroll-snap-type: x mandatory; scrollbar-width: none; touch-action: pan-y; }
 .final-continue-latest__grid::-webkit-scrollbar { display: none; }
 .final-continue-latest__grid:active { cursor: grabbing; }
-.final-continue-latest__arrow { align-items: center; background: linear-gradient(90deg, rgb(255 255 255 / 94%), rgb(255 255 255 / 12%)); border: 0; bottom: .8rem; color: #171717; cursor: pointer; display: none; font-size: 3rem; justify-content: center; position: absolute; top: .4rem; transition: color .2s ease; width: 3rem; z-index: 4; }
+.final-continue-latest__arrow { align-items: center; background: linear-gradient(90deg, rgb(255 255 255 / 94%), rgb(255 255 255 / 12%)); border: 0; bottom: .8rem; color: #171717; cursor: pointer; display: flex; font-size: 3rem; justify-content: center; position: absolute; top: .4rem; transition: color .2s ease, opacity .2s ease; width: 3rem; z-index: 4; }
 .final-continue-latest__arrow:hover { color: #d84f52; }
+.final-continue-latest__arrow:disabled { color: #171717; cursor: default; opacity: .28; }
 .final-continue-latest__arrow.is-left { left: 0; }
 .final-continue-latest__arrow.is-right { background: linear-gradient(270deg, rgb(255 255 255 / 94%), rgb(255 255 255 / 12%)); right: 0; }
 .final-continue-latest__story { align-self: start; color: inherit; flex: 0 0 82vw; min-width: 0; scroll-snap-align: start; text-decoration: none; }
