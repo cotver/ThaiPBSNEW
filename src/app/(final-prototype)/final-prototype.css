@@ -356,31 +356,6 @@ select {
   right: 0;
 }
 
-.final-hero__orbit {
-  border: 1px solid rgb(247 248 251 / 13%);
-  border-radius: 50%;
-  height: min(62vw, 55rem);
-  position: absolute;
-  right: -10rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: min(62vw, 55rem);
-  z-index: 1;
-}
-
-.final-hero__orbit::before,
-.final-hero__orbit::after {
-  border: 1px solid rgb(247 248 251 / 8%);
-  border-radius: inherit;
-  content: "";
-  inset: 12%;
-  position: absolute;
-}
-
-.final-hero__orbit::after {
-  inset: 28%;
-}
-
 .final-hero__intro {
   bottom: 5rem;
   left: 1.25rem;
@@ -551,63 +526,96 @@ select {
 }
 
 .final-hero__carousel {
-  bottom: 2.25rem;
-  height: 10.5rem;
+  --final-hero-orbit-radius: 8.2rem;
+  bottom: -3rem;
+  height: 24rem;
   position: absolute;
-  right: 2rem;
-  width: min(21rem, 34vw);
+  right: -10rem;
+  width: 24rem;
   z-index: 10;
 }
 
 .final-hero__cards {
   cursor: grab;
-  justify-content: flex-end;
   inset: 0;
+  overscroll-behavior: contain;
   position: absolute;
   touch-action: pan-y;
   user-select: none;
+}
+
+.final-hero__cards::before,
+.final-hero__cards::after {
+  border: 1px solid rgb(255 255 255 / 24%);
+  border-radius: 50%;
+  content: "";
+  inset: 3.75rem;
+  pointer-events: none;
+  position: absolute;
+}
+
+.final-hero__cards::before {
+  background: radial-gradient(circle, rgb(3 7 20 / 12%) 45%, rgb(3 7 20 / 64%) 100%);
+  box-shadow: 0 0 0 1.25rem rgb(255 255 255 / 2%), 0 2rem 5rem rgb(0 0 0 / 38%);
+  clip-path: inset(0 38% 0 0);
+}
+
+.final-hero__cards::after {
+  border-color: rgb(83 226 255 / 28%);
+  border-style: dashed;
+  clip-path: inset(0 50% 0 0);
+  inset: 5rem;
 }
 
 .final-hero__cards[data-dragging="true"] { cursor: grabbing; }
 
 .final-hero-card {
   background: rgb(0 0 0 / 35%);
-  border: 1px solid rgb(255 255 255 / 14%);
-  border-radius: 0.35rem;
+  border: 2px solid rgb(255 255 255 / 28%);
+  border-radius: 50%;
   box-shadow: 0 1.25rem 2.5rem rgb(0 0 0 / 30%);
   cursor: pointer;
+  height: 4.7rem;
   left: 50%;
-  overflow: hidden;
+  overflow: visible;
   padding: 0;
   position: absolute;
   top: 50%;
   transform-origin: center;
   transition: border-color 220ms ease, filter 600ms ease, opacity 600ms ease, transform 780ms cubic-bezier(0.2, 0.75, 0.2, 1);
-  width: 5rem;
+  width: 4.7rem;
+  z-index: 2;
 }
 
-.final-hero-card:hover { border-color: rgb(255 255 255 / 70%); }
-.final-hero-card[aria-pressed="true"] { border-color: rgb(255 255 255 / 82%); }
+.final-hero-card:hover { border-color: rgb(255 255 255 / 88%); }
+.final-hero-card[aria-pressed="true"] { border-color: var(--final-cyan); }
 
 .final-hero-card[data-active="true"] {
   filter: none;
   opacity: 1;
-  transform: translate(-50%, -52%) scale(1.12);
-  z-index: 4;
+  transform: translate(-50%, -50%) rotate(var(--final-hero-card-angle)) translateX(var(--final-hero-orbit-radius)) rotate(var(--final-hero-card-counter-angle)) scale(1.2);
+  z-index: 5;
 }
 
 .final-hero-card:not([data-active="true"]) {
-  filter: brightness(0.68) saturate(0.82);
-  opacity: 0.78;
-  transform: translate(calc(-50% + var(--final-hero-card-x)), calc(-50% + var(--final-hero-card-y))) rotate(var(--final-hero-card-rotate)) scale(.75);
-  z-index: 1;
+  filter: brightness(0.72) saturate(0.84);
+  opacity: 0.82;
+  transform: translate(-50%, -50%) rotate(var(--final-hero-card-angle)) translateX(var(--final-hero-orbit-radius)) rotate(var(--final-hero-card-counter-angle)) scale(.84);
+}
+
+.final-hero-card[data-visible="false"] {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(var(--final-hero-card-angle)) translateX(var(--final-hero-orbit-radius)) rotate(var(--final-hero-card-counter-angle)) scale(.2);
 }
 
 .final-hero-card__image {
-  aspect-ratio: 16 / 9;
   background: #1f2937;
+  border-radius: 50%;
+  height: 100%;
   overflow: hidden;
   position: relative;
+  width: 100%;
 }
 
 .final-hero-card__image img {
@@ -621,24 +629,34 @@ select {
 }
 
 .final-hero-card__progress {
-  background: rgb(255 255 255 / 28%);
-  display: block;
-  height: 2px;
-  overflow: hidden;
-  position: relative;
-}
-
-.final-hero-card[aria-pressed="true"] .final-hero-card__progress::after {
-  animation: final-hero-progress 4500ms linear forwards;
-  background: #fff;
-  content: "";
-  inset: 0;
+  inset: -0.42rem;
+  opacity: 0;
+  pointer-events: none;
   position: absolute;
-  transform-origin: left;
 }
 
-.final-hero__rail-fade {
-  display: none;
+.final-hero-card__progress svg {
+  display: block;
+  height: 100%;
+  transform: rotate(-90deg);
+  width: 100%;
+}
+
+.final-hero-card__progress circle {
+  fill: none;
+  stroke: rgb(83 226 255 / 95%);
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.final-hero__cards[data-auto-rotating="true"] .final-hero-card[aria-pressed="true"] .final-hero-card__progress {
+  opacity: 1;
+}
+
+.final-hero__cards[data-auto-rotating="true"] .final-hero-card[aria-pressed="true"] .final-hero-card__progress circle {
+  animation: final-hero-progress 10000ms linear forwards;
 }
 
 .final-hero--empty {
@@ -1411,8 +1429,8 @@ select {
 }
 
 @keyframes final-hero-progress {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
 }
 
 @media (max-width: 980px) {
@@ -1426,17 +1444,15 @@ select {
   }
 
   .final-hero__carousel {
-    width: min(20rem, 50vw);
+    --final-hero-orbit-radius: 7rem;
+    bottom: -2.25rem;
+    height: 21rem;
+    right: -3rem;
+    width: 21rem;
   }
 
-  .final-hero__orbit {
-    bottom: -8rem;
-    height: 48rem;
-    right: -8rem;
-    top: auto;
-    transform: none;
-    width: 48rem;
-  }
+  .final-hero__cards::before { inset: 3.5rem; }
+  .final-hero__cards::after { inset: 4.7rem; }
 
   .final-hero__background-shade {
     background: linear-gradient(180deg, rgb(3 7 20 / 72%) 0%, rgb(3 7 20 / 36%) 42%, #030714 100%);
@@ -1463,21 +1479,30 @@ select {
 @media (max-width: 640px) {
   .final-hero {
     align-items: start;
+    height: 52rem;
     padding: 4rem 1rem 2rem;
   }
 
+  .final-hero__intro {
+    bottom: auto;
+    top: 7rem;
+  }
+
   .final-hero__carousel {
-    bottom: 4.5rem;
-    height: 9rem;
-    left: auto;
-    right: 0.75rem;
-    width: min(18rem, 76vw);
+    --final-hero-orbit-radius: 5.6rem;
+    bottom: 4rem;
+    height: 17rem;
+    right: -3.5rem;
+    width: 17rem;
   }
 
   .final-hero-card {
-    width: 4.25rem;
+    height: 3.5rem;
+    width: 3.5rem;
   }
 
+  .final-hero__cards::before { inset: 2.5rem; }
+  .final-hero__cards::after { inset: 3.45rem; }
   .final-home-sections { gap: 1.75rem; padding: 1.25rem 1rem 5.5rem; }
   .final-category-section { margin-left: -1rem; margin-right: -1rem; }
   .final-category-diary { gap: 0.5rem; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0.5rem; }

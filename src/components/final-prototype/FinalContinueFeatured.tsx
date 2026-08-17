@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { titleEyebrow, titleHref, titleInlineText, type Title } from "@/lib/content";
+import { finalArticleHref, titleEyebrow, titleInlineText, type Title } from "@/lib/content";
 
 /** Final-only adaptation of Style 10's Recommended rail. */
 export function FinalContinueFeatured({ titles, viewAllHref }: { titles: Title[]; viewAllHref: string }) {
@@ -72,7 +72,7 @@ export function FinalContinueFeatured({ titles, viewAllHref }: { titles: Title[]
         {displayedTitles.map((story, index) => {
           const image = story.heroImage || story.posterImage;
           return (
-            <Link className="final-continue-latest__story" href={titleHref(story.slug)} key={story.slug}>
+            <Link className="final-continue-latest__story" href={finalArticleHref(story.slug)} key={story.slug}>
               <div className="final-continue-latest__image">
                 {image ? <Image alt="" fill loading={index < 5 ? "eager" : "lazy"} sizes="(max-width: 640px) 82vw, (max-width: 900px) 48vw, (max-width: 1200px) 32vw, (max-width: 1535px) 24vw, 19vw" src={image} /> : <i className={`final-continue-latest__fallback bg-gradient-to-br ${story.tone}`} />}
                 {story.progress && <b style={{ width: story.progress }} />}

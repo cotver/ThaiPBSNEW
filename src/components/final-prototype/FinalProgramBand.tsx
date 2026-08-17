@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { titleEyebrow, titleHref, titleInlineText, type Title } from "@/lib/content";
+import { finalArticleHref, titleEyebrow, titleInlineText, type Title } from "@/lib/content";
 
 /** Final-only program-category rail based on the earlier Continue Watching card band. */
 export function FinalProgramBand({ title, titles, viewAllHref }: { title: string; titles: Title[]; viewAllHref: string }) {
@@ -57,7 +57,7 @@ export function FinalProgramBand({ title, titles, viewAllHref }: { title: string
         {visibleTitles.map((story, index) => {
           const image = story.posterImage || story.heroImage;
           return (
-            <Link className="final-program-band__card" href={titleHref(story.slug)} key={story.slug}>
+            <Link className="final-program-band__card" href={finalArticleHref(story.slug)} key={story.slug}>
               <div className="final-program-band__image">
                 {image ? <Image alt="" fill loading={index < 4 ? "eager" : "lazy"} sizes="(max-width: 640px) 68vw, 25vw" src={image} /> : <span className={`final-program-band__fallback bg-gradient-to-br ${story.tone}`} />}
               </div>

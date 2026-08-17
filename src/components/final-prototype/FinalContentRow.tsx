@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { titleHref, titleInlineText, type Title } from "@/lib/content";
+import { finalArticleHref, titleInlineText, type Title } from "@/lib/content";
 
 type FinalRowLayout = "landscape" | "portrait" | "wide";
 
@@ -178,7 +178,7 @@ function FinalTitleCard({ index, layout, title }: { index: number; layout: Final
       {content}
     </article>
   ) : (
-    <Link aria-label={`Open details for ${titleInlineText(title)}`} className="final-title-card" href={titleHref(title.slug)}>
+    <Link aria-label={`Open article for ${titleInlineText(title)}`} className="final-title-card" href={finalArticleHref(title.slug)}>
       {content}
     </Link>
   );

@@ -70,6 +70,10 @@ export function titleHref(slug: string) {
   return `/title/${encodeURIComponent(slug)}`;
 }
 
+export function finalArticleHref(slug: string) {
+  return `/prototype/final/article/${encodeURIComponent(slug)}`;
+}
+
 export function titleEyebrow(title: Title) {
   if (title.eyebrow) {
     return title.eyebrow;

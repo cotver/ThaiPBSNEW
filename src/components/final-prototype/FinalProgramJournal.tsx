@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { titleEyebrow, titleHref, titleInlineText, type Title } from "@/lib/content";
+import { finalArticleHref, titleEyebrow, titleInlineText, type Title } from "@/lib/content";
 
 const PROGRAMS_PER_PAGE = 8;
 const MAX_PAGES = 3;
@@ -34,7 +34,7 @@ export function FinalProgramJournal({ title, titles, viewAllHref }: { title: str
           {visibleTitles.map((item) => {
             const image = item.posterImage || item.heroImage;
             return (
-              <Link className="final-program-journal__card" href={titleHref(item.slug)} key={item.slug}>
+              <Link className="final-program-journal__card" href={finalArticleHref(item.slug)} key={item.slug}>
                 <div className="final-program-journal__image">
                   {image ? <Image alt="" fill sizes="(max-width: 640px) 72vw, (max-width: 980px) 40vw, 20vw" src={image} /> : <span className={`final-program-journal__fallback bg-gradient-to-br ${item.tone}`} />}
                 </div>

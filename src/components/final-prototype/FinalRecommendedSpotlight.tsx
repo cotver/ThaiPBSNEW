@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { titleEyebrow, titleHref, titleInlineText, type Title } from "@/lib/content";
+import { finalArticleHref, titleEyebrow, titleInlineText, type Title } from "@/lib/content";
 
 const ROTATION_INTERVAL_MS = 15_000;
 
@@ -39,7 +39,7 @@ export function FinalRecommendedSpotlight({ titles }: { titles: Title[] }) {
   return (
     <section className="final-recommended" aria-label="Recommended For You">
       <div className="final-recommended__copy">
-        <Link className="final-recommended__details" href={titleHref(activeTitle.slug)}>
+        <Link className="final-recommended__details" href={finalArticleHref(activeTitle.slug)}>
           <p>{titleEyebrow(activeTitle)}</p>
           <h2 className={titleSize}>{titleText}</h2>
           {metadata.length > 0 && <small>{metadata.join(" · ")}</small>}
@@ -55,7 +55,7 @@ export function FinalRecommendedSpotlight({ titles }: { titles: Title[] }) {
         </Link>
       </div>
 
-      <Link className="final-recommended__story" href={titleHref(activeTitle.slug)} key={activeTitle.slug}>
+      <Link className="final-recommended__story" href={finalArticleHref(activeTitle.slug)} key={activeTitle.slug}>
         <div className="final-recommended__image">
           {image ? (
             <Image alt="" fill priority={activeIndex === 0} sizes="(max-width: 980px) 100vw, 62vw" src={image} />

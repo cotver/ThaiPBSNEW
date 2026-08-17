@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { titleDisplayLines, titleEyebrow, titleHref, titleInlineText, type Title } from "@/lib/content";
+import { finalArticleHref, titleDisplayLines, titleEyebrow, titleInlineText, type Title } from "@/lib/content";
 import { FinalSaveButton } from "./FinalSaveButton";
 
-const ROTATION_INTERVAL_MS = 4500;
+const ROTATION_INTERVAL_MS = 10000;
+const DRAG_STEP_PX = 42;
 
 function toYouTubeEmbedUrl(rawUrl: string): string | null {
   try {
@@ -52,17 +53,24 @@ export function FinalHero({ heroes }: { heroes: Title[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [heroInView, setHeroInView] = useState(true);
   const [isDraggingCards, setIsDraggingCards] = useState(false);
+  const [rotationKey, setRotationKey] = useState(0);
   const [trailerPlayback, setTrailerPlayback] = useState({ ended: false, failed: false, loaded: false, muted: true, url: "" });
   const cardRailRef = useRef<HTMLDivElement>(null);
   const dragActiveRef = useRef(false);
   const didDragCardsRef = useRef(false);
   const dragStartIndexRef = useRef<number | null>(null);
+  const dragLastXRef = useRef(0);
+  const dragRemainderRef = useRef(0);
+  const isDraggingCardsRef = useRef(false);
+  const wheelRemainderRef = useRef(0);
+  const wheelResetTimerRef = useRef<number | null>(null);
   const dragStartXRef = useRef(0);
   const heroRef = useRef<HTMLElement>(null);
   const trailerIframeRef = useRef<HTMLIFrameElement>(null);
   const trailerVideoRef = useRef<HTMLVideoElement>(null);
   const visibleHeroes = heroes;
   const heroCount = heroes.length;
+  const orbitItemCount = Math.min(heroCount, 5);
   const activeHero = visibleHeroes[activeIndex] ?? visibleHeroes[0];
   const trailerSource = getTrailerSource(activeHero);
   const trailerUrl = trailerSource.url;
@@ -77,8 +85,10 @@ export function FinalHero({ heroes }: { heroes: Title[] }) {
   const canRenderTrailer = Boolean(trailerUrl) && !trailerEnded && (trailerIsGif || Boolean(trailerEmbedUrl) || (trailerIsInternal && !trailerFailed));
   const hasExternalTrailer = Boolean(trailerUrl) && !trailerIsGif && !trailerEmbedUrl && !trailerIsInternal;
   const showTrailer = canRenderTrailer && heroInView && trailerLoaded;
+  const isAutoRotationActive = visibleHeroes.length > 1 && !isDraggingCards && (!canRenderTrailer || trailerIsGif || trailerEnded);
 
   const advanceHero = useCallback(() => {
+    if (isDraggingCardsRef.current) return;
     setActiveIndex((index) => heroCount ? (index + 1) % heroCount : 0);
   }, [heroCount]);
 
@@ -94,6 +104,10 @@ export function FinalHero({ heroes }: { heroes: Title[] }) {
 
     return () => window.clearTimeout(timer);
   }, [activeIndex, advanceHero, canRenderTrailer, isDraggingCards, trailerEnded, trailerIsGif, visibleHeroes.length]);
+
+  useEffect(() => () => {
+    if (wheelResetTimerRef.current !== null) window.clearTimeout(wheelResetTimerRef.current);
+  }, []);
 
   useEffect(() => {
     if (!trailerUrl) return;
@@ -162,7 +176,11 @@ export function FinalHero({ heroes }: { heroes: Title[] }) {
     const pressedIndex = Number(pressedButton?.dataset.index);
     dragStartIndexRef.current = Number.isInteger(pressedIndex) ? pressedIndex : null;
     dragStartXRef.current = event.clientX;
+    dragLastXRef.current = event.clientX;
+    dragRemainderRef.current = 0;
     dragActiveRef.current = true;
+    isDraggingCardsRef.current = true;
+    event.currentTarget.setPointerCapture(event.pointerId);
     setIsDraggingCards(true);
   }
 
@@ -171,25 +189,31 @@ export function FinalHero({ heroes }: { heroes: Title[] }) {
     const delta = event.clientX - dragStartXRef.current;
     if (Math.abs(delta) > 6) {
       didDragCardsRef.current = true;
-      if (!event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.setPointerCapture(event.pointerId);
+      dragRemainderRef.current += event.clientX - dragLastXRef.current;
+      dragLastXRef.current = event.clientX;
+      const dragSteps = Math.trunc(dragRemainderRef.current / DRAG_STEP_PX);
+      if (!dragSteps || heroCount < 2) return;
+
+      dragRemainderRef.current -= dragSteps * DRAG_STEP_PX;
+      setActiveIndex((index) => (index + dragSteps % heroCount + heroCount) % heroCount);
     }
   }
 
   function finishCardDrag(event: React.PointerEvent<HTMLDivElement>) {
     if (!dragActiveRef.current) return;
     const delta = event.clientX - dragStartXRef.current;
-    if (Math.abs(delta) > 32 && heroCount > 1) {
-      setActiveIndex((index) => delta < 0 ? (index + 1) % heroCount : (index - 1 + heroCount) % heroCount);
-    } else if (Math.abs(delta) <= 6 && dragStartIndexRef.current !== null) {
-      const selectedIndex = dragStartIndexRef.current;
-      if (selectedIndex >= 0 && selectedIndex < heroCount) {
-        setActiveIndex((current) => selectedIndex === current ? (current + 1) % heroCount : selectedIndex);
-      }
+    const didMove = Math.abs(delta) > 6;
+    const selectedIndex = dragStartIndexRef.current;
+    if (!didMove && selectedIndex !== null && selectedIndex >= 0 && selectedIndex < heroCount) {
+      setActiveIndex(selectedIndex);
     }
-    didDragCardsRef.current = true;
+    didDragCardsRef.current = didMove || selectedIndex !== null;
     dragActiveRef.current = false;
+    isDraggingCardsRef.current = false;
     dragStartIndexRef.current = null;
+    dragRemainderRef.current = 0;
     setIsDraggingCards(false);
+    setRotationKey((key) => key + 1);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     window.setTimeout(() => { didDragCardsRef.current = false; }, 0);
   }
@@ -201,11 +225,31 @@ export function FinalHero({ heroes }: { heroes: Title[] }) {
     didDragCardsRef.current = false;
   }
 
+  function spinCardsWithWheel(event: React.WheelEvent<HTMLDivElement>) {
+    if (heroCount < 2) return;
+    const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+    if (!delta) return;
+
+    event.preventDefault();
+    wheelRemainderRef.current += delta;
+    if (wheelResetTimerRef.current !== null) window.clearTimeout(wheelResetTimerRef.current);
+    wheelResetTimerRef.current = window.setTimeout(() => { wheelRemainderRef.current = 0; }, 140);
+
+    const steps = Math.trunc(wheelRemainderRef.current / 80);
+    if (!steps) return;
+
+    wheelRemainderRef.current -= steps * 80;
+    setActiveIndex((index) => (index + steps % heroCount + heroCount) % heroCount);
+  }
+
   function cancelCardDrag(event: React.PointerEvent<HTMLDivElement>) {
     dragActiveRef.current = false;
+    isDraggingCardsRef.current = false;
     dragStartIndexRef.current = null;
+    dragRemainderRef.current = 0;
     didDragCardsRef.current = false;
     setIsDraggingCards(false);
+    setRotationKey((key) => key + 1);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   }
 
@@ -309,8 +353,6 @@ export function FinalHero({ heroes }: { heroes: Title[] }) {
         })}
         <div className="final-hero__background-shade" />
       </div>
-      <div className="final-hero__orbit" aria-hidden="true" />
-
       {activeHero.showHeroDetails !== false && <div className="final-hero__intro">
         <p>{titleEyebrow(activeHero)}</p>
         <h1>{titleDisplayLines(activeHero).map((line) => <span key={line}>{line}</span>)}</h1>
@@ -324,7 +366,7 @@ export function FinalHero({ heroes }: { heroes: Title[] }) {
             {activeHero.isDiscontinued ? (
               <><span className="final-hero__play is-disabled">Play</span><span className="final-hero__details is-disabled">Details</span></>
             ) : (
-              <><Link className="final-hero__play" href={titleHref(activeHero.slug)}>Play</Link><Link className="final-hero__details" href={`${titleHref(activeHero.slug)}#episodes`}>Details</Link></>
+            <><Link className="final-hero__play" href={finalArticleHref(activeHero.slug)}>Play</Link><Link className="final-hero__details" href={`${finalArticleHref(activeHero.slug)}#episodes`}>Details</Link></>
             )}
             <FinalSaveButton title={activeHero} />
           </div>
@@ -352,10 +394,9 @@ export function FinalHero({ heroes }: { heroes: Title[] }) {
       )}
 
       <div className="final-hero__carousel">
-        <span className="final-hero__rail-fade final-hero__rail-fade--left" />
-        <span className="final-hero__rail-fade final-hero__rail-fade--right" />
         <div
           className="final-hero__cards"
+          data-auto-rotating={isAutoRotationActive}
           data-dragging={isDraggingCards}
           onClickCapture={preventClickAfterDrag}
           onDragStart={(event) => event.preventDefault()}
@@ -363,31 +404,35 @@ export function FinalHero({ heroes }: { heroes: Title[] }) {
           onPointerDown={startCardDrag}
           onPointerMove={moveCardDrag}
           onPointerUp={finishCardDrag}
+          onWheel={spinCardsWithWheel}
           ref={cardRailRef}
         >
           {visibleHeroes.map((hero, index) => {
             const position = (index - activeIndex + visibleHeroes.length) % visibleHeroes.length;
+            const signedPosition = position > visibleHeroes.length / 2 ? position - visibleHeroes.length : position;
+            const isOrbitVisible = visibleHeroes.length <= orbitItemCount || Math.abs(signedPosition) <= Math.floor(orbitItemCount / 2);
             const image = hero.heroImage || hero.posterImage;
-            const angle = position === 0 ? 0 : ((position - 1) * 360) / Math.max(1, visibleHeroes.length - 1);
-            const cardStyle = position === 0
-              ? undefined
-              : {
-                  "--final-hero-card-x": `${Math.cos((angle * Math.PI) / 180) * 7.4}rem`,
-                  "--final-hero-card-y": `${Math.sin((angle * Math.PI) / 180) * 2.85}rem`,
-                  "--final-hero-card-rotate": `${angle / 9}deg`,
-                } as CSSProperties;
+            const semiCircleStep = orbitItemCount <= 2 ? 90 : 180 / (orbitItemCount - 1);
+            const angle = 180 + signedPosition * semiCircleStep;
+            const cardStyle = {
+              "--final-hero-card-angle": `${angle}deg`,
+              "--final-hero-card-counter-angle": `${-angle}deg`,
+            } as CSSProperties;
 
             return (
               <button
-                aria-label={`Show ${titleInlineText(hero)}`}
+                aria-hidden={!isOrbitVisible || undefined}
+                aria-label={`Show ${titleInlineText(hero)} in the hero`}
                 aria-pressed={index === activeIndex}
                 className="final-hero-card"
                 data-active={position === 0}
                 data-index={index}
                 data-position={position}
+                data-visible={isOrbitVisible}
                 key={`${hero.source ?? "program"}-${hero.slug}`}
-                onClick={() => setActiveIndex(index === activeIndex ? (index + 1) % heroCount : index)}
+                onClick={() => setActiveIndex(index)}
                 style={cardStyle}
+                tabIndex={isOrbitVisible ? 0 : -1}
                 type="button"
               >
                 <div className="final-hero-card__image">
@@ -404,7 +449,11 @@ export function FinalHero({ heroes }: { heroes: Title[] }) {
                     <span className={`final-hero-card__fallback bg-gradient-to-br ${hero.tone}`} />
                   )}
                 </div>
-                <span className="final-hero-card__progress" />
+                <span className="final-hero-card__progress" key={`${hero.slug}-${rotationKey}`}>
+                  <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" pathLength="100" r="10" />
+                  </svg>
+                </span>
               </button>
             );
           })}
