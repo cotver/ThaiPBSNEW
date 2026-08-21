@@ -55,6 +55,8 @@ export function BrowseTitleGrid({ titles }: { titles: Title[] }) {
 
       setActivePreview({
         anchorHeight: anchor.height,
+        anchorLeft,
+        anchorTop,
         anchorWidth: anchor.width,
         left,
         originX: `${clamp(originPercent, 14, 86)}%`,
@@ -122,14 +124,12 @@ export function BrowseTitleGrid({ titles }: { titles: Title[] }) {
       {hasMoreTitles ? (
         <div aria-hidden="true" className="h-10" ref={loadMoreRef} />
       ) : null}
-      {activePreview ? (
-        <RowFloatingPreview
-          active={activePreview}
-          onClose={closePreview}
-          onEnter={clearPreviewTimer}
-          onOpenTitle={setModalTitle}
-        />
-      ) : null}
+      <RowFloatingPreview
+        active={activePreview}
+        onClose={closePreview}
+        onEnter={clearPreviewTimer}
+        onOpenTitle={setModalTitle}
+      />
       <TitlePreviewModal onClose={() => setModalTitle(null)} open={Boolean(modalTitle)} title={modalTitle} />
     </div>
   );

@@ -87,6 +87,8 @@ export function ContentRow({
 
       setActivePreview({
         anchorHeight: anchor.height,
+        anchorLeft,
+        anchorTop,
         anchorWidth: anchor.width,
         left,
         originX,
@@ -390,7 +392,6 @@ export function ContentRow({
             ),
           )}
         </div>
-        {activePreview ? (
         <RowFloatingPreview
           active={activePreview}
           matchSourceTitles={matchSourceTitles}
@@ -399,7 +400,6 @@ export function ContentRow({
           onOpenTitle={setModalTitle}
           onRemoveTitle={removable ? removeFromContinueWatching : undefined}
         />
-        ) : null}
         {canScrollRight ? (
           <button
             aria-label={`Scroll ${title} right`}

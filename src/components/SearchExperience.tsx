@@ -98,6 +98,8 @@ export function SearchExperience({ initialQuery = "", titles }: { initialQuery?:
 
       setActivePreview({
         anchorHeight: anchor.height,
+        anchorLeft,
+        anchorTop,
         anchorWidth: anchor.width,
         left,
         originX: `${clamp(originPercent, 14, 86)}%`,
@@ -222,14 +224,12 @@ export function SearchExperience({ initialQuery = "", titles }: { initialQuery?:
         {hasMoreResults ? (
           <div aria-hidden="true" className="h-10 w-full" ref={loadMoreRef} />
         ) : null}
-        {activePreview ? (
-          <RowFloatingPreview
-            active={activePreview}
-            onClose={closePreview}
-            onEnter={clearPreviewTimer}
-            onOpenTitle={setModalTitle}
-          />
-        ) : null}
+        <RowFloatingPreview
+          active={activePreview}
+          onClose={closePreview}
+          onEnter={clearPreviewTimer}
+          onOpenTitle={setModalTitle}
+        />
       </div>
 
       {results.length === 0 && (

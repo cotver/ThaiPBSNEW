@@ -9,6 +9,8 @@ import { SaveForLaterButton } from "./SaveForLaterButton";
 
 export type ActivePreview = {
   anchorHeight: number;
+  anchorLeft: number;
+  anchorTop: number;
   anchorWidth: number;
   safeLeft: number;
   safeRight: number;
@@ -27,38 +29,97 @@ export function RowFloatingPreview({
   onOpenTitle,
   onRemoveTitle,
 }: {
-  active: ActivePreview;
+  active: ActivePreview | null;
   matchSourceTitles?: Title[];
   onClose: () => void;
   onEnter: () => void;
   onOpenTitle: (title: Title) => void;
   onRemoveTitle?: (title: Title) => void;
 }) {
-  const { title } = active;
+  const reducedMotion = usePrefersReducedMotion();
+  const [renderedActive, setRenderedActive] = useState<ActivePreview | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const renderedActiveRef = useRef<ActivePreview | null>(null);
+
+  useEffect(() => {
+    let firstFrame = 0;
+    let secondFrame = 0;
+    let closeTimer: ReturnType<typeof setTimeout> | null = null;
+
+    if (active) {
+      const isSameTitle = renderedActiveRef.current?.title.slug === active.title.slug;
+      renderedActiveRef.current = active;
+
+      firstFrame = window.requestAnimationFrame(() => {
+        setRenderedActive(active);
+
+        if (isSameTitle || reducedMotion) {
+          setExpanded(true);
+        } else {
+          setExpanded(false);
+          secondFrame = window.requestAnimationFrame(() => setExpanded(true));
+        }
+      });
+    } else if (renderedActiveRef.current) {
+      firstFrame = window.requestAnimationFrame(() => setExpanded(false));
+      closeTimer = setTimeout(() => {
+        renderedActiveRef.current = null;
+        setRenderedActive(null);
+      }, reducedMotion ? 0 : 260);
+    }
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+      if (closeTimer) clearTimeout(closeTimer);
+    };
+  }, [active, reducedMotion]);
+
+  if (!renderedActive) return null;
+
+  const { title } = renderedActive;
   const imageSrc = title.heroImage || title.posterImage;
-  const previewScaleX = Math.max(0.72, Math.min(1, active.anchorWidth / active.width));
+  const collapsedImageSrc =
+    renderedActive.anchorHeight > renderedActive.anchorWidth * 1.2
+      ? title.posterImage || title.heroImage
+      : title.heroImage || title.posterImage;
   const matchPercent = calculateTitleMatch(title, matchSourceTitles ?? []);
   const displayTitle = titleInlineText(title);
   const trailerSource = getHoverTrailerSource(title);
   const trailerUrl = trailerSource.url;
   const trailerMimeType = trailerSource.mimeType;
+  const motionDuration = reducedMotion ? 0 : expanded ? 420 : 260;
+  const detailDuration = reducedMotion ? 0 : expanded ? 240 : 180;
+  const expandedMediaHeight = renderedActive.width * (9 / 16);
 
   return (
     <div className="pointer-events-none absolute inset-0 z-[80] overflow-visible">
       <div
-        className="pointer-events-auto absolute overflow-hidden rounded-[8px] bg-[#111827] text-white opacity-0 shadow-[0_26px_72px_rgba(0,0,0,0.72)] ring-1 ring-white/14 animate-[previewFloatIn_240ms_cubic-bezier(0.16,1,0.3,1)_forwards]"
+        className="pointer-events-auto absolute overflow-hidden bg-[#111827] text-white ring-1 ring-white/14"
         data-hover-preview-panel
+        data-preview-state={expanded ? "expanded" : "collapsed"}
         onMouseEnter={onEnter}
         onMouseLeave={onClose}
         style={{
-          ["--preview-origin-x" as string]: active.originX,
-          ["--preview-scale-x" as string]: previewScaleX,
-          ["--preview-scale-y" as string]: 0.78,
-          maxWidth: Math.max(active.anchorWidth, active.safeRight - active.safeLeft),
-          left: active.left,
-          top: active.top,
-          transformOrigin: `${active.originX} 0%`,
-          width: active.width,
+          borderRadius: expanded ? 8 : 6,
+          boxShadow: expanded
+            ? "0 26px 72px rgba(0,0,0,0.72)"
+            : "0 18px 40px rgba(0,0,0,0.25)",
+          left: expanded ? renderedActive.left : renderedActive.anchorLeft,
+          maxWidth: Math.max(
+            renderedActive.anchorWidth,
+            renderedActive.safeRight - renderedActive.safeLeft,
+          ),
+          top: expanded ? renderedActive.top : renderedActive.anchorTop,
+          transform: expanded ? "translateY(-6px)" : "translateY(0)",
+          transformOrigin: `${renderedActive.originX} 0%`,
+          transitionDuration: `${motionDuration}ms`,
+          transitionProperty: "left, top, width, transform, border-radius, box-shadow",
+          transitionTimingFunction: expanded
+            ? "cubic-bezier(0.16, 1, 0.3, 1)"
+            : "cubic-bezier(0.4, 0, 0.2, 1)",
+          width: expanded ? renderedActive.width : renderedActive.anchorWidth,
+          willChange: "left, top, width, transform",
         }}
       >
         {onRemoveTitle ? (
@@ -69,6 +130,11 @@ export function RowFloatingPreview({
               event.preventDefault();
               event.stopPropagation();
               onRemoveTitle(title);
+            }}
+            style={{
+              opacity: expanded ? 1 : 0,
+              pointerEvents: expanded ? "auto" : "none",
+              transitionDuration: `${detailDuration}ms`,
             }}
             type="button"
           >
@@ -86,22 +152,58 @@ export function RowFloatingPreview({
             }
           }}
           role="button"
-          tabIndex={0}
+          tabIndex={expanded ? 0 : -1}
         >
-          <div className={`relative aspect-video bg-gradient-to-br ${title.tone}`}>
+          <div
+            className={`relative overflow-hidden bg-gradient-to-br ${title.tone}`}
+            style={{
+              height: expanded ? expandedMediaHeight : renderedActive.anchorHeight,
+              transitionDuration: `${motionDuration}ms`,
+              transitionProperty: "height",
+              transitionTimingFunction: expanded
+                ? "cubic-bezier(0.16, 1, 0.3, 1)"
+                : "cubic-bezier(0.4, 0, 0.2, 1)",
+            }}
+          >
             <HoverTrailerMedia
               imageSrc={imageSrc}
               isDiscontinued={Boolean(title.isDiscontinued)}
               tone={title.tone}
               trailerMimeType={trailerMimeType}
               trailerUrl={trailerUrl}
-              width={active.width}
+              width={renderedActive.width}
             />
-            <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(17,24,39,0.58),transparent_54%),radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.20),transparent_24%)]" />
+            {collapsedImageSrc ? (
+              <Image
+                alt=""
+                className="absolute inset-0 z-[3] size-full object-cover"
+                fill
+                sizes={`${Math.ceil(renderedActive.anchorWidth)}px`}
+                src={collapsedImageSrc}
+                style={{
+                  opacity: expanded ? 0 : 1,
+                  transition: `opacity ${reducedMotion ? 0 : expanded ? 180 : 120}ms ease-out`,
+                }}
+              />
+            ) : null}
+            <div
+              className="absolute inset-0 z-[4] bg-[linear-gradient(0deg,rgba(17,24,39,0.58),transparent_54%),radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.20),transparent_24%)]"
+              style={{
+                opacity: expanded ? 1 : 0,
+                transition: `opacity ${detailDuration}ms ease-out`,
+              }}
+            />
             {title.isDiscontinued ? (
               <DiscontinuedBadge className="absolute left-4 top-4 z-10" />
             ) : null}
-            <div className="absolute bottom-4 left-4 right-4">
+            <div
+              className="absolute bottom-4 left-4 right-4 z-[5]"
+              style={{
+                opacity: expanded ? 1 : 0,
+                transform: expanded ? "translateY(0)" : "translateY(4px)",
+                transition: `opacity ${detailDuration}ms ease-out, transform ${detailDuration}ms ease-out`,
+              }}
+            >
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-200/90">
                 {titleEyebrow(title)}
               </p>
@@ -110,7 +212,21 @@ export function RowFloatingPreview({
           </div>
         </div>
 
-        <div className="space-y-3 p-4">
+        <div
+          aria-hidden={!expanded}
+          className="overflow-hidden"
+          style={{
+            maxHeight: expanded ? 320 : 0,
+            opacity: expanded ? 1 : 0,
+            pointerEvents: expanded ? "auto" : "none",
+            transform: expanded ? "translateY(0) scaleY(1)" : "translateY(4px) scaleY(0.96)",
+            transformOrigin: "50% 0%",
+            transitionDuration: `${detailDuration}ms`,
+            transitionProperty: "max-height, opacity, transform",
+            transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+        >
+          <div className="space-y-3 p-4">
           <div className="flex items-center gap-2">
             <button
               aria-label={`Play ${title.title}`}
@@ -146,6 +262,7 @@ export function RowFloatingPreview({
           <p className="line-clamp-1 text-[12px] font-semibold text-white/45">
             {title.type} | {title.genre}
           </p>
+          </div>
         </div>
       </div>
     </div>
@@ -444,6 +561,21 @@ function calculateTitleMatch(title: Title, sourceTitles: Title[]) {
 
   if (weightedScore < 24) return null;
   return Math.round(clamp(62 + weightedScore * 0.37, 70, 99));
+}
+
+function usePrefersReducedMotion() {
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => setReducedMotion(mediaQuery.matches);
+
+    updatePreference();
+    mediaQuery.addEventListener("change", updatePreference);
+    return () => mediaQuery.removeEventListener("change", updatePreference);
+  }, []);
+
+  return reducedMotion;
 }
 
 function buildPreferenceProfile(sourceTitles: Title[]) {
