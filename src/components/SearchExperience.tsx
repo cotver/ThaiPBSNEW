@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { RowFloatingPreview, type ActivePreview } from "@/components/ContentRow";
+import { RowFloatingPreview, type ActivePreview } from "@/components/RowFloatingPreview";
 import { PosterCard } from "@/components/PosterCard";
 import { TitlePreviewModal } from "@/components/TitlePreviewModal";
 import type { Title } from "@/lib/content";

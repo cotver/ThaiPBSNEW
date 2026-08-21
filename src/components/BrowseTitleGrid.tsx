@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Title } from "@/lib/content";
-import { RowFloatingPreview, type ActivePreview } from "./ContentRow";
 import { PosterCard } from "./PosterCard";
+import { RowFloatingPreview, type ActivePreview } from "./RowFloatingPreview";
 import { TitlePreviewModal } from "./TitlePreviewModal";
 
 const titleLoadBatchSize = 70;
