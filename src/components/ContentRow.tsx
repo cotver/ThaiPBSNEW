@@ -87,6 +87,7 @@ export function ContentRow({
 
       setActivePreview({
         anchorHeight: anchor.height,
+        anchorImageSrc: element.querySelector("img")?.currentSrc || undefined,
         anchorLeft,
         anchorTop,
         anchorWidth: anchor.width,

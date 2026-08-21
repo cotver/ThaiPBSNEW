@@ -55,6 +55,7 @@ export function BrowseTitleGrid({ titles }: { titles: Title[] }) {
 
       setActivePreview({
         anchorHeight: anchor.height,
+        anchorImageSrc: element.querySelector("img")?.currentSrc || undefined,
         anchorLeft,
         anchorTop,
         anchorWidth: anchor.width,

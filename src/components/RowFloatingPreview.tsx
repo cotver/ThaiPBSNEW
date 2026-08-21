@@ -9,6 +9,7 @@ import { SaveForLaterButton } from "./SaveForLaterButton";
 
 export type ActivePreview = {
   anchorHeight: number;
+  anchorImageSrc?: string;
   anchorLeft: number;
   anchorTop: number;
   anchorWidth: number;
@@ -39,6 +40,7 @@ export function RowFloatingPreview({
   const reducedMotion = usePrefersReducedMotion();
   const [renderedActive, setRenderedActive] = useState<ActivePreview | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [readyPreviewImageSrc, setReadyPreviewImageSrc] = useState("");
   const renderedActiveRef = useRef<ActivePreview | null>(null);
 
   useEffect(() => {
@@ -80,9 +82,12 @@ export function RowFloatingPreview({
   const { title } = renderedActive;
   const imageSrc = title.heroImage || title.posterImage;
   const collapsedImageSrc =
-    renderedActive.anchorHeight > renderedActive.anchorWidth * 1.2
+    renderedActive.anchorImageSrc ||
+    (renderedActive.anchorHeight > renderedActive.anchorWidth * 1.2
       ? title.posterImage || title.heroImage
-      : title.heroImage || title.posterImage;
+      : title.heroImage || title.posterImage);
+  const previewImageReady = !imageSrc || readyPreviewImageSrc === imageSrc;
+  const revealPreviewImage = expanded && previewImageReady;
   const matchPercent = calculateTitleMatch(title, matchSourceTitles ?? []);
   const displayTitle = titleInlineText(title);
   const trailerSource = getHoverTrailerSource(title);
@@ -95,13 +100,14 @@ export function RowFloatingPreview({
   return (
     <div className="pointer-events-none absolute inset-0 z-[80] overflow-visible">
       <div
-        className="pointer-events-auto absolute overflow-hidden bg-[#111827] text-white ring-1 ring-white/14"
+        className="pointer-events-auto absolute overflow-hidden text-white ring-1 ring-white/14"
         data-hover-preview-panel
         data-preview-state={expanded ? "expanded" : "collapsed"}
         onMouseEnter={onEnter}
         onMouseLeave={onClose}
         style={{
           borderRadius: expanded ? 8 : 6,
+          backgroundColor: expanded ? "#111827" : "transparent",
           boxShadow: expanded
             ? "0 26px 72px rgba(0,0,0,0.72)"
             : "0 18px 40px rgba(0,0,0,0.25)",
@@ -155,8 +161,9 @@ export function RowFloatingPreview({
           tabIndex={expanded ? 0 : -1}
         >
           <div
-            className={`relative overflow-hidden bg-gradient-to-br ${title.tone}`}
+            className="relative overflow-hidden"
             style={{
+              backgroundColor: expanded ? "#101827" : "transparent",
               height: expanded ? expandedMediaHeight : renderedActive.anchorHeight,
               transitionDuration: `${motionDuration}ms`,
               transitionProperty: "height",
@@ -171,6 +178,7 @@ export function RowFloatingPreview({
               tone={title.tone}
               trailerMimeType={trailerMimeType}
               trailerUrl={trailerUrl}
+              onImageReady={() => setReadyPreviewImageSrc(imageSrc ?? "")}
               width={renderedActive.width}
             />
             {collapsedImageSrc ? (
@@ -178,18 +186,21 @@ export function RowFloatingPreview({
                 alt=""
                 className="absolute inset-0 z-[3] size-full object-cover"
                 fill
+                decoding="sync"
+                loading="eager"
                 sizes={`${Math.ceil(renderedActive.anchorWidth)}px`}
                 src={collapsedImageSrc}
                 style={{
-                  opacity: expanded ? 0 : 1,
-                  transition: `opacity ${reducedMotion ? 0 : expanded ? 180 : 120}ms ease-out`,
+                  opacity: revealPreviewImage ? 0 : 1,
+                  transition: `opacity ${reducedMotion ? 0 : revealPreviewImage ? 180 : 120}ms ease-out`,
                 }}
+                unoptimized={Boolean(renderedActive.anchorImageSrc)}
               />
             ) : null}
             <div
               className="absolute inset-0 z-[4] bg-[linear-gradient(0deg,rgba(17,24,39,0.58),transparent_54%),radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.20),transparent_24%)]"
               style={{
-                opacity: expanded ? 1 : 0,
+                opacity: revealPreviewImage ? 1 : 0,
                 transition: `opacity ${detailDuration}ms ease-out`,
               }}
             />
@@ -199,8 +210,8 @@ export function RowFloatingPreview({
             <div
               className="absolute bottom-4 left-4 right-4 z-[5]"
               style={{
-                opacity: expanded ? 1 : 0,
-                transform: expanded ? "translateY(0)" : "translateY(4px)",
+                opacity: revealPreviewImage ? 1 : 0,
+                transform: revealPreviewImage ? "translateY(0)" : "translateY(4px)",
                 transition: `opacity ${detailDuration}ms ease-out, transform ${detailDuration}ms ease-out`,
               }}
             >
@@ -331,6 +342,7 @@ function getHoverTrailerSource(title: Title): { mimeType?: string; url: string }
 function HoverTrailerMedia({
   imageSrc,
   isDiscontinued,
+  onImageReady,
   tone,
   trailerMimeType,
   trailerUrl,
@@ -338,6 +350,7 @@ function HoverTrailerMedia({
 }: {
   imageSrc?: string;
   isDiscontinued: boolean;
+  onImageReady: () => void;
   tone: string;
   trailerMimeType?: string;
   trailerUrl: string;
@@ -519,7 +532,16 @@ function HoverTrailerMedia({
         } transition-opacity duration-500 ease-out`}
       >
         {imageSrc ? (
-          <Image alt="" className={imageClassName} fill sizes={`${Math.ceil(width)}px`} src={imageSrc} />
+          <Image
+            alt=""
+            className={imageClassName}
+            fill
+            loading="eager"
+            onError={onImageReady}
+            onLoad={onImageReady}
+            sizes={`${Math.ceil(width)}px`}
+            src={imageSrc}
+          />
         ) : (
           <div className={`absolute inset-0 bg-gradient-to-br ${tone}`} />
         )}
