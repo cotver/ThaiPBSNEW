@@ -347,10 +347,15 @@ export interface User {
               | 'synopsisTh'
               | 'synopsisEn'
               | 'companyProduce'
+              | 'companyProduceEn'
               | 'producer'
+              | 'producerEn'
               | 'director'
+              | 'directorEn'
               | 'artist'
+              | 'artistEn'
               | 'writer'
+              | 'writerEn'
               | 'targetGroup'
               | 'programType'
               | 'genre'
@@ -811,10 +816,15 @@ export interface RoleProfile {
               | 'synopsisTh'
               | 'synopsisEn'
               | 'companyProduce'
+              | 'companyProduceEn'
               | 'producer'
+              | 'producerEn'
               | 'director'
+              | 'directorEn'
               | 'artist'
+              | 'artistEn'
               | 'writer'
+              | 'writerEn'
               | 'targetGroup'
               | 'programType'
               | 'genre'
@@ -1274,10 +1284,15 @@ export interface UserGroup {
               | 'synopsisTh'
               | 'synopsisEn'
               | 'companyProduce'
+              | 'companyProduceEn'
               | 'producer'
+              | 'producerEn'
               | 'director'
+              | 'directorEn'
               | 'artist'
+              | 'artistEn'
               | 'writer'
+              | 'writerEn'
               | 'targetGroup'
               | 'programType'
               | 'genre'
@@ -1602,25 +1617,45 @@ export interface Program {
    */
   synopsisEn?: string | null;
   /**
-   * Company produce
+   * Company produce (Thai)
    */
   companyProduce?: string | null;
   /**
-   * Producer
+   * Company produce (English)
+   */
+  companyProduceEn?: string | null;
+  /**
+   * Producer (Thai)
    */
   producer?: string | null;
   /**
-   * Director
+   * Producer (English)
+   */
+  producerEn?: string | null;
+  /**
+   * Director (Thai)
    */
   director?: string | null;
   /**
-   * Artist
+   * Director (English)
+   */
+  directorEn?: string | null;
+  /**
+   * Artist (Thai)
    */
   artist?: string | null;
   /**
-   * Writer
+   * Artist (English)
+   */
+  artistEn?: string | null;
+  /**
+   * Writer (Thai)
    */
   writer?: string | null;
+  /**
+   * Writer (English)
+   */
+  writerEn?: string | null;
   /**
    * Program type
    */
@@ -3512,10 +3547,15 @@ export interface ProgramsSelect<T extends boolean = true> {
   synopsisTh?: T;
   synopsisEn?: T;
   companyProduce?: T;
+  companyProduceEn?: T;
   producer?: T;
+  producerEn?: T;
   director?: T;
+  directorEn?: T;
   artist?: T;
+  artistEn?: T;
   writer?: T;
+  writerEn?: T;
   type?: T;
   genre?: T;
   genre_sub?: T;

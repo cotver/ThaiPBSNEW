@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { titleDisplayLines, titleEyebrow, titleHref, type Title } from "@/lib/content";
+import { titleDisplayLines, titleEyebrow, titleHref, titleSeasonEpisodeLabel, type Title } from "@/lib/content";
 import { ENABLE_TITLE_PLAYBACK, PREFER_TRAILER_SOUND } from "@/lib/features";
 import { isGifMedia, playVideoWithSoundFallback } from "@/lib/trailer-playback";
 import { SaveForLaterButton } from "./SaveForLaterButton";
@@ -375,6 +375,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   }
 
   const currentIsDisabled = current.isDiscontinued;
+  const currentMeta = [current.year, current.rating, current.duration, titleSeasonEpisodeLabel(current)].filter(Boolean);
 
   return (
     <section ref={heroRef} className="relative h-[clamp(620px,min(56.25vw,100vh),2160px)] overflow-hidden px-5 pb-24 sm:px-8 lg:px-10">
@@ -584,9 +585,9 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
               </span>
             ))}
           </h1>
-          {[current.year, current.rating, current.duration].filter(Boolean).length > 0 && (
+          {currentMeta.length > 0 && (
             <p className="mt-4 text-sm font-bold text-white/72">
-              {[current.year, current.rating, current.duration].filter(Boolean).join(" | ")}
+              {currentMeta.join(" | ")}
             </p>
           )}
           {current.description && (

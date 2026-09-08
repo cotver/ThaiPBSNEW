@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { titleDisplayLines, titleEyebrow, titleHref, type Title } from "@/lib/content";
+import { titleDisplayLines, titleEyebrow, titleHref, titleSeasonEpisodeLabel, type Title } from "@/lib/content";
 import { ENABLE_TITLE_PLAYBACK, PREFER_TRAILER_SOUND } from "@/lib/features";
 import { isGifMedia, playVideoWithSoundFallback } from "@/lib/trailer-playback";
 import { DiscontinuedBadge } from "./DiscontinuedBadge";
@@ -274,7 +274,7 @@ export function TitlePreviewModal({
   const showImageFade = title.showHeroDetails !== false;
   const useFullImage = title.source === "heroImage" && title.showHeroDetails === false;
   const titleLines = titleDisplayLines(title);
-  const meta = [title.year, title.rating, title.duration].filter(Boolean);
+  const meta = [title.year, title.rating, title.duration, titleSeasonEpisodeLabel(title)].filter(Boolean);
 
   return createPortal(
     <div

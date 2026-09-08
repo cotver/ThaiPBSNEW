@@ -7,8 +7,23 @@ export const Programs: CollectionConfig = {
       slug: 'programs',
       admin: {
         useAsTitle: '_displayTitle',
-        defaultColumns: ['programId', 'titleTh', 'titleEn', 'programContentType', 'producer', 'director', 'createdAt', 'updatedAt'],
-        listSearchableFields: ['programId', 'titleTh', 'titleEn', '_displayTitle'],
+        defaultColumns: ['programId', 'titleTh', 'titleEn', 'programContentType', 'producer', 'producerEn', 'director', 'directorEn', 'createdAt', 'updatedAt'],
+        listSearchableFields: [
+          'programId',
+          'titleTh',
+          'titleEn',
+          '_displayTitle',
+          'companyProduce',
+          'companyProduceEn',
+          'producer',
+          'producerEn',
+          'director',
+          'directorEn',
+          'artist',
+          'artistEn',
+          'writer',
+          'writerEn',
+        ],
       },
       hooks: {
         beforeChange: [syncProgramTypeFlags],
@@ -139,27 +154,52 @@ export const Programs: CollectionConfig = {
         {
           name: 'companyProduce',
           type: 'text',
-          admin: { description: 'Company produce' },
+          admin: { description: 'Company produce (Thai)' },
+        },
+        {
+          name: 'companyProduceEn',
+          type: 'text',
+          admin: { description: 'Company produce (English)' },
         },
         {
           name: 'producer',
           type: 'text',
-          admin: { description: 'Producer' },
+          admin: { description: 'Producer (Thai)' },
+        },
+        {
+          name: 'producerEn',
+          type: 'text',
+          admin: { description: 'Producer (English)' },
         },
         {
           name: 'director',
           type: 'text',
-          admin: { description: 'Director' },
+          admin: { description: 'Director (Thai)' },
+        },
+        {
+          name: 'directorEn',
+          type: 'text',
+          admin: { description: 'Director (English)' },
         },
         {
           name: 'artist',
           type: 'text',
-          admin: { description: 'Artist' },
+          admin: { description: 'Artist (Thai)' },
+        },
+        {
+          name: 'artistEn',
+          type: 'text',
+          admin: { description: 'Artist (English)' },
         },
         {
           name: 'writer',
           type: 'text',
-          admin: { description: 'Writer' },
+          admin: { description: 'Writer (Thai)' },
+        },
+        {
+          name: 'writerEn',
+          type: 'text',
+          admin: { description: 'Writer (English)' },
         },
         {
           name: 'type',

@@ -2896,10 +2896,15 @@ export function ProgramsManagerAddForm(props?: {
   const [synopsisTh, setSynopsisTh] = useState('')
   const [synopsisEn, setSynopsisEn] = useState('')
   const [companyProduce, setCompanyProduce] = useState('')
+  const [companyProduceEn, setCompanyProduceEn] = useState('')
   const [producer, setProducer] = useState('')
+  const [producerEn, setProducerEn] = useState('')
   const [director, setDirector] = useState('')
+  const [directorEn, setDirectorEn] = useState('')
   const [artist, setArtist] = useState('')
+  const [artistEn, setArtistEn] = useState('')
   const [writer, setWriter] = useState('')
+  const [writerEn, setWriterEn] = useState('')
   const [targetGroup, setTargetGroup] = useState('')
   const [type, setType] = useState('')
   const [genre, setGenre] = useState<number[]>([])
@@ -3151,10 +3156,15 @@ export function ProgramsManagerAddForm(props?: {
     setSynopsisTh(String(p.synopsisTh ?? ''))
     setSynopsisEn(String(p.synopsisEn ?? ''))
     setCompanyProduce(String(p.companyProduce ?? ''))
+    setCompanyProduceEn(String(p.companyProduceEn ?? ''))
     setProducer(String(p.producer ?? ''))
+    setProducerEn(String(p.producerEn ?? ''))
     setDirector(String(p.director ?? ''))
+    setDirectorEn(String(p.directorEn ?? ''))
     setArtist(String(p.artist ?? ''))
+    setArtistEn(String(p.artistEn ?? ''))
     setWriter(String(p.writer ?? ''))
+    setWriterEn(String(p.writerEn ?? ''))
     setTargetGroup(String(p.targetGroup ?? ''))
     setType(String(p.type ?? ''))
     setGenre(relationIds((p as { genre?: unknown }).genre))
@@ -3737,10 +3747,15 @@ export function ProgramsManagerAddForm(props?: {
             synopsisTh: synopsisTh.trim() || null,
             synopsisEn: synopsisEn.trim() || null,
             companyProduce: companyProduce.trim() || null,
+            companyProduceEn: companyProduceEn.trim() || null,
             producer: producer.trim() || null,
+            producerEn: producerEn.trim() || null,
             director: director.trim() || null,
+            directorEn: directorEn.trim() || null,
             artist: artist.trim() || null,
+            artistEn: artistEn.trim() || null,
             writer: writer.trim() || null,
+            writerEn: writerEn.trim() || null,
             targetGroup: targetGroupAge,
             type: type || null,
             genre,
@@ -4001,10 +4016,15 @@ export function ProgramsManagerAddForm(props?: {
           synopsisTh: synopsisTh.trim() || null,
           synopsisEn: synopsisEn.trim() || null,
           companyProduce: companyProduce.trim() || null,
+          companyProduceEn: companyProduceEn.trim() || null,
           producer: producer.trim() || null,
+          producerEn: producerEn.trim() || null,
           director: director.trim() || null,
+          directorEn: directorEn.trim() || null,
           artist: artist.trim() || null,
+          artistEn: artistEn.trim() || null,
           writer: writer.trim() || null,
+          writerEn: writerEn.trim() || null,
           targetGroup: targetGroupAge,
           type: type || null,
           genre,
@@ -4191,10 +4211,15 @@ export function ProgramsManagerAddForm(props?: {
       setSynopsisTh('')
       setSynopsisEn('')
       setCompanyProduce('')
+      setCompanyProduceEn('')
       setProducer('')
+      setProducerEn('')
       setDirector('')
+      setDirectorEn('')
       setArtist('')
+      setArtistEn('')
       setWriter('')
+      setWriterEn('')
       setCategories([])
       setTargetGroup('')
       setType('')
@@ -4994,7 +5019,7 @@ export function ProgramsManagerAddForm(props?: {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{L('companyProduce', 'Company produce')}</label>
+                <label className="block text-sm font-medium mb-1">{L('companyProduce', 'Company produce (Thai)')}</label>
                 <input
                   type="text"
                   value={companyProduce}
@@ -5003,7 +5028,16 @@ export function ProgramsManagerAddForm(props?: {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{L('producer', 'Producer')}</label>
+                <label className="block text-sm font-medium mb-1">{L('companyProduceEn', 'Company produce (English)')}</label>
+                <input
+                  type="text"
+                  value={companyProduceEn}
+                  onChange={(e) => setCompanyProduceEn(e.target.value)}
+                  className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{L('producer', 'Producer (Thai)')}</label>
                 <input
                   type="text"
                   value={producer}
@@ -5012,7 +5046,16 @@ export function ProgramsManagerAddForm(props?: {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{L('director', 'Director')}</label>
+                <label className="block text-sm font-medium mb-1">{L('producerEn', 'Producer (English)')}</label>
+                <input
+                  type="text"
+                  value={producerEn}
+                  onChange={(e) => setProducerEn(e.target.value)}
+                  className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{L('director', 'Director (Thai)')}</label>
                 <input
                   type="text"
                   value={director}
@@ -5021,7 +5064,16 @@ export function ProgramsManagerAddForm(props?: {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{L('artist', 'Artist')}</label>
+                <label className="block text-sm font-medium mb-1">{L('directorEn', 'Director (English)')}</label>
+                <input
+                  type="text"
+                  value={directorEn}
+                  onChange={(e) => setDirectorEn(e.target.value)}
+                  className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{L('artist', 'Artist (Thai)')}</label>
                 <input
                   type="text"
                   value={artist}
@@ -5030,11 +5082,29 @@ export function ProgramsManagerAddForm(props?: {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{L('writer', 'Writer')}</label>
+                <label className="block text-sm font-medium mb-1">{L('artistEn', 'Artist (English)')}</label>
+                <input
+                  type="text"
+                  value={artistEn}
+                  onChange={(e) => setArtistEn(e.target.value)}
+                  className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{L('writer', 'Writer (Thai)')}</label>
                 <input
                   type="text"
                   value={writer}
                   onChange={(e) => setWriter(e.target.value)}
+                  className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{L('writerEn', 'Writer (English)')}</label>
+                <input
+                  type="text"
+                  value={writerEn}
+                  onChange={(e) => setWriterEn(e.target.value)}
                   className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
                 />
               </div>

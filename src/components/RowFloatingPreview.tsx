@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { titleEyebrow, titleHref, titleInlineText, type Title } from "@/lib/content";
+import { titleEyebrow, titleHref, titleInlineText, titleSeasonEpisodeLabel, type Title } from "@/lib/content";
 import { ENABLE_TITLE_PLAYBACK, PREFER_TRAILER_SOUND } from "@/lib/features";
 import { isGifMedia, playVideoWithSoundFallback } from "@/lib/trailer-playback";
 import { DiscontinuedBadge } from "./DiscontinuedBadge";
@@ -91,7 +91,7 @@ export function RowFloatingPreview({
   const previewImageReady = !imageSrc || readyPreviewImageSrc === imageSrc;
   const revealPreviewImage = expanded && previewImageReady;
   const matchPercent = calculateTitleMatch(title, matchSourceTitles ?? []);
-  const episodeCountLabel = getEpisodeCountLabel(title);
+  const episodeCountLabel = titleSeasonEpisodeLabel(title);
   const displayTitle = titleInlineText(title);
   const trailerSource = getHoverTrailerSource(title);
   const trailerUrl = trailerSource.url;
@@ -284,16 +284,6 @@ export function RowFloatingPreview({
       </div>
     </div>
   );
-}
-
-function getEpisodeCountLabel(title: Title): string | null {
-  const seasons = title.seasons ?? [];
-  if (seasons.length === 0) return null;
-
-  const episodeCount = Math.max(...seasons.map((season) => season.episodes.length));
-  const seasonLabel = `${seasons.length} ${seasons.length === 1 ? "Season" : "Seasons"}`;
-  const episodeLabel = `${episodeCount} ${episodeCount === 1 ? "Episode" : "Episodes"}`;
-  return `${seasonLabel} · ${episodeLabel}`;
 }
 
 function toYouTubeEmbedUrl(rawUrl: string): string | null {

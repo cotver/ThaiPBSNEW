@@ -8,9 +8,11 @@ export type Title = {
   duration: string;
   eyebrow?: string;
   description: string;
+  companyProduce?: string;
   producer?: string;
   director?: string;
   artist?: string;
+  writer?: string;
   categoryNames?: string[];
   categorySlugs?: string[];
   progress?: string;
@@ -106,4 +108,16 @@ export function titleDisplayText(title: Pick<Title, "heroTitleLines" | "title">)
 
 export function titleInlineText(title: Pick<Title, "title">) {
   return title.title.replace(/\\n|\r?\n/g, " ").replace(/\s+/g, " ").trim();
+}
+
+export function titleSeasonEpisodeLabel(title: Pick<Title, "seasons">): string | null {
+  const seasons = title.seasons ?? [];
+  if (seasons.length === 0) return null;
+
+  const episodeCount = Math.max(...seasons.map((season) => season.episodes.length));
+  if (episodeCount === 0) return null;
+
+  const seasonLabel = `${seasons.length} ${seasons.length === 1 ? "Season" : "Seasons"}`;
+  const episodeLabel = `${episodeCount} ${episodeCount === 1 ? "Episode" : "Episodes"}`;
+  return `${seasonLabel} · ${episodeLabel}`;
 }
