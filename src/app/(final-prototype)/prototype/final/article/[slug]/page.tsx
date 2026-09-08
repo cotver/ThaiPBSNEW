@@ -1,77 +1,165 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { finalArticleHref, titleEyebrow, titleInlineText } from "@/lib/content";
-import { getCatalogCollections, getCatalogTitle, getCatalogTitles } from "@/lib/payload-content";
+import { FinalArticleRichText } from "@/components/final-prototype/FinalArticleRichText";
+import { finalArticleHref } from "@/lib/content";
+import { getFinalArticle, getRelatedFinalArticles, type FinalArticleCard, type FinalArticleDetail } from "@/lib/payload-articles";
 
 export const dynamic = "force-dynamic";
 
-export default async function FinalArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+type ArticlePageProps = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const [program, catalog, collections] = await Promise.all([getCatalogTitle(slug), getCatalogTitles(), getCatalogCollections()]);
-  const title = program ?? collections.heroes.find((item) => item.slug === slug);
+  const article = await getFinalArticle(slug);
 
-  if (!title || title.isDiscontinued) notFound();
+  if (article) {
+    const image = absoluteImageUrl(article.socialImageUrl || article.imageUrl);
+    const canonical = absolutePageUrl(finalArticleHref(article.slug));
+    return {
+      title: `${article.seoTitle} | Thai PBS`,
+      description: article.seoDescription || article.excerpt,
+      alternates: canonical ? { canonical } : undefined,
+      authors: article.author ? [{ name: article.author }] : undefined,
+      openGraph: {
+        title: article.seoTitle,
+        description: article.seoDescription || article.excerpt,
+        type: "article",
+        publishedTime: article.publishedDate,
+        authors: article.author ? [article.author] : undefined,
+        url: canonical,
+        images: image ? [{ url: image, alt: article.imageAlt }] : [],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: article.seoTitle,
+        description: article.seoDescription || article.excerpt,
+        images: image ? [image] : [],
+      },
+    };
+  }
 
-  const image = title.heroImage || title.posterImage;
-  const related = catalog.filter((item) => !item.isDiscontinued && item.slug !== title.slug).slice(0, 3);
+  return {};
+}
 
+export default async function FinalArticlePage({ params }: ArticlePageProps) {
+  const { slug } = await params;
+  const article = await getFinalArticle(slug);
+
+  if (article) {
+    const related = await getRelatedFinalArticles(article);
+    return <PublishedArticle article={article} related={related} />;
+  }
+
+  notFound();
+}
+
+function PublishedArticle({ article, related }: { article: FinalArticleDetail; related: FinalArticleCard[] }) {
   return (
     <main className="min-h-screen bg-[#030714] pb-20 text-white">
       <article>
-        <header className="relative isolate min-h-[34rem] overflow-hidden border-b border-white/10 sm:min-h-[42rem]">
+        <header className="final-article-hero relative isolate overflow-hidden border-b border-white/10">
           <div className="absolute inset-0 bg-[#07101f]">
-            {image ? <Image alt="" className="object-cover" fill priority sizes="100vw" src={image} /> : <span className={`absolute inset-0 bg-gradient-to-br ${title.tone}`} />}
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,.92)_35%,rgba(3,7,20,.2)_75%,rgba(3,7,20,.4)_100%)]" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#030714] via-transparent to-[#030714]/30" />
+            {article.imageUrl ? (
+              <div className="final-hero-background__image-align">
+                <div className="final-hero-background__image-inner">
+                  <Image alt={article.imageAlt} fill priority sizes="100vw" src={article.imageUrl} />
+                  <span className="final-hero-background__image-left-fade" />
+                  <span className="final-hero-background__image-bottom-fade" />
+                </div>
+              </div>
+            ) : (
+              <span className="absolute inset-0 bg-[radial-gradient(circle_at_70%_25%,#164e63_0%,#07101f_36%,#030714_76%)]" />
+            )}
+            <div className="final-hero-background__detail-shadow" />
+            <div className="final-hero__background-shade" />
           </div>
-          <div className="relative mx-auto flex min-h-[34rem] max-w-[80rem] items-end px-5 pb-14 pt-28 sm:min-h-[42rem] sm:px-10 sm:pb-20">
-            <div className="max-w-3xl">
-              <Link className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-white/65 transition hover:text-cyan-200" href="/prototype/final">← Back to home</Link>
-              <p className="text-xs font-black uppercase tracking-[0.12em] text-cyan-200">{titleEyebrow(title)} · Article</p>
-              <h1 className="mt-4 text-4xl font-black leading-[1.02] tracking-[-0.045em] sm:text-6xl lg:text-7xl">{titleInlineText(title)}</h1>
-              <p className="mt-6 max-w-2xl text-base leading-8 text-white/75 sm:text-xl sm:leading-9">{title.description}</p>
-              <p className="mt-6 text-sm font-semibold text-white/60">{[title.year, title.rating, title.duration, title.genre].filter(Boolean).join(" · ")}</p>
+          <div className="relative mx-auto flex h-full max-w-[80rem] items-end px-5 pb-14 pt-28 sm:px-10 sm:pb-20">
+            <div className="max-w-4xl">
+              <Link className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-white/65 transition hover:text-[#f87724]" href="/prototype/final">← Back to home</Link>
+              <p className="text-xs font-black uppercase tracking-[0.12em] text-[#f87724]">{article.programTitle} · {article.targetLabel}</p>
+              <h1 className="mt-4 text-4xl font-black leading-[1.02] tracking-[-0.045em] sm:text-6xl lg:text-7xl">{article.title}</h1>
+              {article.excerpt ? <p className="mt-6 max-w-3xl text-base leading-8 text-white/75 sm:text-xl sm:leading-9">{article.excerpt}</p> : null}
+              <p className="mt-6 text-sm font-semibold text-white/60">{[formatArticleDate(article.publishedDate), article.author, ...article.categoryNames].filter(Boolean).join(" · ")}</p>
             </div>
           </div>
         </header>
 
-        <div className="mx-auto grid max-w-[80rem] gap-12 px-5 py-16 sm:px-10 sm:py-24 lg:grid-cols-[minmax(0,46rem)_15rem]">
-          <div className="space-y-8 text-lg leading-8 text-white/72 sm:text-xl sm:leading-9">
-            <p>{title.description}</p>
-            <p>เรื่องราวนี้พาเราเข้าใกล้ผู้คน สถานที่ และรายละเอียดที่มีความหมาย ผ่านมุมมองของ Thai PBS ที่ให้พื้นที่กับความจริง ความหลากหลาย และบทสนทนาที่ไปต่อได้.</p>
-            {image ? <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-white/10"><Image alt={`ภาพจาก ${titleInlineText(title)}`} className="object-cover" fill sizes="(max-width: 1024px) 100vw, 736px" src={image} /></div> : null}
-            <h2 className="pt-4 text-3xl font-black leading-tight text-white sm:text-4xl">A story worth staying with.</h2>
-            <p>ทุกตอนและทุกประเด็นชวนให้เรามองสิ่งรอบตัวอย่างละเอียดขึ้น ทั้งชีวิตประจำวัน ชุมชน และความเปลี่ยนแปลงที่เกิดขึ้นในสังคม.</p>
+        <div className="mx-auto grid max-w-[78rem] gap-y-12 px-5 py-16 sm:px-10 sm:py-24 xl:grid-cols-[minmax(0,56rem)_13rem] xl:gap-x-16 xl:gap-y-0">
+          <div className="mx-auto w-full max-w-[56rem]">
+            {article.description && article.description !== article.excerpt ? <p className="mb-10 text-xl font-semibold leading-9 text-white/82 sm:text-2xl sm:leading-10">{article.description}</p> : null}
+            <FinalArticleRichText content={article.content} />
           </div>
 
-          <aside className="h-fit border-t border-white/15 pt-6 lg:sticky lg:top-28">
-            <p className="text-xs font-black uppercase tracking-[0.12em] text-cyan-200">Programme details</p>
+          <aside className="h-fit border-t border-white/15 pt-6 xl:sticky xl:top-28 xl:col-start-2 xl:row-start-1 xl:w-52">
+            <p className="text-xs font-black uppercase tracking-[0.12em] text-[#f87724]">Article details</p>
             <dl className="mt-5 space-y-5 text-sm">
-              <ArticleMeta label="Type" value={title.type} />
-              <ArticleMeta label="Genre" value={title.genre} />
-              <ArticleMeta label="Year" value={title.year} />
-              {title.duration ? <ArticleMeta label="Duration" value={title.duration} /> : null}
+              <ArticleMeta label="Programme" value={article.programTitle} />
+              <ArticleMeta label="Story level" value={article.targetLabel} />
+              <ArticleMeta label="Published" value={formatArticleDate(article.publishedDate)} />
+              {article.author ? <ArticleMeta label="Author" value={article.author} /> : null}
             </dl>
+            {article.programHref ? <Link className="mt-7 inline-flex border-b border-[#f87724] pb-1 text-sm font-black text-[#f87724]" href={article.programHref}>Explore programme ↗</Link> : null}
+            {article.tags.length ? <div className="mt-8 flex flex-wrap gap-2">{article.tags.map((tag) => <span className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/60" key={tag}>#{tag}</span>)}</div> : null}
           </aside>
         </div>
       </article>
 
-      {related.length ? (
-        <section className="mx-auto max-w-[80rem] px-5 pt-8 sm:px-10 sm:pt-12">
-          <div className="mb-8 flex items-end justify-between border-b border-white/10 pb-5"><div><p className="text-xs font-black uppercase tracking-[0.12em] text-cyan-200">Keep exploring</p><h2 className="mt-2 text-3xl font-black">Related programmes</h2></div><Link className="text-sm font-bold text-white/60 hover:text-white" href="/prototype/final">View all</Link></div>
-          <div className="grid gap-5 md:grid-cols-3">
-            {related.map((item) => {
-              const relatedImage = item.heroImage || item.posterImage;
-              return <Link className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]" href={finalArticleHref(item.slug)} key={item.slug}><div className="relative aspect-[16/10] bg-[#07101f]">{relatedImage ? <Image alt="" className="object-cover transition duration-500 group-hover:scale-105" fill sizes="(max-width: 768px) 100vw, 33vw" src={relatedImage} /> : <span className={`absolute inset-0 bg-gradient-to-br ${item.tone}`} />}</div><div className="p-5"><p className="text-xs font-black uppercase text-cyan-200">{item.genre}</p><h3 className="mt-2 text-xl font-black leading-snug">{titleInlineText(item)}</h3><p className="mt-3 line-clamp-2 text-sm leading-6 text-white/55">{item.description}</p></div></Link>;
-            })}
-          </div>
-        </section>
-      ) : null}
+      {related.length ? <RelatedArticles articles={related} /> : null}
     </main>
+  );
+}
+
+function RelatedArticles({ articles }: { articles: FinalArticleCard[] }) {
+  return (
+    <section className="mx-auto max-w-[80rem] px-5 pt-8 sm:px-10 sm:pt-12">
+      <div className="mb-8 flex items-end justify-between border-b border-white/10 pb-5">
+        <div><p className="text-xs font-black uppercase tracking-[0.12em] text-[#f87724]">More from this programme</p><h2 className="mt-2 text-3xl font-black">Related articles</h2></div>
+        <Link className="text-sm font-bold text-white/60 hover:text-white" href="/prototype/final">Back home</Link>
+      </div>
+      <div className="grid gap-5 md:grid-cols-3">
+        {articles.map((item) => (
+          <Link className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]" href={finalArticleHref(item.slug)} key={item.slug}>
+            <div className="relative aspect-[16/10] bg-[#07101f]">
+              {item.imageUrl ? <Image alt={item.imageAlt} className="object-cover transition duration-500 group-hover:scale-105" fill sizes="(max-width: 768px) 100vw, 33vw" src={item.imageUrl} /> : null}
+            </div>
+            <div className="p-5"><p className="text-xs font-black uppercase text-[#f87724]">{item.targetLabel}</p><h3 className="mt-2 text-xl font-black leading-snug">{item.title}</h3>{item.excerpt ? <p className="mt-3 line-clamp-2 text-sm leading-6 text-white/55">{item.excerpt}</p> : null}</div>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 
 function ArticleMeta({ label, value }: { label: string; value: string }) {
   return <div><dt className="text-xs font-bold text-white/40">{label}</dt><dd className="mt-1 font-bold text-white/80">{value}</dd></div>;
+}
+
+function formatArticleDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "long", year: "numeric" }).format(date);
+}
+
+function absoluteImageUrl(value?: string): string | undefined {
+  if (!value) return undefined;
+  if (/^https?:\/\//i.test(value)) return value;
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
+  if (!origin) return undefined;
+  try {
+    return new URL(value, origin).toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function absolutePageUrl(path: string): string | undefined {
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
+  if (!origin) return undefined;
+  try {
+    return new URL(path, origin).toString();
+  } catch {
+    return undefined;
+  }
 }

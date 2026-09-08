@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Title, TitleEpisode, TitleSeason } from "@/lib/content";
+import { ENABLE_TITLE_PLAYBACK } from "@/lib/features";
 import { DiscontinuedBadge } from "./DiscontinuedBadge";
 
 type DetailTab = "episodes" | "details";
@@ -81,7 +82,11 @@ export function TitleDetails({
     slug: title.slug,
     id: seasons[0]?.id ?? "",
   });
-  const activeTab = activeTabState.slug === title.slug ? activeTabState.tab : "episodes";
+  const activeTab = ENABLE_TITLE_PLAYBACK
+    ? activeTabState.slug === title.slug
+      ? activeTabState.tab
+      : "episodes"
+    : "details";
   const internalSelectedSeasonId =
     internalSeasonSelection.slug === title.slug ? internalSeasonSelection.id : seasons[0]?.id ?? "";
   const selectedSeasonId = controlledSelectedSeasonId ?? internalSelectedSeasonId;
@@ -116,15 +121,17 @@ export function TitleDetails({
     <>
       <div className={compact ? "space-y-7 px-5 py-6 sm:px-9" : "space-y-8 px-5 py-7 sm:px-9 lg:px-10"}>
         <div className="flex gap-7 border-b border-white/10 text-sm font-black uppercase tracking-[0.16em] text-white/42">
-          <TabButton active={activeTab === "episodes"} onClick={() => setActiveTabState({ slug: title.slug, tab: "episodes" })}>
-            Episodes
-          </TabButton>
+          {ENABLE_TITLE_PLAYBACK ? (
+            <TabButton active={activeTab === "episodes"} onClick={() => setActiveTabState({ slug: title.slug, tab: "episodes" })}>
+              Episodes
+            </TabButton>
+          ) : null}
           <TabButton active={activeTab === "details"} onClick={() => setActiveTabState({ slug: title.slug, tab: "details" })}>
             Details
           </TabButton>
         </div>
 
-        {activeTab === "episodes" ? (
+        {ENABLE_TITLE_PLAYBACK && activeTab === "episodes" ? (
           <EpisodesPanel
             compact={compact}
             episodeLayout={episodeLayout}
@@ -140,12 +147,14 @@ export function TitleDetails({
 
         {activeTab === "details" ? <DetailsPanel title={title} /> : null}
       </div>
-      <EpisodeVideoPlayer
-        playingEpisode={playingEpisode}
-        onClose={() => setPlayingEpisode(null)}
-        onPlayEpisode={playEpisode}
-        playableEpisodes={selectedSeason?.episodes.filter((episode) => Boolean(episode.videoUrl)) ?? []}
-      />
+      {ENABLE_TITLE_PLAYBACK ? (
+        <EpisodeVideoPlayer
+          playingEpisode={playingEpisode}
+          onClose={() => setPlayingEpisode(null)}
+          onPlayEpisode={playEpisode}
+          playableEpisodes={selectedSeason?.episodes.filter((episode) => Boolean(episode.videoUrl)) ?? []}
+        />
+      ) : null}
     </>
   );
 }

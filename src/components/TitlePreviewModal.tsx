@@ -7,6 +7,8 @@ import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { titleDisplayLines, titleEyebrow, titleHref, type Title } from "@/lib/content";
+import { ENABLE_TITLE_PLAYBACK, PREFER_TRAILER_SOUND } from "@/lib/features";
+import { playVideoWithSoundFallback } from "@/lib/trailer-playback";
 import { DiscontinuedBadge } from "./DiscontinuedBadge";
 import { SaveForLaterButton } from "./SaveForLaterButton";
 import { TitleDetails } from "./TitleDetails";
@@ -74,14 +76,14 @@ export function TitlePreviewModal({
     ended: false,
     failed: false,
     loaded: false,
-    muted: true,
+    muted: !PREFER_TRAILER_SOUND,
     url: "",
   });
   const trailerPlaybackMatches = trailerPlayback.url === activeTrailerUrl;
   const trailerEnded = trailerPlaybackMatches ? trailerPlayback.ended : false;
   const trailerFailed = trailerPlaybackMatches ? trailerPlayback.failed : false;
   const trailerLoaded = trailerPlaybackMatches ? trailerPlayback.loaded : false;
-  const trailerMuted = trailerPlaybackMatches ? trailerPlayback.muted : true;
+  const trailerMuted = trailerPlaybackMatches ? trailerPlayback.muted : !PREFER_TRAILER_SOUND;
   const [heroInView, setHeroInView] = useState(true);
 
   const closeWithHistory = useCallback(() => {
@@ -153,13 +155,14 @@ export function TitlePreviewModal({
     const video = trailerVideoRef.current;
     if (!video) return;
 
-    video.muted = trailerMuted;
     if (!open || !heroInView || trailerEnded || trailerFailed) {
       video.pause();
       return;
     }
 
-    video.play().catch(() => {});
+    void playVideoWithSoundFallback(video, trailerMuted, () => {
+      setTrailerPlayback((playback) => ({ ...playback, muted: true, url: activeTrailerUrl }));
+    });
   }, [open, activeTrailerUrl, heroInView, trailerEnded, trailerFailed, trailerMuted]);
 
   useEffect(() => {
@@ -320,7 +323,7 @@ export function TitlePreviewModal({
                 <video
                   key={trailerUrl}
                   aria-hidden="true"
-                  autoPlay={trailerMuted}
+                  autoPlay
                   className={`${mediaClassName} ${
                     showInlineTrailer ? "opacity-100" : "opacity-0"
                   } transition-opacity duration-700 ease-out`}
@@ -349,13 +352,14 @@ export function TitlePreviewModal({
                   onLoadedData={() => {
                     const video = trailerVideoRef.current;
                     if (!video) return;
-                    video.muted = trailerMuted;
                     setTrailerPlayback((playback) => ({
                       ...playback,
                       loaded: true,
                       url: trailerUrl,
                     }));
-                    video.play().catch(() => {});
+                    void playVideoWithSoundFallback(video, trailerMuted, () => {
+                      setTrailerPlayback((playback) => ({ ...playback, muted: true, url: trailerUrl }));
+                    });
                   }}
                   onCanPlay={() => {
                     setTrailerPlayback((playback) => ({
@@ -494,14 +498,16 @@ export function TitlePreviewModal({
               ) : null}
               {title.showHeroActions !== false ? (
                 <div className="mt-8 flex flex-wrap items-center gap-3">
-                  <Link
-                    className="inline-flex h-12 items-center gap-2 rounded-[6px] bg-white px-7 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
-                    href={titleHref(title.slug)}
-                    onClick={(event) => navigateFromModal(event, titleHref(title.slug))}
-                  >
-                    <PlayIcon />
-                    Play
-                  </Link>
+                  {ENABLE_TITLE_PLAYBACK ? (
+                    <Link
+                      className="inline-flex h-12 items-center gap-2 rounded-[6px] bg-white px-7 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
+                      href={titleHref(title.slug)}
+                      onClick={(event) => navigateFromModal(event, titleHref(title.slug))}
+                    >
+                      <PlayIcon />
+                      Play
+                    </Link>
+                  ) : null}
                   <Link
                     className="inline-flex h-12 items-center rounded-[6px] border border-white/16 bg-white/12 px-6 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
                     href={`${titleHref(title.slug)}#episodes`}

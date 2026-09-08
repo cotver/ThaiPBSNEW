@@ -23,6 +23,8 @@ type ProgramDoc = Record<string, unknown> & {
   coverImage?: { id: number | string; url?: string } | number | null
   image?: { id: number | string; url?: string } | number | null
   is_Award?: boolean | null
+  producer?: string | null
+  director?: string | null
 }
 
 const DEFAULT_SORT = '-updatedAt'

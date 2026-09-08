@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { titleDisplayLines, titleEyebrow, titleHref, type Title } from "@/lib/content";
+import { ENABLE_TITLE_PLAYBACK, PREFER_TRAILER_SOUND } from "@/lib/features";
+import { playVideoWithSoundFallback } from "@/lib/trailer-playback";
 import { SaveForLaterButton } from "./SaveForLaterButton";
 
 const AUTO_SLIDE_MS = 6500;
@@ -90,7 +92,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
     ended: false,
     failed: false,
     loaded: false,
-    muted: true,
+    muted: !PREFER_TRAILER_SOUND,
     url: "",
   });
   const activeTrailerSource = getHeroTrailerSource(current);
@@ -101,7 +103,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   const trailerPlaybackMatches = trailerPlayback.url === activeTrailerUrl;
   const trailerEnded = trailerPlaybackMatches ? trailerPlayback.ended : false;
   const trailerFailed = trailerPlaybackMatches ? trailerPlayback.failed : false;
-  const trailerMuted = trailerPlaybackMatches ? trailerPlayback.muted : true;
+  const trailerMuted = trailerPlaybackMatches ? trailerPlayback.muted : !PREFER_TRAILER_SOUND;
   const activeHasInlineTrailer =
     Boolean(activeTrailerUrl) &&
     (activeTrailerIsGif || Boolean(activeTrailerEmbedUrl) || (activeTrailerIsInternal && !trailerFailed));
@@ -161,7 +163,6 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
       const video = trailerVideoRef.current;
       if (!video) return;
 
-      video.muted = trailerMuted;
       if (!heroInView || trailerEnded || trailerFailed) {
         video.pause();
         return;
@@ -171,13 +172,13 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         markTrailerLoaded(activeTrailerUrl);
       }
 
-      video.play()
-        .then(() => markTrailerLoaded(activeTrailerUrl))
-        .catch(() => {
-          if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-            markTrailerLoaded(activeTrailerUrl);
-          }
-        });
+      void playVideoWithSoundFallback(video, trailerMuted, () => {
+        setTrailerPlayback((playback) => ({ ...playback, muted: true, url: activeTrailerUrl }));
+      }).then((playing) => {
+        if (playing || video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+          markTrailerLoaded(activeTrailerUrl);
+        }
+      });
     },
     [activeTrailerUrl, heroInView, markTrailerLoaded, trailerEnded, trailerFailed, trailerMuted],
   );
@@ -440,7 +441,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
               <video
                 key={trailerUrl}
                 aria-hidden="true"
-                autoPlay={trailerMuted}
+                autoPlay
                 className={`${mediaClassName} ${
                   showInlineTrailer ? "opacity-100" : "opacity-0"
                 } transition-opacity duration-700 ease-out`}
@@ -602,12 +603,14 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
             <div className="mt-8 flex flex-wrap gap-3">
               {currentIsDisabled ? (
                 <>
-                  <span
-                    aria-disabled="true"
-                    className="cursor-not-allowed rounded-[6px] bg-white/45 px-9 py-3 text-sm font-black uppercase text-[#030714]/62"
-                  >
-                    Play
-                  </span>
+                  {ENABLE_TITLE_PLAYBACK ? (
+                    <span
+                      aria-disabled="true"
+                      className="cursor-not-allowed rounded-[6px] bg-white/45 px-9 py-3 text-sm font-black uppercase text-[#030714]/62"
+                    >
+                      Play
+                    </span>
+                  ) : null}
                   <span
                     aria-disabled="true"
                     className="cursor-not-allowed rounded-[6px] border border-white/12 bg-white/8 px-8 py-3 text-sm font-black uppercase text-white/42 backdrop-blur"
@@ -617,12 +620,14 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                 </>
               ) : (
                 <>
-                  <Link
-                    className="rounded-[6px] bg-white px-9 py-3 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
-                    href={titleHref(current.slug)}
-                  >
-                    Play
-                  </Link>
+                  {ENABLE_TITLE_PLAYBACK ? (
+                    <Link
+                      className="rounded-[6px] bg-white px-9 py-3 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
+                      href={titleHref(current.slug)}
+                    >
+                      Play
+                    </Link>
+                  ) : null}
                   <Link
                     className="rounded-[6px] border border-white/16 bg-white/12 px-8 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
                     href={`${titleHref(current.slug)}#episodes`}

@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionBeforeDeleteHook, CollectionConfig } from 'payload'
 
 export const Episodes: CollectionConfig = {
       slug: 'episodes',
@@ -7,6 +7,28 @@ export const Episodes: CollectionConfig = {
         useAsTitle: '_displayTitle',
         defaultColumns: ['season', 'ep', 'epNameTh', 'epNameEn', 'updatedAt'],
         description: 'Programs > Seasons > Episodes',
+      },
+      hooks: {
+        beforeDelete: [
+          (async ({ id, req }) => {
+            const articlesResult = await req.payload.find({
+              collection: 'articles',
+              where: { episode: { equals: id } },
+              limit: 5000,
+              depth: 0,
+              overrideAccess: true,
+              req,
+            })
+            for (const article of articlesResult.docs ?? []) {
+              await req.payload.delete({
+                collection: 'articles',
+                id: article.id,
+                overrideAccess: true,
+                req,
+              })
+            }
+          }) as CollectionBeforeDeleteHook,
+        ],
       },
       fields: [
         {

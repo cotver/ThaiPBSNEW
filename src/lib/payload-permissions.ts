@@ -26,6 +26,7 @@ export const managedCollections = [
   'vipaPrograms',
   'seasons',
   'episodes',
+  'articles',
 ] as const
 export type ManagedCollection = (typeof managedCollections)[number]
 
@@ -130,6 +131,7 @@ export const collectionFields: Record<ManagedCollection, string[]> = {
     'synopsisEn',
     'companyProduce',
     'producer',
+    'director',
     'artist',
     'writer',
     'targetGroup',
@@ -274,6 +276,34 @@ export const collectionFields: Record<ManagedCollection, string[]> = {
     'videoThumbnailAirflowProxyPath',
     'videoLink',
     'trailerLink',
+  ],
+  articles: [
+    'program',
+    'targetType',
+    'season',
+    'episode',
+    'titleTh',
+    'titleEn',
+    'slug',
+    'excerptTh',
+    'excerptEn',
+    'descriptionTh',
+    'descriptionEn',
+    'heroImages',
+    'categories',
+    'tags',
+    'author',
+    'publishedDate',
+    'status',
+    'isFeatured',
+    'featuredUntil',
+    'contentTh',
+    'contentEn',
+    'seoTitleTh',
+    'seoTitleEn',
+    'seoDescriptionTh',
+    'seoDescriptionEn',
+    'socialSharingImage',
   ],
 }
 
@@ -627,8 +657,19 @@ export async function getAssignedProgramIds(req: Parameters<Access>[0]['req']): 
 
 function programScopeWhere(context: PermissionContext, collection: ManagedCollection): boolean | Where {
   if (isSuperAdmin(context)) return true
-  const ids = ownedIdsFor(context, collection)
+  const ids =
+    collection === 'articles'
+      ? ownedIdsFor(context, 'programs')
+      : ownedIdsFor(context, collection)
   if (ids.length === 0) return true
+
+  if (collection === 'articles') {
+    return {
+      program: {
+        in: ids,
+      },
+    }
+  }
 
   return {
     id: {
@@ -652,7 +693,14 @@ export function collectionAccess(collection: ManagedCollection): {
     read: async ({ req }) => {
       const context = await getPermissionContext(req)
       if (collection === 'media' || collection === 'videos') return true
-      if (!context.user) return canUseCollection(context, collection, 'read')
+      if (!context.user) {
+        if (collection === 'articles') {
+          return canUseCollection(context, collection, 'read')
+            ? { status: { equals: 'published' } }
+            : false
+        }
+        return canUseCollection(context, collection, 'read')
+      }
       if (collection === 'users') {
         const userId = idFromRelation(context.user.id)
         if (isSuperAdmin(context)) return true
@@ -846,7 +894,7 @@ export async function canViewAdminPage(req: Parameters<Access>[0]['req'], page: 
 const documentRelationshipField = (label = 'Documents'): Field => ({
   name: 'allowedDocuments',
   type: 'relationship',
-  relationTo: [...managedCollections] as any,
+  relationTo: [...managedCollections],
   hasMany: true,
   admin: {
     description: `${label} kept for legacy data only. Collection and field permissions control access.`,

@@ -61,7 +61,7 @@ export function FinalProgramBand({ title, titles, viewAllHref }: { title: string
               <div className="final-program-band__image">
                 {image ? <Image alt="" fill loading={index < 4 ? "eager" : "lazy"} sizes="(max-width: 640px) 68vw, 25vw" src={image} /> : <span className={`final-program-band__fallback bg-gradient-to-br ${story.tone}`} />}
               </div>
-              <p>{String(index + 1).padStart(2, "0")} / {titleEyebrow(story)}</p>
+              <p>{titleEyebrow(story)}</p>
               <h3>{titleInlineText(story)}</h3>
               {(story.duration || story.year) && <small>{story.duration || story.year}</small>}
             </Link>

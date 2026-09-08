@@ -46,11 +46,11 @@ export function FinalRecommendedSpotlight({ titles }: { titles: Title[] }) {
           {activeTitle.description && <span>{activeTitle.description}</span>}
         </Link>
         <div className="final-recommended__controls">
-          <button aria-label="Show previous recommended program" disabled={count < 2} onClick={() => move(-1)} type="button">{"←"}</button>
+          <button aria-label="Show previous recommended article" disabled={count < 2} onClick={() => move(-1)} type="button">{"←"}</button>
           <small><b>{String(activeIndex + 1).padStart(2, "0")}</b> / {String(count).padStart(2, "0")}</small>
-          <button aria-label="Show next recommended program" disabled={count < 2} onClick={() => move(1)} type="button">{"→"}</button>
+          <button aria-label="Show next recommended article" disabled={count < 2} onClick={() => move(1)} type="button">{"→"}</button>
         </div>
-        <Link className="final-recommended__view-all" href="/browse?section=recommended&label=Recommended%20For%20You">
+        <Link className="final-recommended__view-all" href="/prototype/final">
           View All {"›"}
         </Link>
       </div>
@@ -63,7 +63,7 @@ export function FinalRecommendedSpotlight({ titles }: { titles: Title[] }) {
             <span className={`final-recommended__fallback bg-gradient-to-br ${activeTitle.tone}`} />
           )}
         </div>
-        <span className="final-recommended__action">Explore programme {"↗"}</span>
+        <span className="final-recommended__action">Read article {"↗"}</span>
       </Link>
     </section>
   );

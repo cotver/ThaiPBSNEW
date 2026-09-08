@@ -256,13 +256,13 @@ export function FinalHero({ heroes }: { heroes: Title[] }) {
   if (!activeHero) {
     return (
       <section className="final-hero final-hero--empty">
-        <p>No published hero records yet.</p>
+        <p>No featured articles yet.</p>
       </section>
     );
   }
 
   return (
-    <section className="final-hero" aria-label="Featured Thai PBS stories" ref={heroRef}>
+    <section className="final-hero" aria-label="Featured Thai PBS articles" ref={heroRef}>
       <div className="final-hero__backgrounds" aria-hidden="true">
         {visibleHeroes.map((hero, index) => {
           const image = hero.heroImage || hero.posterImage;
@@ -366,7 +366,7 @@ export function FinalHero({ heroes }: { heroes: Title[] }) {
             {activeHero.isDiscontinued ? (
               <><span className="final-hero__play is-disabled">Play</span><span className="final-hero__details is-disabled">Details</span></>
             ) : (
-            <><Link className="final-hero__play" href={finalArticleHref(activeHero.slug)}>Play</Link><Link className="final-hero__details" href={`${finalArticleHref(activeHero.slug)}#episodes`}>Details</Link></>
+            <><Link className="final-hero__play" href={finalArticleHref(activeHero.slug)}>Read</Link><Link className="final-hero__details" href={finalArticleHref(activeHero.slug)}>Details</Link></>
             )}
             <FinalSaveButton title={activeHero} />
           </div>

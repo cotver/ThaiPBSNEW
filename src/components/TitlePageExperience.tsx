@@ -7,6 +7,8 @@ import { DiscontinuedBadge } from "@/components/DiscontinuedBadge";
 import { SaveForLaterButton } from "@/components/SaveForLaterButton";
 import { TitleDetails } from "@/components/TitleDetails";
 import { titleDisplayLines, titleEyebrow, titleHref, type Title } from "@/lib/content";
+import { ENABLE_TITLE_PLAYBACK, PREFER_TRAILER_SOUND } from "@/lib/features";
+import { playVideoWithSoundFallback } from "@/lib/trailer-playback";
 
 function toYouTubeEmbedUrl(rawUrl: string): string | null {
   const input = rawUrl.trim();
@@ -78,14 +80,14 @@ export function TitlePageExperience({ title }: { title: Title }) {
     ended: false,
     failed: false,
     loaded: false,
-    muted: true,
+    muted: !PREFER_TRAILER_SOUND,
     url: "",
   });
   const trailerPlaybackMatches = trailerPlayback.url === activeTrailerUrl;
   const trailerEnded = trailerPlaybackMatches ? trailerPlayback.ended : false;
   const trailerFailed = trailerPlaybackMatches ? trailerPlayback.failed : false;
   const trailerLoaded = trailerPlaybackMatches ? trailerPlayback.loaded : false;
-  const trailerMuted = trailerPlaybackMatches ? trailerPlayback.muted : true;
+  const trailerMuted = trailerPlaybackMatches ? trailerPlayback.muted : !PREFER_TRAILER_SOUND;
   const [heroInView, setHeroInView] = useState(true);
 
   const markTrailerLoaded = useCallback((url: string) => {
@@ -102,7 +104,6 @@ export function TitlePageExperience({ title }: { title: Title }) {
       const video = trailerVideoRef.current;
       if (!video) return;
 
-      video.muted = trailerMuted;
       if (!heroInView || trailerEnded || trailerFailed) {
         video.pause();
         return;
@@ -112,13 +113,13 @@ export function TitlePageExperience({ title }: { title: Title }) {
         markTrailerLoaded(activeTrailerUrl);
       }
 
-      video.play()
-        .then(() => markTrailerLoaded(activeTrailerUrl))
-        .catch(() => {
-          if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-            markTrailerLoaded(activeTrailerUrl);
-          }
-        });
+      void playVideoWithSoundFallback(video, trailerMuted, () => {
+        setTrailerPlayback((playback) => ({ ...playback, muted: true, url: activeTrailerUrl }));
+      }).then((playing) => {
+        if (playing || video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+          markTrailerLoaded(activeTrailerUrl);
+        }
+      });
     },
     [activeTrailerUrl, heroInView, markTrailerLoaded, trailerEnded, trailerFailed, trailerMuted],
   );
@@ -300,7 +301,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
             <video
               key={trailerUrl}
               aria-hidden="true"
-              autoPlay={trailerMuted}
+              autoPlay
               className={`absolute inset-0 h-full w-full object-cover object-center ${
                 showInlineTrailer ? "opacity-100" : "opacity-0"
               } transition-opacity duration-700 ease-out`}
@@ -465,13 +466,15 @@ export function TitlePageExperience({ title }: { title: Title }) {
             ) : null}
             {title.showHeroActions !== false ? (
               <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Link
-                  className="inline-flex h-12 items-center gap-2 rounded-[6px] bg-white px-7 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
-                  href={titleHref(title.slug)}
-                >
-                  <PlayIcon />
-                  Play
-                </Link>
+                {ENABLE_TITLE_PLAYBACK ? (
+                  <Link
+                    className="inline-flex h-12 items-center gap-2 rounded-[6px] bg-white px-7 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
+                    href={titleHref(title.slug)}
+                  >
+                    <PlayIcon />
+                    Play
+                  </Link>
+                ) : null}
                 <a
                   className="inline-flex h-12 items-center rounded-[6px] border border-white/16 bg-white/12 px-6 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
                   href="#episodes"

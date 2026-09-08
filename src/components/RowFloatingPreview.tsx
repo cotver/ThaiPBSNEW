@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { titleEyebrow, titleHref, titleInlineText, type Title } from "@/lib/content";
+import { ENABLE_TITLE_PLAYBACK, PREFER_TRAILER_SOUND } from "@/lib/features";
+import { playVideoWithSoundFallback } from "@/lib/trailer-playback";
 import { DiscontinuedBadge } from "./DiscontinuedBadge";
 import { SaveForLaterButton } from "./SaveForLaterButton";
 
@@ -89,6 +91,7 @@ export function RowFloatingPreview({
   const previewImageReady = !imageSrc || readyPreviewImageSrc === imageSrc;
   const revealPreviewImage = expanded && previewImageReady;
   const matchPercent = calculateTitleMatch(title, matchSourceTitles ?? []);
+  const episodeCountLabel = getEpisodeCountLabel(title);
   const displayTitle = titleInlineText(title);
   const trailerSource = getHoverTrailerSource(title);
   const trailerUrl = trailerSource.url;
@@ -239,14 +242,16 @@ export function RowFloatingPreview({
         >
           <div className="space-y-3 p-4">
           <div className="flex items-center gap-2">
-            <button
-              aria-label={`Play ${title.title}`}
-              className="grid size-10 place-items-center rounded-full bg-white text-[#030714] transition hover:scale-105 hover:bg-cyan-100"
-              onClick={() => onOpenTitle(title)}
-              type="button"
-            >
-              <PlayIcon />
-            </button>
+            {ENABLE_TITLE_PLAYBACK ? (
+              <button
+                aria-label={`Play ${title.title}`}
+                className="grid size-10 place-items-center rounded-full bg-white text-[#030714] transition hover:scale-105 hover:bg-cyan-100"
+                onClick={() => onOpenTitle(title)}
+                type="button"
+              >
+                <PlayIcon />
+              </button>
+            ) : null}
             <Link
               aria-label={`Open ${title.title} page`}
               className="grid size-10 place-items-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
@@ -268,6 +273,7 @@ export function RowFloatingPreview({
             </span>
             <span>{title.year}</span>
             <span>{title.duration}</span>
+            {episodeCountLabel ? <span>{episodeCountLabel}</span> : null}
           </div>
           <p className="line-clamp-3 text-[13px] leading-5 text-white/72">{title.description}</p>
           <p className="line-clamp-1 text-[12px] font-semibold text-white/45">
@@ -278,6 +284,16 @@ export function RowFloatingPreview({
       </div>
     </div>
   );
+}
+
+function getEpisodeCountLabel(title: Title): string | null {
+  const seasons = title.seasons ?? [];
+  if (seasons.length === 0) return null;
+
+  const episodeCount = Math.max(...seasons.map((season) => season.episodes.length));
+  const seasonLabel = `${seasons.length} ${seasons.length === 1 ? "Season" : "Seasons"}`;
+  const episodeLabel = `${episodeCount} ${episodeCount === 1 ? "Episode" : "Episodes"}`;
+  return `${seasonLabel} · ${episodeLabel}`;
 }
 
 function toYouTubeEmbedUrl(rawUrl: string): string | null {
@@ -359,7 +375,7 @@ function HoverTrailerMedia({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [mediaState, setMediaState] = useState({ ended: false, failed: false, ready: false, url: "" });
-  const [mutedState, setMutedState] = useState({ muted: true, url: "" });
+  const [mutedState, setMutedState] = useState({ muted: !PREFER_TRAILER_SOUND, url: "" });
   const trailerEmbedUrl = trailerUrl ? toYouTubeEmbedUrl(trailerUrl) : null;
   const trailerIsInternal = trailerUrl ? isInternalVideoUrl(trailerUrl) : false;
   const isGifTrailer = trailerMimeType === "image/gif";
@@ -367,7 +383,7 @@ function HoverTrailerMedia({
   const trailerReady = stateMatches ? mediaState.ready : false;
   const trailerEnded = stateMatches ? mediaState.ended : false;
   const trailerFailed = stateMatches ? mediaState.failed : false;
-  const muted = mutedState.url === trailerUrl ? mutedState.muted : true;
+  const muted = mutedState.url === trailerUrl ? mutedState.muted : !PREFER_TRAILER_SOUND;
   const showInlineTrailer =
     Boolean(trailerUrl) &&
     !trailerEnded &&
@@ -395,9 +411,9 @@ function HoverTrailerMedia({
     (nextMuted: boolean) => {
       const video = videoRef.current;
       if (video) {
-        video.muted = nextMuted;
-        video.volume = nextMuted ? 0 : 1;
-        video.play().catch(() => {});
+        void playVideoWithSoundFallback(video, nextMuted, () => {
+          setMutedState({ muted: true, url: trailerUrl });
+        });
       }
 
       postIframeCommand(nextMuted ? "mute" : "unMute");
@@ -406,7 +422,7 @@ function HoverTrailerMedia({
         postIframeCommand("playVideo");
       }
     },
-    [postIframeCommand],
+    [postIframeCommand, trailerUrl],
   );
 
   useEffect(() => {
@@ -414,11 +430,12 @@ function HoverTrailerMedia({
     const video = videoRef.current;
     if (!video) return;
 
-    video.muted = muted;
     if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) markReady();
 
-    video.play().then(markReady).catch(() => {
-      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) markReady();
+    void playVideoWithSoundFallback(video, muted, () => {
+      setMutedState({ muted: true, url: trailerUrl });
+    }).then((playing) => {
+      if (playing || video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) markReady();
     });
   }, [markReady, muted, trailerEnded, trailerFailed, trailerIsInternal, trailerUrl]);
 
@@ -481,7 +498,7 @@ function HoverTrailerMedia({
           onLoad={markReady}
           ref={iframeRef}
           referrerPolicy="strict-origin-when-cross-origin"
-          src={`${trailerEmbedUrl}?autoplay=1&mute=1&playsinline=1&rel=0&controls=0&modestbranding=1&enablejsapi=1`}
+          src={`${trailerEmbedUrl}?autoplay=1&mute=${muted ? 1 : 0}&playsinline=1&rel=0&controls=0&modestbranding=1&enablejsapi=1`}
           title="Trailer preview"
         />
       ) : trailerIsInternal && trailerUrl && !trailerFailed && !trailerEnded ? (

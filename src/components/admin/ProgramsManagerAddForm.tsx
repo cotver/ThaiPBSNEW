@@ -2897,6 +2897,7 @@ export function ProgramsManagerAddForm(props?: {
   const [synopsisEn, setSynopsisEn] = useState('')
   const [companyProduce, setCompanyProduce] = useState('')
   const [producer, setProducer] = useState('')
+  const [director, setDirector] = useState('')
   const [artist, setArtist] = useState('')
   const [writer, setWriter] = useState('')
   const [targetGroup, setTargetGroup] = useState('')
@@ -3151,6 +3152,7 @@ export function ProgramsManagerAddForm(props?: {
     setSynopsisEn(String(p.synopsisEn ?? ''))
     setCompanyProduce(String(p.companyProduce ?? ''))
     setProducer(String(p.producer ?? ''))
+    setDirector(String(p.director ?? ''))
     setArtist(String(p.artist ?? ''))
     setWriter(String(p.writer ?? ''))
     setTargetGroup(String(p.targetGroup ?? ''))
@@ -3736,6 +3738,7 @@ export function ProgramsManagerAddForm(props?: {
             synopsisEn: synopsisEn.trim() || null,
             companyProduce: companyProduce.trim() || null,
             producer: producer.trim() || null,
+            director: director.trim() || null,
             artist: artist.trim() || null,
             writer: writer.trim() || null,
             targetGroup: targetGroupAge,
@@ -3999,6 +4002,7 @@ export function ProgramsManagerAddForm(props?: {
           synopsisEn: synopsisEn.trim() || null,
           companyProduce: companyProduce.trim() || null,
           producer: producer.trim() || null,
+          director: director.trim() || null,
           artist: artist.trim() || null,
           writer: writer.trim() || null,
           targetGroup: targetGroupAge,
@@ -4188,6 +4192,7 @@ export function ProgramsManagerAddForm(props?: {
       setSynopsisEn('')
       setCompanyProduce('')
       setProducer('')
+      setDirector('')
       setArtist('')
       setWriter('')
       setCategories([])
@@ -5003,6 +5008,15 @@ export function ProgramsManagerAddForm(props?: {
                   type="text"
                   value={producer}
                   onChange={(e) => setProducer(e.target.value)}
+                  className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{L('director', 'Director')}</label>
+                <input
+                  type="text"
+                  value={director}
+                  onChange={(e) => setDirector(e.target.value)}
                   className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
                 />
               </div>

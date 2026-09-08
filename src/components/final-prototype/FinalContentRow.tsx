@@ -178,7 +178,7 @@ function FinalTitleCard({ index, layout, title }: { index: number; layout: Final
       {content}
     </article>
   ) : (
-    <Link aria-label={`Open article for ${titleInlineText(title)}`} className="final-title-card" href={finalArticleHref(title.slug)}>
+    <Link aria-label={`Open article ${titleInlineText(title)}`} className="final-title-card" href={finalArticleHref(title.slug)}>
       {content}
     </Link>
   );

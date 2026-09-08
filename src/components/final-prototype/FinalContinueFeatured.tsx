@@ -78,9 +78,9 @@ export function FinalContinueFeatured({ titles, viewAllHref }: { titles: Title[]
                 {story.progress && <b style={{ width: story.progress }} />}
               </div>
               <div className="final-continue-latest__copy">
-                <p>{String(index + 1).padStart(2, "0")} / {titleEyebrow(story)}{story.year ? ` / ${story.year}` : ""}</p>
+                <p>{titleEyebrow(story)}{story.year ? ` / ${story.year}` : ""}</p>
                 <h3>{titleInlineText(story)}</h3>
-                <b>Continue watching →</b>
+                <b>Read article →</b>
               </div>
             </Link>
           );

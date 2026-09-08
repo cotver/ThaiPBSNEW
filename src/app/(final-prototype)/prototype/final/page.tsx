@@ -1,19 +1,11 @@
 import { FinalPrototype } from "@/components/final-prototype/FinalPrototype";
-import { getCatalogCollections, getCategoryTiles } from "@/lib/payload-content";
-import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
-import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
-import { cookies } from "next/headers";
+import { buildFinalArticleCollections, getFinalArticles } from "@/lib/payload-articles";
 
 export const dynamic = "force-dynamic";
 
 export default async function FinalPrototypePage() {
-  const cookieStore = await cookies();
-  const continueWatchingSlugs = parseWatchHistoryCookie(cookieStore.get(watchHistoryCookieName)?.value);
-  const savedTitleSlugs = parseSavedTitlesCookie(cookieStore.get(savedTitlesCookieName)?.value);
-  const [collections, categories] = await Promise.all([
-    getCatalogCollections(continueWatchingSlugs, savedTitleSlugs),
-    getCategoryTiles(),
-  ]);
+  const articles = await getFinalArticles();
+  const collections = buildFinalArticleCollections(articles);
 
-  return <FinalPrototype categories={categories} collections={collections} />;
+  return <FinalPrototype collections={collections} />;
 }

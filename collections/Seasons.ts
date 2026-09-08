@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionBeforeDeleteHook, CollectionConfig } from 'payload'
 import {
   enforceReadyForSaleOnlyForIpPrograms,
   normalizeSeasonAwardDetails,
@@ -19,6 +19,26 @@ export const Seasons: CollectionConfig = {
       hooks: {
         beforeValidate: [normalizeSeasonAwardDetails],
         beforeChange: [enforceReadyForSaleOnlyForIpPrograms, stampSeasonAwardUpdatedAt],
+        beforeDelete: [
+          (async ({ id, req }) => {
+            const articlesResult = await req.payload.find({
+              collection: 'articles',
+              where: { season: { equals: id } },
+              limit: 5000,
+              depth: 0,
+              overrideAccess: true,
+              req,
+            })
+            for (const article of articlesResult.docs ?? []) {
+              await req.payload.delete({
+                collection: 'articles',
+                id: article.id,
+                overrideAccess: true,
+                req,
+              })
+            }
+          }) as CollectionBeforeDeleteHook,
+        ],
         afterChange: [syncProgramAwardFlagAfterSeasonChange],
         afterDelete: [syncProgramAwardFlagAfterSeasonDelete],
       },

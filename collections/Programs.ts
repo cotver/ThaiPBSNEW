@@ -7,13 +7,30 @@ export const Programs: CollectionConfig = {
       slug: 'programs',
       admin: {
         useAsTitle: '_displayTitle',
-        defaultColumns: ['programId', 'titleTh', 'titleEn', 'programContentType', 'createdAt', 'updatedAt'],
+        defaultColumns: ['programId', 'titleTh', 'titleEn', 'programContentType', 'producer', 'director', 'createdAt', 'updatedAt'],
         listSearchableFields: ['programId', 'titleTh', 'titleEn', '_displayTitle'],
       },
       hooks: {
         beforeChange: [syncProgramTypeFlags],
         beforeDelete: [
           (async ({ id, req }) => {
+            const articlesResult = await req.payload.find({
+              collection: 'articles',
+              where: { program: { equals: id } },
+              limit: 5000,
+              depth: 0,
+              overrideAccess: true,
+              req,
+            })
+            for (const article of articlesResult.docs ?? []) {
+              await req.payload.delete({
+                collection: 'articles',
+                id: article.id,
+                overrideAccess: true,
+                req,
+              })
+            }
+
             const seasonsResult = await req.payload.find({
               collection: 'seasons',
               where: { program: { equals: id } },
@@ -128,6 +145,11 @@ export const Programs: CollectionConfig = {
           name: 'producer',
           type: 'text',
           admin: { description: 'Producer' },
+        },
+        {
+          name: 'director',
+          type: 'text',
+          admin: { description: 'Director' },
         },
         {
           name: 'artist',
@@ -508,6 +530,15 @@ export const Programs: CollectionConfig = {
           relationTo: 'seasons',
           hasMany: true,
           admin: { description: 'Seasons (for Series)' },
+        },
+        {
+          name: 'articles',
+          type: 'join',
+          collection: 'articles',
+          on: 'program',
+          admin: {
+            description: 'All articles attached to this program, including season and episode articles.',
+          },
         },
       ],
     }

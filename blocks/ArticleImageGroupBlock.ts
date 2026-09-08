@@ -19,6 +19,33 @@ export const ArticleImageGroupBlock: Block = {
       ],
     },
     {
+      name: 'displayWidth',
+      label: 'Display Width',
+      type: 'select',
+      required: true,
+      defaultValue: 'medium',
+      options: [
+        { label: 'Small', value: 'small' },
+        { label: 'Medium', value: 'medium' },
+        { label: 'Large', value: 'large' },
+        { label: 'Full width', value: 'full' },
+      ],
+      admin: {
+        description: 'Resizes the image block on the article page.',
+      },
+    },
+    {
+      name: 'imageFit',
+      label: 'Image Fit',
+      type: 'select',
+      required: true,
+      defaultValue: 'contain',
+      options: [
+        { label: 'Show full image (no crop)', value: 'contain' },
+        { label: 'Fill frame (crop)', value: 'cover' },
+      ],
+    },
+    {
       name: 'images',
       type: 'array',
       required: true,

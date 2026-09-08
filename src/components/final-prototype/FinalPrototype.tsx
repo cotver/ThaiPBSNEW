@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import type { Title } from "@/lib/content";
-import type { CategoryTile, TitleCollections } from "@/lib/payload-content";
+import type { TitleCollections } from "@/lib/payload-content";
 import { FinalHero } from "./FinalHero";
 import { FinalHomeSections } from "./FinalHomeSections";
 
-export function FinalPrototype({ categories, collections }: { categories: CategoryTile[]; collections: TitleCollections }) {
+export function FinalPrototype({ collections }: { collections: TitleCollections }) {
   const [useMockData, setUseMockData] = useState(false);
-  const displayedCollections = useMockData ? addMockData(collections) : collections;
+  const displayedCollections = useMockData ? addMockArticles(collections) : collections;
 
   return (
     <main className="final-page">
@@ -21,13 +21,13 @@ export function FinalPrototype({ categories, collections }: { categories: Catego
         {useMockData ? "Use live data" : "Add 20 fake data"}
       </button>
       <FinalHero heroes={displayedCollections.heroes} />
-      <FinalHomeSections categories={categories} collections={displayedCollections} />
+      <FinalHomeSections collections={displayedCollections} />
     </main>
   );
 }
 
-function addMockData(collections: TitleCollections): TitleCollections {
-  const pool = uniqueTitles([
+function addMockArticles(collections: TitleCollections): TitleCollections {
+  const artworkPool = uniqueTitles([
     ...collections.posterMockups,
     ...collections.heroes,
     ...collections.recommended,
@@ -38,8 +38,8 @@ function addMockData(collections: TitleCollections): TitleCollections {
     ...collections.typeRows.flatMap((row) => row.titles),
     ...collections.yearRows.flatMap((row) => row.titles),
   ]);
-  const fakeTitles = createFakeTitles(pool, 20);
-  const addFake = (titles: Title[]) => uniqueTitles([...titles, ...fakeTitles]);
+  const fakeArticles = createFakeArticles(artworkPool, 20);
+  const addFake = (titles: Title[]) => uniqueTitles([...titles, ...fakeArticles]);
 
   return {
     ...collections,
@@ -47,7 +47,10 @@ function addMockData(collections: TitleCollections): TitleCollections {
     recommended: addFake(collections.recommended),
     continueWatching: addFake(collections.continueWatching),
     continuePrograms: addFake(collections.continuePrograms),
-    discontinuedPrograms: addFake(collections.discontinuedPrograms).map((title) => ({ ...title, isDiscontinued: true })),
+    discontinuedPrograms: addFake(collections.discontinuedPrograms).map((title) => ({
+      ...title,
+      isDiscontinued: true,
+    })),
     thaiPrograms: addFake(collections.thaiPrograms),
     internationalPrograms: addFake(collections.internationalPrograms),
     typeRows: collections.typeRows.map((row) => ({ ...row, titles: addFake(row.titles) })),
@@ -55,8 +58,7 @@ function addMockData(collections: TitleCollections): TitleCollections {
   };
 }
 
-function createFakeTitles(artworkPool: Title[], count: number): Title[] {
-  const types: Title["type"][] = ["Series", "Movie", "Original"];
+function createFakeArticles(artworkPool: Title[], count: number): Title[] {
   const fallbackTones = [
     "from-indigo-950 via-sky-700 to-amber-300",
     "from-zinc-950 via-red-800 to-orange-300",
@@ -67,32 +69,33 @@ function createFakeTitles(artworkPool: Title[], count: number): Title[] {
   return Array.from({ length: count }, (_, index) => {
     const artwork = artworkPool.length ? artworkPool[index % artworkPool.length] : undefined;
     const number = index + 1;
+
     return {
-      slug: `final-mock-program-${String(number).padStart(2, "0")}`,
-      title: number % 6 === 0 ? `Mock Programme ${number}: A Very Long Story Title for Responsive Layout Testing` : `Mock Programme ${String(number).padStart(2, "0")}`,
-      type: types[index % types.length],
+      slug: `final-mock-article-${String(number).padStart(2, "0")}`,
+      title: number % 6 === 0
+        ? `Mock Article ${number}: A Very Long Story Title for Responsive Layout Testing`
+        : `Mock Article ${String(number).padStart(2, "0")}`,
+      type: "Original",
       genre: ["Documentary", "Culture", "Drama", "Knowledge"][index % 4],
       year: String(2024 + (index % 4)),
-      rating: ["G", "PG", "13+", "18+"][index % 4],
-      duration: `${24 + index * 3}m`,
-      eyebrow: "Mock data",
-      description: `Fake programme record ${number}, generated only for testing the final prototype layout and interactions.`,
-      progress: `${18 + (index * 7) % 77}%`,
+      rating: "",
+      duration: "",
+      eyebrow: "Mock article",
+      description: `Fake article record ${number}, generated only for testing the final prototype layout and interactions.`,
       featured: index < 8,
       heroImage: artwork?.heroImage || artwork?.posterImage,
-      isContinue: true,
+      isContinue: false,
       isDiscontinued: false,
-      isGlobalProgram: index % 3 === 0,
+      isGlobalProgram: false,
       isNew: true,
       posterImage: artwork?.posterImage || artwork?.heroImage,
       showHeroActions: true,
       showHeroDetails: true,
-      source: "program",
       tone: artwork?.tone || fallbackTones[index % fallbackTones.length],
     } satisfies Title;
   });
 }
 
-function uniqueTitles(titles: Title[]) {
+function uniqueTitles(titles: Title[]): Title[] {
   return [...new Map(titles.map((title) => [title.slug, title])).values()];
 }

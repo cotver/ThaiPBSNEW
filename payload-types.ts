@@ -87,12 +87,17 @@ export interface Config {
     vipaPrograms: VipaProgram;
     seasons: Season;
     episodes: Episode;
+    articles: Article;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    programs: {
+      articles: 'articles';
+    };
+  };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     roleProfiles: RoleProfilesSelect<false> | RoleProfilesSelect<true>;
@@ -114,6 +119,7 @@ export interface Config {
     vipaPrograms: VipaProgramsSelect<false> | VipaProgramsSelect<true>;
     seasons: SeasonsSelect<false> | SeasonsSelect<true>;
     episodes: EpisodesSelect<false> | EpisodesSelect<true>;
+    articles: ArticlesSelect<false> | ArticlesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -215,7 +221,8 @@ export interface User {
           | 'programs'
           | 'vipaPrograms'
           | 'seasons'
-          | 'episodes';
+          | 'episodes'
+          | 'articles';
         /**
          * Choose one or more actions for this collection.
          */
@@ -244,7 +251,8 @@ export interface User {
           | 'programs'
           | 'vipaPrograms'
           | 'seasons'
-          | 'episodes';
+          | 'episodes'
+          | 'articles';
         /**
          * Allow create/update of every field in this collection.
          */
@@ -340,6 +348,7 @@ export interface User {
               | 'synopsisEn'
               | 'companyProduce'
               | 'producer'
+              | 'director'
               | 'artist'
               | 'writer'
               | 'targetGroup'
@@ -501,6 +510,39 @@ export interface User {
               | 'trailerLink'
             )[]
           | null;
+        /**
+         * Editable fields from articles.
+         */
+        fields_articles?:
+          | (
+              | 'program'
+              | 'targetType'
+              | 'season'
+              | 'episode'
+              | 'titleTh'
+              | 'titleEn'
+              | 'slug'
+              | 'excerptTh'
+              | 'excerptEn'
+              | 'descriptionTh'
+              | 'descriptionEn'
+              | 'heroImages'
+              | 'categories'
+              | 'tags'
+              | 'author'
+              | 'publishedDate'
+              | 'status'
+              | 'isFeatured'
+              | 'featuredUntil'
+              | 'contentTh'
+              | 'contentEn'
+              | 'seoTitleTh'
+              | 'seoTitleEn'
+              | 'seoDescriptionTh'
+              | 'seoDescriptionEn'
+              | 'socialSharingImage'
+            )[]
+          | null;
         id?: string | null;
       }[]
     | null;
@@ -572,6 +614,10 @@ export interface User {
         | {
             relationTo: 'episodes';
             value: number | Episode;
+          }
+        | {
+            relationTo: 'articles';
+            value: number | Article;
           }
       )[]
     | null;
@@ -639,7 +685,8 @@ export interface RoleProfile {
           | 'programs'
           | 'vipaPrograms'
           | 'seasons'
-          | 'episodes';
+          | 'episodes'
+          | 'articles';
         /**
          * Choose one or more actions for this collection.
          */
@@ -668,7 +715,8 @@ export interface RoleProfile {
           | 'programs'
           | 'vipaPrograms'
           | 'seasons'
-          | 'episodes';
+          | 'episodes'
+          | 'articles';
         /**
          * Allow create/update of every field in this collection.
          */
@@ -764,6 +812,7 @@ export interface RoleProfile {
               | 'synopsisEn'
               | 'companyProduce'
               | 'producer'
+              | 'director'
               | 'artist'
               | 'writer'
               | 'targetGroup'
@@ -925,6 +974,39 @@ export interface RoleProfile {
               | 'trailerLink'
             )[]
           | null;
+        /**
+         * Editable fields from articles.
+         */
+        fields_articles?:
+          | (
+              | 'program'
+              | 'targetType'
+              | 'season'
+              | 'episode'
+              | 'titleTh'
+              | 'titleEn'
+              | 'slug'
+              | 'excerptTh'
+              | 'excerptEn'
+              | 'descriptionTh'
+              | 'descriptionEn'
+              | 'heroImages'
+              | 'categories'
+              | 'tags'
+              | 'author'
+              | 'publishedDate'
+              | 'status'
+              | 'isFeatured'
+              | 'featuredUntil'
+              | 'contentTh'
+              | 'contentEn'
+              | 'seoTitleTh'
+              | 'seoTitleEn'
+              | 'seoDescriptionTh'
+              | 'seoDescriptionEn'
+              | 'socialSharingImage'
+            )[]
+          | null;
         id?: string | null;
       }[]
     | null;
@@ -996,6 +1078,10 @@ export interface RoleProfile {
         | {
             relationTo: 'episodes';
             value: number | Episode;
+          }
+        | {
+            relationTo: 'articles';
+            value: number | Article;
           }
       )[]
     | null;
@@ -1062,7 +1148,8 @@ export interface UserGroup {
           | 'programs'
           | 'vipaPrograms'
           | 'seasons'
-          | 'episodes';
+          | 'episodes'
+          | 'articles';
         /**
          * Choose one or more actions for this collection.
          */
@@ -1091,7 +1178,8 @@ export interface UserGroup {
           | 'programs'
           | 'vipaPrograms'
           | 'seasons'
-          | 'episodes';
+          | 'episodes'
+          | 'articles';
         /**
          * Allow create/update of every field in this collection.
          */
@@ -1187,6 +1275,7 @@ export interface UserGroup {
               | 'synopsisEn'
               | 'companyProduce'
               | 'producer'
+              | 'director'
               | 'artist'
               | 'writer'
               | 'targetGroup'
@@ -1348,6 +1437,39 @@ export interface UserGroup {
               | 'trailerLink'
             )[]
           | null;
+        /**
+         * Editable fields from articles.
+         */
+        fields_articles?:
+          | (
+              | 'program'
+              | 'targetType'
+              | 'season'
+              | 'episode'
+              | 'titleTh'
+              | 'titleEn'
+              | 'slug'
+              | 'excerptTh'
+              | 'excerptEn'
+              | 'descriptionTh'
+              | 'descriptionEn'
+              | 'heroImages'
+              | 'categories'
+              | 'tags'
+              | 'author'
+              | 'publishedDate'
+              | 'status'
+              | 'isFeatured'
+              | 'featuredUntil'
+              | 'contentTh'
+              | 'contentEn'
+              | 'seoTitleTh'
+              | 'seoTitleEn'
+              | 'seoDescriptionTh'
+              | 'seoDescriptionEn'
+              | 'socialSharingImage'
+            )[]
+          | null;
         id?: string | null;
       }[]
     | null;
@@ -1420,6 +1542,10 @@ export interface UserGroup {
             relationTo: 'episodes';
             value: number | Episode;
           }
+        | {
+            relationTo: 'articles';
+            value: number | Article;
+          }
       )[]
     | null;
   updatedAt: string;
@@ -1483,6 +1609,10 @@ export interface Program {
    * Producer
    */
   producer?: string | null;
+  /**
+   * Director
+   */
+  director?: string | null;
   /**
    * Artist
    */
@@ -1781,6 +1911,14 @@ export interface Program {
    * Seasons (for Series)
    */
   seasons?: (number | Season)[] | null;
+  /**
+   * All articles attached to this program, including season and episode articles.
+   */
+  articles?: {
+    docs?: (number | Article)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -2303,6 +2441,119 @@ export interface Episode {
   _displayTitle?: string | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * Articles attached to a program, season, or episode.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "articles".
+ */
+export interface Article {
+  id: number;
+  /**
+   * One program can have many articles.
+   */
+  program: number | Program;
+  targetType: 'program' | 'season' | 'episode';
+  /**
+   * Required for season and episode articles. Only seasons from the selected program are shown.
+   */
+  season?: (number | null) | Season;
+  /**
+   * Required for episode articles. Select the season first.
+   */
+  episode?: (number | null) | Episode;
+  _displayTitle?: string | null;
+  titleTh: string;
+  titleEn?: string | null;
+  /**
+   * URL path. Generated from the Thai or English title when left blank.
+   */
+  slug: string;
+  excerptTh?: string | null;
+  excerptEn?: string | null;
+  descriptionTh?: string | null;
+  descriptionEn?: string | null;
+  heroImages?: {
+    /**
+     * The first image is the primary vertical hero.
+     */
+    vertical?:
+      | {
+          image: number | Media;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * The first image is the primary horizontal hero.
+     */
+    horizontal?:
+      | {
+          image: number | Media;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  categories?: (number | Category)[] | null;
+  /**
+   * Add one or more article tags.
+   */
+  tags?: string[] | null;
+  /**
+   * Article author or editorial team.
+   */
+  author?: string | null;
+  /**
+   * Automatically set the first time the article is published.
+   */
+  publishedDate?: string | null;
+  status: 'draft' | 'published';
+  /**
+   * Show this article in the final prototype hero.
+   */
+  isFeatured?: boolean | null;
+  /**
+   * Optional. Leave empty to keep this article featured indefinitely.
+   */
+  featuredUntil?: string | null;
+  contentTh: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  contentEn?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  seoTitleTh?: string | null;
+  seoTitleEn?: string | null;
+  seoDescriptionTh?: string | null;
+  seoDescriptionEn?: string | null;
+  socialSharingImage?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2836,6 +3087,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'episodes';
         value: number | Episode;
+      } | null)
+    | ({
+        relationTo: 'articles';
+        value: number | Article;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -2919,6 +3174,7 @@ export interface UsersSelect<T extends boolean = true> {
         fields_vipaPrograms?: T;
         fields_seasons?: T;
         fields_episodes?: T;
+        fields_articles?: T;
         id?: T;
       };
   allowedDocuments?: T;
@@ -2969,6 +3225,7 @@ export interface RoleProfilesSelect<T extends boolean = true> {
         fields_vipaPrograms?: T;
         fields_seasons?: T;
         fields_episodes?: T;
+        fields_articles?: T;
         id?: T;
       };
   allowedDocuments?: T;
@@ -3014,6 +3271,7 @@ export interface UserGroupsSelect<T extends boolean = true> {
         fields_vipaPrograms?: T;
         fields_seasons?: T;
         fields_episodes?: T;
+        fields_articles?: T;
         id?: T;
       };
   allowedDocuments?: T;
@@ -3255,6 +3513,7 @@ export interface ProgramsSelect<T extends boolean = true> {
   synopsisEn?: T;
   companyProduce?: T;
   producer?: T;
+  director?: T;
   artist?: T;
   writer?: T;
   type?: T;
@@ -3328,6 +3587,7 @@ export interface ProgramsSelect<T extends boolean = true> {
   asset_create?: T;
   asset_update?: T;
   seasons?: T;
+  articles?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -3467,6 +3727,57 @@ export interface EpisodesSelect<T extends boolean = true> {
   _displayTitle?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "articles_select".
+ */
+export interface ArticlesSelect<T extends boolean = true> {
+  program?: T;
+  targetType?: T;
+  season?: T;
+  episode?: T;
+  _displayTitle?: T;
+  titleTh?: T;
+  titleEn?: T;
+  slug?: T;
+  excerptTh?: T;
+  excerptEn?: T;
+  descriptionTh?: T;
+  descriptionEn?: T;
+  heroImages?:
+    | T
+    | {
+        vertical?:
+          | T
+          | {
+              image?: T;
+              id?: T;
+            };
+        horizontal?:
+          | T
+          | {
+              image?: T;
+              id?: T;
+            };
+      };
+  categories?: T;
+  tags?: T;
+  author?: T;
+  publishedDate?: T;
+  status?: T;
+  isFeatured?: T;
+  featuredUntil?: T;
+  contentTh?: T;
+  contentEn?: T;
+  seoTitleTh?: T;
+  seoTitleEn?: T;
+  seoDescriptionTh?: T;
+  seoDescriptionEn?: T;
+  socialSharingImage?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

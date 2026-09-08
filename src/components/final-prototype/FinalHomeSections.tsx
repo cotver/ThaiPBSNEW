@@ -1,16 +1,14 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
-import type { CategoryTile, TitleCollections } from "@/lib/payload-content";
-import { FinalCategoryTiles } from "./FinalCategoryTiles";
-import { FinalContinueFeatured } from "./FinalContinueFeatured";
+import type { TitleCollections } from "@/lib/payload-content";
 import { FinalContentRow } from "./FinalContentRow";
 import { FinalProgramJournal } from "./FinalProgramJournal";
 import { FinalProgramBand } from "./FinalProgramBand";
 import { FinalRecommendedSpotlight } from "./FinalRecommendedSpotlight";
 import { FinalYearMotion } from "./FinalYearMotion";
 
-export function FinalHomeSections({ categories, collections }: { categories: CategoryTile[]; collections: TitleCollections }) {
+export function FinalHomeSections({ collections }: { collections: TitleCollections }) {
   const rootRef = useRef<HTMLElement>(null);
 
   useLayoutEffect(() => {
@@ -47,12 +45,10 @@ export function FinalHomeSections({ categories, collections }: { categories: Cat
     });
 
     return () => observer.disconnect();
-  }, [categories, collections]);
+  }, [collections]);
 
   return (
     <section className="final-home-sections" ref={rootRef}>
-      <FinalCategoryTiles categories={categories} />
-
       <FinalRecommendedSpotlight titles={collections.recommended} />
 
       {collections.typeRows.map((row) => (
@@ -60,36 +56,32 @@ export function FinalHomeSections({ categories, collections }: { categories: Cat
           key={row.type.id}
           title={row.type.name}
           titles={row.titles}
-          viewAllHref={`/browse?section=type&type=${encodeURIComponent(row.type.slug)}&label=${encodeURIComponent(row.type.name)}`}
+          viewAllHref="/prototype/final"
         />
       ))}
 
-      <FinalContinueFeatured
-        titles={collections.continueWatching}
-        viewAllHref="/browse?section=continue-watching&label=Continue%20Watching"
-      />
       {collections.yearRows.map((row) => (
         <FinalYearMotion
           key={row.year}
           titles={row.titles}
-          viewAllHref={`/browse?section=year&year=${encodeURIComponent(String(row.year))}&label=${encodeURIComponent(`ThaiPBS Year ${row.year}`)}`}
+          viewAllHref="/prototype/final"
           year={row.year}
         />
       ))}
 
-      <FinalProgramJournal title="Thai Programs" titles={collections.thaiPrograms} viewAllHref="/browse?section=thai&label=Thai%20Programs" />
-      <FinalProgramJournal title="International Programs" titles={collections.internationalPrograms} viewAllHref="/browse?section=international&label=International%20Programs" />
+      <FinalProgramJournal title="Thai Programs" titles={collections.thaiPrograms} viewAllHref="/prototype/final" />
+      <FinalProgramJournal title="International Programs" titles={collections.internationalPrograms} viewAllHref="/prototype/final" />
       <FinalContentRow
         layout="portrait"
         title="Continue Programs"
         titles={collections.continuePrograms}
-        viewAllHref="/browse?section=continue-programs&label=Continue%20Programs"
+        viewAllHref="/prototype/final"
       />
       <FinalContentRow
         layout="portrait"
         title="Discontinued Programs"
         titles={collections.discontinuedPrograms}
-        viewAllHref="/browse?section=discontinued-programs&label=Discontinued%20Programs"
+        viewAllHref="/prototype/final"
       />
     </section>
   );
