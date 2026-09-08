@@ -8,7 +8,7 @@ import { SaveForLaterButton } from "@/components/SaveForLaterButton";
 import { TitleDetails } from "@/components/TitleDetails";
 import { titleDisplayLines, titleEyebrow, titleHref, type Title } from "@/lib/content";
 import { ENABLE_TITLE_PLAYBACK, PREFER_TRAILER_SOUND } from "@/lib/features";
-import { playVideoWithSoundFallback } from "@/lib/trailer-playback";
+import { isGifMedia, playVideoWithSoundFallback } from "@/lib/trailer-playback";
 
 function toYouTubeEmbedUrl(rawUrl: string): string | null {
   const input = rawUrl.trim();
@@ -251,7 +251,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
   const trailerEmbedUrl = hasTrailer ? toYouTubeEmbedUrl(trailerUrl) : null;
   const trailerIsInternal = hasTrailer ? isInternalVideoUrl(trailerUrl) : false;
   const imageClassName = title.isDiscontinued ? "object-fill grayscale" : "object-fill";
-  const isGifTrailer = effectiveTrailerMimeType === "image/gif";
+  const isGifTrailer = isGifMedia(effectiveTrailerMimeType, trailerUrl);
   const hasInlineTrailer = hasTrailer && (isGifTrailer || Boolean(trailerEmbedUrl) || (trailerIsInternal && !trailerFailed));
   const keepTrailerMounted = hasInlineTrailer && !trailerEnded;
   const showInlineTrailer = keepTrailerMounted && heroInView && trailerLoaded;

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { titleEyebrow, titleHref, titleInlineText, type Title } from "@/lib/content";
 import { ENABLE_TITLE_PLAYBACK, PREFER_TRAILER_SOUND } from "@/lib/features";
-import { playVideoWithSoundFallback } from "@/lib/trailer-playback";
+import { isGifMedia, playVideoWithSoundFallback } from "@/lib/trailer-playback";
 import { DiscontinuedBadge } from "./DiscontinuedBadge";
 import { SaveForLaterButton } from "./SaveForLaterButton";
 
@@ -378,7 +378,7 @@ function HoverTrailerMedia({
   const [mutedState, setMutedState] = useState({ muted: !PREFER_TRAILER_SOUND, url: "" });
   const trailerEmbedUrl = trailerUrl ? toYouTubeEmbedUrl(trailerUrl) : null;
   const trailerIsInternal = trailerUrl ? isInternalVideoUrl(trailerUrl) : false;
-  const isGifTrailer = trailerMimeType === "image/gif";
+  const isGifTrailer = isGifMedia(trailerMimeType, trailerUrl);
   const stateMatches = mediaState.url === trailerUrl;
   const trailerReady = stateMatches ? mediaState.ready : false;
   const trailerEnded = stateMatches ? mediaState.ended : false;
@@ -501,6 +501,17 @@ function HoverTrailerMedia({
           src={`${trailerEmbedUrl}?autoplay=1&mute=${muted ? 1 : 0}&playsinline=1&rel=0&controls=0&modestbranding=1&enablejsapi=1`}
           title="Trailer preview"
         />
+      ) : isGifTrailer && trailerUrl && !trailerEnded ? (
+        <Image
+          alt=""
+          className={`${mediaClassName} ${
+            showInlineTrailer ? "opacity-100" : "opacity-0"
+          } transition-opacity duration-500 ease-out`}
+          fill
+          onLoad={markReady}
+          sizes={`${Math.ceil(width)}px`}
+          src={trailerUrl}
+        />
       ) : trailerIsInternal && trailerUrl && !trailerFailed && !trailerEnded ? (
         <video
           aria-hidden="true"
@@ -528,17 +539,6 @@ function HoverTrailerMedia({
           poster={imageSrc}
           preload="auto"
           ref={videoRef}
-          src={trailerUrl}
-        />
-      ) : isGifTrailer && trailerUrl && !trailerEnded ? (
-        <Image
-          alt=""
-          className={`${mediaClassName} ${
-            showInlineTrailer ? "opacity-100" : "opacity-0"
-          } transition-opacity duration-500 ease-out`}
-          fill
-          onLoad={markReady}
-          sizes={`${Math.ceil(width)}px`}
           src={trailerUrl}
         />
       ) : null}

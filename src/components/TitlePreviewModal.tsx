@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { titleDisplayLines, titleEyebrow, titleHref, type Title } from "@/lib/content";
 import { ENABLE_TITLE_PLAYBACK, PREFER_TRAILER_SOUND } from "@/lib/features";
-import { playVideoWithSoundFallback } from "@/lib/trailer-playback";
+import { isGifMedia, playVideoWithSoundFallback } from "@/lib/trailer-playback";
 import { DiscontinuedBadge } from "./DiscontinuedBadge";
 import { SaveForLaterButton } from "./SaveForLaterButton";
 import { TitleDetails } from "./TitleDetails";
@@ -266,11 +266,11 @@ export function TitlePreviewModal({
   const trailerIsInternal = hasTrailer ? isInternalVideoUrl(trailerUrl) : false;
   const mediaClassName = title.isDiscontinued ? "absolute inset-0 h-full w-full object-cover object-center grayscale" : "absolute inset-0 h-full w-full object-cover object-center";
   const imageClassName = title.isDiscontinued ? "object-cover grayscale" : "object-cover";
-  const isGifTrailer = effectiveTrailerMimeType === "image/gif";
-  const hasInlineTrailer = hasTrailer && (Boolean(trailerEmbedUrl) || (trailerIsInternal && !trailerFailed));
+  const isGifTrailer = isGifMedia(effectiveTrailerMimeType, trailerUrl);
+  const hasInlineTrailer = hasTrailer && (isGifTrailer || Boolean(trailerEmbedUrl) || (trailerIsInternal && !trailerFailed));
   const keepTrailerMounted = hasInlineTrailer && !trailerEnded;
   const showInlineTrailer = keepTrailerMounted && heroInView && trailerLoaded;
-  const hasExternalTrailerFallback = hasTrailer && !trailerEmbedUrl && !trailerIsInternal;
+  const hasExternalTrailerFallback = hasTrailer && !isGifTrailer && !trailerEmbedUrl && !trailerIsInternal;
   const showImageFade = title.showHeroDetails !== false;
   const useFullImage = title.source === "heroImage" && title.showHeroDetails === false;
   const titleLines = titleDisplayLines(title);
@@ -318,6 +318,23 @@ export function TitlePreviewModal({
                   referrerPolicy="strict-origin-when-cross-origin"
                   src={`${trailerEmbedUrl}?autoplay=1&mute=${trailerMuted ? 1 : 0}&playsinline=1&rel=0&enablejsapi=1`}
                   title="Trailer player"
+                />
+            ) : isGifTrailer && trailerUrl && keepTrailerMounted ? (
+                <Image
+                  alt=""
+                  className={`${mediaClassName} ${
+                    showInlineTrailer ? "opacity-100" : "opacity-0"
+                  } transition-opacity duration-700 ease-out`}
+                  fill
+                  onLoad={() => {
+                    setTrailerPlayback((playback) => ({
+                      ...playback,
+                      loaded: true,
+                      url: trailerUrl,
+                    }));
+                  }}
+                  sizes="min(100vw, 1024px)"
+                  src={trailerUrl}
                 />
             ) : trailerIsInternal && trailerUrl && keepTrailerMounted ? (
                 <video

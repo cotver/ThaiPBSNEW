@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { titleDisplayLines, titleEyebrow, titleHref, type Title } from "@/lib/content";
 import { ENABLE_TITLE_PLAYBACK, PREFER_TRAILER_SOUND } from "@/lib/features";
-import { playVideoWithSoundFallback } from "@/lib/trailer-playback";
+import { isGifMedia, playVideoWithSoundFallback } from "@/lib/trailer-playback";
 import { SaveForLaterButton } from "./SaveForLaterButton";
 
 const AUTO_SLIDE_MS = 6500;
@@ -99,7 +99,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   const activeTrailerUrl = activeTrailerSource.url;
   const activeTrailerEmbedUrl = activeTrailerUrl ? toYouTubeEmbedUrl(activeTrailerUrl) : null;
   const activeTrailerIsInternal = activeTrailerUrl ? isInternalVideoUrl(activeTrailerUrl) : false;
-  const activeTrailerIsGif = activeTrailerSource.mimeType === "image/gif";
+  const activeTrailerIsGif = isGifMedia(activeTrailerSource.mimeType, activeTrailerUrl);
   const trailerPlaybackMatches = trailerPlayback.url === activeTrailerUrl;
   const trailerEnded = trailerPlaybackMatches ? trailerPlayback.ended : false;
   const trailerFailed = trailerPlaybackMatches ? trailerPlayback.failed : false;
@@ -389,7 +389,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         const trailerUrl = trailerSource.url;
         const trailerEmbedUrl = isActive && trailerUrl ? toYouTubeEmbedUrl(trailerUrl) : null;
         const trailerIsInternal = isActive && trailerUrl ? isInternalVideoUrl(trailerUrl) : false;
-        const isGifTrailer = trailerSource.mimeType === "image/gif";
+        const isGifTrailer = isGifMedia(trailerSource.mimeType, trailerUrl);
         const slidePlaybackMatches = isActive && trailerPlayback.url === trailerUrl;
         const slideTrailerLoaded = slidePlaybackMatches ? trailerPlayback.loaded : false;
         const slideTrailerEnded = slidePlaybackMatches ? trailerPlayback.ended : false;

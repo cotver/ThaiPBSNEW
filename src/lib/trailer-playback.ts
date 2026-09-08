@@ -24,3 +24,13 @@ export async function playVideoWithSoundFallback(
     }
   }
 }
+
+export function isGifMedia(mimeType: string | undefined, rawUrl: string): boolean {
+  if (mimeType?.trim().toLowerCase() === 'image/gif') return true;
+
+  try {
+    return new URL(rawUrl, 'http://localhost').pathname.toLowerCase().endsWith('.gif');
+  } catch {
+    return rawUrl.split(/[?#]/, 1)[0]?.toLowerCase().endsWith('.gif') ?? false;
+  }
+}
