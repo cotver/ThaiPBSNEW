@@ -496,7 +496,11 @@ export function TitlePreviewModal({
                 <button
                   aria-expanded={heroDetailsRevealed}
                   aria-label="Show title details"
-                  className="group pointer-events-auto absolute inset-y-0 left-0 z-10 flex w-14 items-center justify-center bg-gradient-to-r from-black/45 to-transparent text-white transition hover:from-black/75 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-200 sm:w-16"
+                  className={`group pointer-events-auto absolute inset-y-0 left-0 z-10 flex w-14 items-center justify-center bg-gradient-to-r text-white transition-opacity duration-500 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-200 sm:w-16 ${
+                    heroDetailsRevealed
+                      ? "from-black/0 to-transparent opacity-0"
+                      : "from-black/45 to-transparent opacity-100 hover:from-black/75"
+                  }`}
                   onClick={() => setHeroDetailsRevealed(true)}
                   onBlur={() => setHeroDetailsRevealed(false)}
                   onFocus={() => setHeroDetailsRevealed(true)}
