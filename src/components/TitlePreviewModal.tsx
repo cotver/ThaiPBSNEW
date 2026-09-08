@@ -85,6 +85,7 @@ export function TitlePreviewModal({
   const trailerLoaded = trailerPlaybackMatches ? trailerPlayback.loaded : false;
   const trailerMuted = trailerPlaybackMatches ? trailerPlayback.muted : !PREFER_TRAILER_SOUND;
   const [heroInView, setHeroInView] = useState(true);
+  const [heroDetailsRevealed, setHeroDetailsRevealed] = useState(false);
 
   const closeWithHistory = useCallback(() => {
     if (hasPreviewUrlRef.current) {
@@ -478,43 +479,72 @@ export function TitlePreviewModal({
               </>
             ) : null}
             {title.showHeroDetails !== false ? (
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_10%,rgba(3,7,20,0.7)_20%,rgba(3,7,20,0.22)_30%,transparent_78%)]" />
+              <div
+                className={`absolute inset-0 bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_10%,rgba(3,7,20,0.7)_20%,rgba(3,7,20,0.22)_30%,transparent_78%)] transition-opacity duration-500 ${
+                  showInlineTrailer && !heroDetailsRevealed ? "opacity-0" : "opacity-100"
+                }`}
+              />
             ) : null}
           </div>
           <div className="absolute inset-x-0 bottom-0 h-50 bg-gradient-to-t from-[#111827] via-[#111827]/40 to-transparent" />
 
           {title.showHeroDetails !== false ? (
-            <div className="absolute bottom-8 left-5 z-10 max-w-2xl sm:bottom-10 sm:left-9">
-              <p className="mb-3 text-xs font-black uppercase text-cyan-200">
-                {titleEyebrow(title)}
-              </p>
-              {title.isDiscontinued ? (
-                <DiscontinuedBadge className="mb-4" />
+            <div
+              className="absolute inset-y-0 left-0 z-10 w-[min(48rem,calc(100%-1.25rem))]"
+              onMouseEnter={() => setHeroDetailsRevealed(true)}
+              onMouseLeave={() => setHeroDetailsRevealed(false)}
+            >
+              {showInlineTrailer ? (
+                <button
+                  aria-expanded={heroDetailsRevealed}
+                  aria-label="Show title details"
+                  className="absolute left-2 top-1/2 z-20 grid size-10 -translate-y-1/2 place-items-center rounded-full border border-white/18 bg-black/55 text-white shadow-lg backdrop-blur transition hover:bg-white hover:text-[#030714] focus-visible:ring-2 focus-visible:ring-cyan-200 sm:left-4"
+                  onClick={() => setHeroDetailsRevealed(true)}
+                  onFocus={() => setHeroDetailsRevealed(true)}
+                  type="button"
+                >
+                  <ChevronIcon />
+                </button>
               ) : null}
-              <h2 className="max-w-3xl text-4xl font-black leading-[0.98] sm:text-6xl">
-                {titleLines.map((line) => (
-                  <span className="block" key={line}>
-                    {line}
-                  </span>
-                ))}
-              </h2>
-              {meta.length > 0 ? (
-                <p className="mt-4 text-sm font-bold text-white/72">
-                  {meta.join(" | ")}
-                </p>
-              ) : null}
-              {title.description ? (
-                <p className="mt-5 line-clamp-4 max-w-md text-sm leading-7 text-white/74 sm:text-base">
-                  {title.description}
-                </p>
-              ) : null}
-              {title.genre ? (
-                <p className="mt-4 max-w-2xl text-xs font-bold uppercase text-white/58 sm:text-sm">
-                  {title.genre}
-                </p>
-              ) : null}
-              {title.showHeroActions !== false ? (
-                <div className="mt-8 flex flex-wrap items-center gap-3">
+              <div className="absolute bottom-8 left-5 max-w-2xl sm:bottom-10 sm:left-9">
+                <div
+                  className={`transform-gpu will-change-transform transition-transform duration-700 ease-in-out ${
+                    showInlineTrailer && !heroDetailsRevealed
+                      ? "-translate-x-[calc(100%+4rem)]"
+                      : "translate-x-0"
+                  }`}
+                >
+                  <p className="mb-3 text-xs font-black uppercase text-cyan-200">
+                    {titleEyebrow(title)}
+                  </p>
+                  {title.isDiscontinued ? (
+                    <DiscontinuedBadge className="mb-4" />
+                  ) : null}
+                  <h2 className="max-w-3xl text-4xl font-black leading-[0.98] sm:text-6xl">
+                    {titleLines.map((line) => (
+                      <span className="block" key={line}>
+                        {line}
+                      </span>
+                    ))}
+                  </h2>
+                  {meta.length > 0 ? (
+                    <p className="mt-4 text-sm font-bold text-white/72">
+                      {meta.join(" | ")}
+                    </p>
+                  ) : null}
+                  {title.description ? (
+                    <p className="mt-5 line-clamp-4 max-w-md text-sm leading-7 text-white/74 sm:text-base">
+                      {title.description}
+                    </p>
+                  ) : null}
+                  {title.genre ? (
+                    <p className="mt-4 max-w-2xl text-xs font-bold uppercase text-white/58 sm:text-sm">
+                      {title.genre}
+                    </p>
+                  ) : null}
+                </div>
+                {title.showHeroActions !== false ? (
+                  <div className="mt-8 flex flex-wrap items-center gap-3">
                   {ENABLE_TITLE_PLAYBACK ? (
                     <Link
                       className="inline-flex h-12 items-center gap-2 rounded-[6px] bg-white px-7 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
@@ -537,8 +567,9 @@ export function TitlePreviewModal({
                     savedClassName="grid size-12 place-items-center rounded-full border border-cyan-200/40 bg-cyan-200 text-lg font-black text-[#030714] transition hover:bg-white"
                     title={title}
                   />
-                </div>
-              ) : null}
+                  </div>
+                ) : null}
+              </div>
             </div>
           ) : null}
         </div>
@@ -560,6 +591,22 @@ function PlayIcon() {
   return (
     <svg aria-hidden="true" className="size-4" fill="currentColor" viewBox="0 0 24 24">
       <path d="M8 5.14v13.72c0 .7.77 1.12 1.36.74l10.78-6.86a.88.88 0 0 0 0-1.48L9.36 4.4A.88.88 0 0 0 8 5.14Z" />
+    </svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeWidth="2.1"
+      viewBox="0 0 24 24"
+    >
+      <path d="m9 18 6-6-6-6" />
     </svg>
   );
 }

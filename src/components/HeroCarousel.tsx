@@ -87,6 +87,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   const trailerVideoRef = useRef<HTMLVideoElement | null>(null);
   const [isDraggingThumbs, setIsDraggingThumbs] = useState(false);
   const [heroInView, setHeroInView] = useState(true);
+  const [heroDetailsRevealed, setHeroDetailsRevealed] = useState(false);
   const [manualAdvanceKey, setManualAdvanceKey] = useState(0);
   const [trailerPlayback, setTrailerPlayback] = useState({
     ended: false,
@@ -566,7 +567,11 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
               </>
             ) : null}
             {title.showHeroDetails !== false && (
-              <div className={`absolute inset-0 ${getHeroDetailShadowClass(title)}`} />
+              <div
+                className={`absolute inset-0 ${getHeroDetailShadowClass(title)} transition-opacity duration-500 ${
+                  showInlineTrailer && !heroDetailsRevealed ? "opacity-0" : "opacity-100"
+                }`}
+              />
             )}
           </div>
         );
@@ -574,34 +579,59 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
       <div className="absolute inset-x-0 bottom-0 h-50 bg-gradient-to-t from-[#030714] via-[#030714]/40 to-transparent" />
 
       {current.showHeroDetails !== false && (
-        <div className="absolute bottom-20 left-5 z-10 max-w-3xl sm:left-8 lg:bottom-24 lg:left-10">
-          <p className="mb-3 text-xs font-black uppercase text-cyan-200">
-            {titleEyebrow(current)}
-          </p>
-          <h1 className="max-w-3xl text-5xl font-black leading-[0.98] sm:text-6xl lg:text-7xl">
-            {titleDisplayLines(current).map((line) => (
-              <span className="block" key={line}>
-                {line}
-              </span>
-            ))}
-          </h1>
-          {currentMeta.length > 0 && (
-            <p className="mt-4 text-sm font-bold text-white/72">
-              {currentMeta.join(" | ")}
-            </p>
-          )}
-          {current.description && (
-            <p className="mt-5 line-clamp-4 max-w-md text-sm leading-7 text-white/74 sm:text-base">
-              {current.description}
-            </p>
-          )}
-          {current.genre && (
-            <p className="mt-4 max-w-2xl text-xs font-bold uppercase text-white/58 sm:text-sm">
-              {current.genre}
-            </p>
-          )}
-          {current.showHeroActions !== false && (
-            <div className="mt-8 flex flex-wrap gap-3">
+        <div
+          className="absolute inset-y-0 left-0 z-10 w-[min(48rem,calc(100%-1.25rem))]"
+          onMouseEnter={() => setHeroDetailsRevealed(true)}
+          onMouseLeave={() => setHeroDetailsRevealed(false)}
+        >
+          {activeHasInlineTrailer && !trailerEnded && trailerPlaybackMatches && trailerPlayback.loaded ? (
+            <button
+              aria-expanded={heroDetailsRevealed}
+              aria-label="Show title details"
+              className="absolute left-2 top-1/2 z-20 grid size-10 -translate-y-1/2 place-items-center rounded-full border border-white/18 bg-black/55 text-white shadow-lg backdrop-blur transition hover:bg-white hover:text-[#030714] focus-visible:ring-2 focus-visible:ring-cyan-200 sm:left-4"
+              onClick={() => setHeroDetailsRevealed(true)}
+              onFocus={() => setHeroDetailsRevealed(true)}
+              type="button"
+            >
+              <ChevronIcon />
+            </button>
+          ) : null}
+          <div className="absolute bottom-20 left-5 max-w-3xl sm:left-8 lg:bottom-24 lg:left-10">
+            <div
+              className={`transform-gpu will-change-transform transition-transform duration-700 ease-in-out ${
+                activeHasInlineTrailer && !trailerEnded && trailerPlaybackMatches && trailerPlayback.loaded && !heroDetailsRevealed
+                  ? "-translate-x-[calc(100%+4rem)]"
+                  : "translate-x-0"
+              }`}
+            >
+              <p className="mb-3 text-xs font-black uppercase text-cyan-200">
+                {titleEyebrow(current)}
+              </p>
+              <h1 className="max-w-3xl text-5xl font-black leading-[0.98] sm:text-6xl lg:text-7xl">
+                {titleDisplayLines(current).map((line) => (
+                  <span className="block" key={line}>
+                    {line}
+                  </span>
+                ))}
+              </h1>
+              {currentMeta.length > 0 && (
+                <p className="mt-4 text-sm font-bold text-white/72">
+                  {currentMeta.join(" | ")}
+                </p>
+              )}
+              {current.description && (
+                <p className="mt-5 line-clamp-4 max-w-md text-sm leading-7 text-white/74 sm:text-base">
+                  {current.description}
+                </p>
+              )}
+              {current.genre && (
+                <p className="mt-4 max-w-2xl text-xs font-bold uppercase text-white/58 sm:text-sm">
+                  {current.genre}
+                </p>
+              )}
+            </div>
+            {current.showHeroActions !== false && (
+              <div className="mt-8 flex flex-wrap gap-3">
               {currentIsDisabled ? (
                 <>
                   {ENABLE_TITLE_PLAYBACK ? (
@@ -642,20 +672,21 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                 savedClassName="grid size-12 place-items-center rounded-full border border-cyan-200/40 bg-cyan-200 text-lg font-black text-[#030714] transition hover:bg-white"
                 title={current}
               />
+              </div>
+            )}
+            <div className="mt-8 flex items-center gap-2 lg:hidden">
+              {titles.map((title, index) => (
+                <button
+                  aria-label={`Show ${title.title}`}
+                  className={`h-1.5 rounded-full transition-all ${
+                    index === active ? "w-9 bg-white" : "w-4 bg-white/34 hover:bg-white/70"
+                  }`}
+                  key={title.slug}
+                  onClick={() => selectHero(index)}
+                  type="button"
+                />
+              ))}
             </div>
-          )}
-          <div className="mt-8 flex items-center gap-2 lg:hidden">
-            {titles.map((title, index) => (
-              <button
-                aria-label={`Show ${title.title}`}
-                className={`h-1.5 rounded-full transition-all ${
-                  index === active ? "w-9 bg-white" : "w-4 bg-white/34 hover:bg-white/70"
-                }`}
-                key={title.slug}
-                onClick={() => selectHero(index)}
-                type="button"
-              />
-            ))}
           </div>
         </div>
       )}
@@ -746,6 +777,22 @@ function getHeroDetailShadowClass(title: Title) {
   }
 
   return "bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_10%,rgba(3,7,20,0.7)_20%,rgba(3,7,20,0.22)_30%,transparent_78%)]";
+}
+
+function ChevronIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeWidth="2.1"
+      viewBox="0 0 24 24"
+    >
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
 }
 
 function MutedIcon() {
