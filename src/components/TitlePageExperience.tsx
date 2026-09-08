@@ -263,7 +263,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
 
   return (
     <>
-      <section ref={heroRef} className="relative h-[clamp(390px,56.25vw,100vh)] overflow-hidden bg-black text-white">
+      <section ref={heroRef} className="group/title-hero relative h-[clamp(390px,56.25vw,100vh)] overflow-hidden bg-black text-white">
         <div className="absolute inset-0 bg-[#030714]">
           {trailerEmbedUrl && keepTrailerMounted ? (
             <iframe
@@ -429,41 +429,55 @@ export function TitlePageExperience({ title }: { title: Title }) {
           ) : null}
 
           {title.showHeroDetails !== false ? (
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_10%,rgba(3,7,20,0.7)_20%,rgba(3,7,20,0.22)_30%,transparent_78%)]" />
+            <div
+              className={`absolute inset-0 bg-[linear-gradient(90deg,#030714_0%,rgba(3,7,20,0.96)_10%,rgba(3,7,20,0.7)_20%,rgba(3,7,20,0.22)_30%,transparent_78%)] transition-opacity duration-500 ${
+                showInlineTrailer
+                  ? "opacity-0 group-hover/title-hero:opacity-100 group-focus-within/title-hero:opacity-100"
+                  : "opacity-100"
+              }`}
+            />
           ) : null}
         </div>
         <div className="absolute inset-x-0 bottom-0 h-50 bg-gradient-to-t from-[#030714] via-[#030714]/40 to-transparent" />
 
         {title.showHeroDetails !== false ? (
           <div className="absolute bottom-8 left-5 z-10 max-w-2xl sm:bottom-10 sm:left-9">
-            <p className="mb-3 text-xs font-black uppercase text-cyan-200">
-              {titleEyebrow(title)}
-            </p>
-            {title.isDiscontinued ? (
-              <DiscontinuedBadge className="mb-4" />
-            ) : null}
-            <h1 className="max-w-3xl text-4xl font-black leading-[0.98] sm:text-6xl">
-              {titleLines.map((line) => (
-                <span className="block" key={line}>
-                  {line}
-                </span>
-              ))}
-            </h1>
-            {meta.length > 0 ? (
-              <p className="mt-4 text-sm font-bold text-white/72">
-                {meta.join(" | ")}
+            <div
+              className={`transform-gpu transition-[transform,opacity] duration-500 ease-out ${
+                showInlineTrailer
+                  ? "-translate-x-[calc(100%+3rem)] opacity-0 group-hover/title-hero:translate-x-0 group-hover/title-hero:opacity-100 group-focus-within/title-hero:translate-x-0 group-focus-within/title-hero:opacity-100"
+                  : "translate-x-0 opacity-100"
+              }`}
+            >
+              <p className="mb-3 text-xs font-black uppercase text-cyan-200">
+                {titleEyebrow(title)}
               </p>
-            ) : null}
-            {title.description ? (
-              <p className="mt-5 line-clamp-4 max-w-md text-sm leading-7 text-white/74 sm:text-base">
-                {title.description}
-              </p>
-            ) : null}
-            {title.genre ? (
-              <p className="mt-4 max-w-2xl text-xs font-bold uppercase text-white/58 sm:text-sm">
-                {title.genre}
-              </p>
-            ) : null}
+              {title.isDiscontinued ? (
+                <DiscontinuedBadge className="mb-4" />
+              ) : null}
+              <h1 className="max-w-3xl text-4xl font-black leading-[0.98] sm:text-6xl">
+                {titleLines.map((line) => (
+                  <span className="block" key={line}>
+                    {line}
+                  </span>
+                ))}
+              </h1>
+              {meta.length > 0 ? (
+                <p className="mt-4 text-sm font-bold text-white/72">
+                  {meta.join(" | ")}
+                </p>
+              ) : null}
+              {title.description ? (
+                <p className="mt-5 line-clamp-4 max-w-md text-sm leading-7 text-white/74 sm:text-base">
+                  {title.description}
+                </p>
+              ) : null}
+              {title.genre ? (
+                <p className="mt-4 max-w-2xl text-xs font-bold uppercase text-white/58 sm:text-sm">
+                  {title.genre}
+                </p>
+              ) : null}
+            </div>
             {title.showHeroActions !== false ? (
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 {ENABLE_TITLE_PLAYBACK ? (
