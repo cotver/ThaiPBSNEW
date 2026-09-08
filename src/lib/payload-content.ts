@@ -483,8 +483,8 @@ export function buildTitleCollections(
 function programToTitle(program: Program): Title | null {
   const titleTh = cleanText(program.titleTh);
   const titleEn = cleanText(program.titleEn);
-  const title = titleTh || titleEn || cleanText(program._displayTitle);
-  const heroTitleLines = uniqueTextLines([titleTh, titleEn]);
+  const title = titleEn || titleTh || cleanText(program._displayTitle);
+  const heroTitleLines = uniqueTextLines([title]);
 
   if (!title || !program.slug) {
     return null;
@@ -501,8 +501,8 @@ function programToTitle(program: Program): Title | null {
   const year = program.comingSoon ? dateYear(program.comingSoonDate) || fallbackYear : fallbackYear;
   const duration = formatDuration(program.duration, type);
   const description =
-    cleanText(program.synopsisTh) ||
     cleanText(program.synopsisEn) ||
+    cleanText(program.synopsisTh) ||
     cleanText(program.tags) ||
     "Watch this title from the ThaiPBS catalog.";
 
@@ -515,6 +515,9 @@ function programToTitle(program: Program): Title | null {
     rating: getRating(program),
     duration,
     description,
+    producer: cleanText(program.producer) || undefined,
+    director: cleanText(program.director) || undefined,
+    artist: cleanText(program.artist) || undefined,
     categoryNames: relationNames((program as { categories?: unknown }).categories),
     categorySlugs: relationSlugs((program as { categories?: unknown }).categories),
     progress: program.isNewHits ? "38%" : undefined,
@@ -636,13 +639,13 @@ function seasonToTitleSeason(
 
   return {
     id: String(season.id),
-    description: cleanText(season.synopsisTh) || cleanText(season.synopsisEn) || undefined,
+    description: cleanText(season.synopsisEn) || cleanText(season.synopsisTh) || undefined,
     episodes: episodes
       .map((episode) => episodeToTitleEpisode(episode, seasonImage || programFallbackImage))
       .sort((a, b) => (a.episodeNumber ?? 9999) - (b.episodeNumber ?? 9999)),
     image: seasonImage,
     seasonNumber,
-    title: cleanText(season.seasonName) || cleanText(season.seasonNameEn) || fallbackTitle,
+    title: cleanText(season.seasonNameEn) || cleanText(season.seasonName) || fallbackTitle,
     trailerMimeType: videoMimeType(season.trailer),
     trailerUrl:
       videoUrl(season.trailer) ||
@@ -662,8 +665,8 @@ function episodeToTitleEpisode(
   return {
     id: String(episode.id),
     description:
-      cleanText(episode.synopsisEpTh) ||
       cleanText(episode.synopsisEpEn) ||
+      cleanText(episode.synopsisEpTh) ||
       "Episode details will be available soon.",
     duration: "Episode",
     episodeNumber,
@@ -673,7 +676,7 @@ function episodeToTitleEpisode(
       thumbnailPath(episode.TrailerThumbnailAirflowProxyPath) ||
       fallbackImage,
     releaseDate: dateLabel(episode.firstRun),
-    title: cleanText(episode.epNameTh) || cleanText(episode.epNameEn) || fallbackTitle,
+    title: cleanText(episode.epNameEn) || cleanText(episode.epNameTh) || fallbackTitle,
     videoMimeType: videoMimeType(episode.video),
     videoUrl:
       videoUrl(episode.video) ||

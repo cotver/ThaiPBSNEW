@@ -8,6 +8,9 @@ export type Title = {
   duration: string;
   eyebrow?: string;
   description: string;
+  producer?: string;
+  director?: string;
+  artist?: string;
   categoryNames?: string[];
   categorySlugs?: string[];
   progress?: string;

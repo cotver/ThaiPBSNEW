@@ -827,6 +827,9 @@ function DetailsPanel({ title }: { title: Title }) {
         <Meta label="Genre" value={title.genre} />
         <Meta label="Released" value={title.year} />
         <Meta label="Rating" value={title.rating} />
+        {title.producer?.trim() ? <Meta label="Producer" value={title.producer.trim()} /> : null}
+        {title.director?.trim() ? <Meta label="Director" value={title.director.trim()} /> : null}
+        {title.artist?.trim() ? <Meta label="Artist" value={title.artist.trim()} /> : null}
       </dl>
     </section>
   );

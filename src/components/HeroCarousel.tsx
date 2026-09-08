@@ -590,7 +590,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
             </p>
           )}
           {current.description && (
-            <p className="mt-5 max-w-md text-sm leading-7 text-white/74 sm:text-base">
+            <p className="mt-5 line-clamp-4 max-w-md text-sm leading-7 text-white/74 sm:text-base">
               {current.description}
             </p>
           )}
