@@ -449,11 +449,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
               <button
                 aria-expanded={heroDetailsRevealed}
                 aria-label="Show title details"
-                className={`group pointer-events-auto absolute inset-y-0 left-0 z-10 flex w-14 items-center justify-center bg-gradient-to-r text-white transition-opacity duration-500 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-200 sm:w-16 ${
-                  heroDetailsRevealed
-                    ? "from-black/0 to-transparent opacity-0"
-                    : "from-black/45 to-transparent opacity-100 hover:from-black/75"
-                }`}
+                className="group pointer-events-auto absolute inset-y-0 left-0 z-10 flex w-14 items-center justify-center text-white focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-200 sm:w-16"
                 onClick={() => setHeroDetailsRevealed(true)}
                 onBlur={() => setHeroDetailsRevealed(false)}
                 onFocus={() => setHeroDetailsRevealed(true)}
@@ -461,7 +457,11 @@ export function TitlePageExperience({ title }: { title: Title }) {
                 onMouseLeave={() => setHeroDetailsRevealed(false)}
                 type="button"
               >
-                <span className="grid size-10 place-items-center rounded-full border border-white/18 bg-black/55 shadow-lg backdrop-blur transition group-hover:bg-white group-hover:text-[#030714]">
+                <span
+                  className={`drop-shadow-[0_2px_5px_rgba(0,0,0,0.9)] transition-[opacity,transform] duration-500 group-hover:scale-110 ${
+                    heroDetailsRevealed ? "opacity-0" : "opacity-100"
+                  }`}
+                >
                   <ChevronIcon />
                 </span>
               </button>
@@ -556,7 +556,7 @@ function ChevronIcon() {
   return (
     <svg
       aria-hidden="true"
-      className="size-5"
+      className="size-7"
       fill="none"
       stroke="currentColor"
       strokeLinecap="round"
