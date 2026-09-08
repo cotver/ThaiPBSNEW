@@ -505,7 +505,7 @@ export function TitlePreviewModal({
                   type="button"
                 >
                   <span
-                    className={`drop-shadow-[0_2px_5px_rgba(0,0,0,0.9)] transition-[opacity,transform] duration-500 group-hover:scale-110 ${
+                    className={`grid size-10 place-items-center rounded-full border border-white/18 bg-black/55 shadow-lg backdrop-blur transition-[opacity,transform,background-color,color] duration-500 group-hover:scale-110 group-hover:bg-white group-hover:text-[#030714] ${
                       heroDetailsRevealed ? "opacity-0" : "opacity-100"
                     }`}
                   >
@@ -606,7 +606,7 @@ function ChevronIcon() {
   return (
     <svg
       aria-hidden="true"
-      className="size-7"
+      className="size-5"
       fill="none"
       stroke="currentColor"
       strokeLinecap="round"
