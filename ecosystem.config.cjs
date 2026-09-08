@@ -16,9 +16,7 @@ module.exports = {
       name: 'ThaiPBSNEW',
       cwd: appCwd,
       script: 'node_modules/next/dist/bin/next',
-      // Nginx is the only public entry point. Binding Next.js to loopback prevents
-      // clients from bypassing Nginx access rules by connecting to port 3008.
-      args: 'start -p 3008 -H 127.0.0.1',
+      args: 'start -p 3008',
       instances: 2,
       exec_mode: 'cluster',
       max_memory_restart: '4G',
