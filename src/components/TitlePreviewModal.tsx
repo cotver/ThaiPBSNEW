@@ -490,20 +490,23 @@ export function TitlePreviewModal({
 
           {title.showHeroDetails !== false ? (
             <div
-              className="absolute inset-y-0 left-0 z-10 w-[min(48rem,calc(100%-1.25rem))]"
-              onMouseEnter={() => setHeroDetailsRevealed(true)}
-              onMouseLeave={() => setHeroDetailsRevealed(false)}
+              className="pointer-events-none absolute inset-0 z-10"
             >
               {showInlineTrailer ? (
                 <button
                   aria-expanded={heroDetailsRevealed}
                   aria-label="Show title details"
-                  className="absolute left-2 top-1/2 z-20 grid size-10 -translate-y-1/2 place-items-center rounded-full border border-white/18 bg-black/55 text-white shadow-lg backdrop-blur transition hover:bg-white hover:text-[#030714] focus-visible:ring-2 focus-visible:ring-cyan-200 sm:left-4"
+                  className="group pointer-events-auto absolute inset-y-0 left-0 z-20 flex w-14 items-center justify-center bg-gradient-to-r from-black/45 to-transparent text-white transition hover:from-black/75 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-200 sm:w-16"
                   onClick={() => setHeroDetailsRevealed(true)}
+                  onBlur={() => setHeroDetailsRevealed(false)}
                   onFocus={() => setHeroDetailsRevealed(true)}
+                  onMouseEnter={() => setHeroDetailsRevealed(true)}
+                  onMouseLeave={() => setHeroDetailsRevealed(false)}
                   type="button"
                 >
-                  <ChevronIcon />
+                  <span className="grid size-10 place-items-center rounded-full border border-white/18 bg-black/55 shadow-lg backdrop-blur transition group-hover:bg-white group-hover:text-[#030714]">
+                    <ChevronIcon />
+                  </span>
                 </button>
               ) : null}
               <div className="absolute bottom-8 left-5 max-w-2xl sm:bottom-10 sm:left-9">
@@ -544,7 +547,7 @@ export function TitlePreviewModal({
                   ) : null}
                 </div>
                 {title.showHeroActions !== false ? (
-                  <div className="mt-8 flex flex-wrap items-center gap-3">
+                  <div className="pointer-events-auto mt-8 flex flex-wrap items-center gap-3">
                   {ENABLE_TITLE_PLAYBACK ? (
                     <Link
                       className="inline-flex h-12 items-center gap-2 rounded-[6px] bg-white px-7 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
