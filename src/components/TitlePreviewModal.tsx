@@ -496,7 +496,7 @@ export function TitlePreviewModal({
                 <button
                   aria-expanded={heroDetailsRevealed}
                   aria-label="Show title details"
-                  className="group pointer-events-auto absolute inset-y-0 left-0 z-20 flex w-14 items-center justify-center bg-gradient-to-r from-black/45 to-transparent text-white transition hover:from-black/75 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-200 sm:w-16"
+                  className="group pointer-events-auto absolute inset-y-0 left-0 z-10 flex w-14 items-center justify-center bg-gradient-to-r from-black/45 to-transparent text-white transition hover:from-black/75 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-200 sm:w-16"
                   onClick={() => setHeroDetailsRevealed(true)}
                   onBlur={() => setHeroDetailsRevealed(false)}
                   onFocus={() => setHeroDetailsRevealed(true)}
@@ -509,7 +509,7 @@ export function TitlePreviewModal({
                   </span>
                 </button>
               ) : null}
-              <div className="absolute bottom-8 left-5 max-w-2xl sm:bottom-10 sm:left-9">
+              <div className="absolute bottom-8 left-5 z-20 max-w-2xl sm:bottom-10 sm:left-9">
                 <div
                   className={`transform-gpu will-change-transform transition-transform duration-700 ease-in-out ${
                     showInlineTrailer && !heroDetailsRevealed
