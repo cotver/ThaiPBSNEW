@@ -38,3 +38,8 @@ Use `npm.cmd` for the same commands if PowerShell blocks `npm`.
 - Global styles: `src/app/globals.css`
 - Hero art: `public/hero-cinematic.png`
 - Agent handoff: `AGENT.md`
+
+## Production deployment
+
+For the Nginx reverse proxy, domain setup, HTTPS, and LAN-only `/admin`
+instructions, see [`deploy/nginx/README.md`](deploy/nginx/README.md).
