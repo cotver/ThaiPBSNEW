@@ -87,7 +87,7 @@ that distribution's Nginx and Certbot packages instead.
 ## 5. Install the site configuration
 
 ```bash
-sudo cp /srv/ThaiPBSNEW/deploy/nginx/pavilions.thaipbs.or.th.conf /etc/nginx/sites-available/pavilions.thaipbs.or.th
+sudo cp ./deploy/nginx/pavilions.thaipbs.or.th.conf /etc/nginx/sites-available/pavilions.thaipbs.or.th
 sudo ln -s /etc/nginx/sites-available/pavilions.thaipbs.or.th /etc/nginx/sites-enabled/pavilions.thaipbs.or.th
 sudo nginx -t
 sudo systemctl reload nginx
