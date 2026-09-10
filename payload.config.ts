@@ -1,7 +1,7 @@
 import sharp from 'sharp'
 import { BlocksFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import { postgresAdapter } from '@payloadcms/db-postgres'
-import { buildConfig } from 'payload'
+import { buildConfig, type CollectionConfig } from 'payload'
 import { ArticleEmbedBlock } from './blocks/ArticleEmbedBlock.ts'
 import { ArticleImageGroupBlock } from './blocks/ArticleImageGroupBlock.ts'
 import { withCollectionPermissions } from './src/lib/payload-permissions.ts'
@@ -33,6 +33,20 @@ import { Articles } from './collections/Articles.ts'
 
 const payloadDatabaseUrl = process.env.PAYLOAD_DATABASE_URL || process.env.DATABASE_URL || ''
 const payloadDbSchema = process.env.PAYLOAD_DB_SCHEMA || 'payload'
+const ungroupedCollectionSlugs = new Set(['users', 'roleProfiles', 'userGroups'])
+
+const groupProgramCollections = (collections: CollectionConfig[]): CollectionConfig[] =>
+  collections.map((collection) =>
+    ungroupedCollectionSlugs.has(collection.slug)
+      ? collection
+      : {
+          ...collection,
+          admin: {
+            ...collection.admin,
+            group: 'Programs',
+          },
+        },
+  )
 
 export default buildConfig({
   editor: lexicalEditor({
@@ -89,33 +103,35 @@ export default buildConfig({
     },
   },
 
-  collections: withCollectionPermissions([
-    Users,
-    RoleProfiles,
-    UserGroups,
-    Media,
-    Videos,
-    Landing,
-    Trends,
-    Content,
-    Header,
-    Footer,
-    Languages,
-    Awards,
-    Categories,
-    Genres,
-    SubGenres,
-    HeroImages,
-    Programs,
-    Producers,
-    Directors,
-    Artists,
-    Writers,
-    VipaPrograms,
-    Seasons,
-    Episodes,
-    Articles,
-  ]),
+  collections: withCollectionPermissions(
+    groupProgramCollections([
+      Users,
+      RoleProfiles,
+      UserGroups,
+      Media,
+      Videos,
+      Landing,
+      Trends,
+      Content,
+      Header,
+      Footer,
+      Languages,
+      Awards,
+      Categories,
+      Genres,
+      SubGenres,
+      HeroImages,
+      Programs,
+      Producers,
+      Directors,
+      Artists,
+      Writers,
+      VipaPrograms,
+      Seasons,
+      Episodes,
+      Articles,
+    ]),
+  ),
 
   upload: {
     useTempFiles: false,
