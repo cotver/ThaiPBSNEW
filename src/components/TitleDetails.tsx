@@ -851,8 +851,8 @@ function DetailsPanel({ title }: { title: Title }) {
 }
 
 function textCreditFallback(value?: string): TitleCredit[] {
-  const name = value?.trim();
-  return name ? [{ name }] : [];
+  return [...new Set((value ?? "").split(",").map((name) => name.trim()).filter(Boolean))]
+    .map((name) => ({ name }));
 }
 
 function CreditRow({ label, people }: { label: string; people: TitleCredit[] }) {

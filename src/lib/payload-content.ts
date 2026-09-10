@@ -1030,7 +1030,9 @@ function creditRelationPeople(value: unknown, fallback: string): NonNullable<Tit
 
   const uniquePeople = [...new Map(people.map((person) => [person.name, person])).values()];
 
-  return uniquePeople.length > 0 ? uniquePeople : fallback ? [{ name: fallback }] : [];
+  return uniquePeople.length > 0
+    ? uniquePeople
+    : [...new Set(fallback.split(",").map((name) => name.trim()).filter(Boolean))].map((name) => ({ name }));
 }
 
 function relationSlugs(value: unknown): string[] {
