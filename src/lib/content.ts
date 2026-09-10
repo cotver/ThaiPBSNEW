@@ -25,6 +25,7 @@ export type Title = {
   isDiscontinued?: boolean;
   isGlobalProgram?: boolean;
   isNew?: boolean;
+  isScheduled?: boolean;
   posterImage?: string;
   seasons?: TitleSeason[];
   showHeroActions?: boolean;

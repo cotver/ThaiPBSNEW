@@ -28,8 +28,8 @@ export default async function CategoryPage({
     notFound();
   }
 
-  const { category, titles } = categoryPage;
-  const availableTitles = titles.filter((title) => !title.isDiscontinued);
+  const { category, categoryRowTitles, titles } = categoryPage;
+  const availableTitles = categoryRowTitles.filter((title) => !title.isDiscontinued);
   const collections = buildTitleCollections(titles, continueWatchingSlugs, savedTitleSlugs);
   const showHeaderSection = category.showHeaderSection !== false;
   const showTitle = category.showTitle !== false;

@@ -233,7 +233,9 @@ export async function getTypeNavItems(): Promise<NavItem[]> {
   }
 }
 
-export async function getCategoryPage(slug: string): Promise<{ category: CategoryTile; titles: Title[] } | null> {
+export async function getCategoryPage(
+  slug: string,
+): Promise<{ category: CategoryTile; categoryRowTitles: Title[]; titles: Title[] } | null> {
   try {
     const payload = await getPayloadClient();
     const cleanSlug = normalizeSlugLookupKey(slug);
@@ -282,22 +284,12 @@ export async function getCategoryPage(slug: string): Promise<{ category: Categor
       return null;
     }
 
-    const programsResult = await payload.find({
-      collection: "programs",
-      depth: 3,
-      limit: 80,
-      overrideAccess: true,
-      sort: "-updatedAt",
-      where: {
-        categories: {
-          contains: category.id,
-        },
-      },
-    });
+    const { categoryRowTitles, recentTitles } = await getCategoryProgramTitles(payload, category.id);
 
     return {
       category: tile,
-      titles: sortTitlesByAvailability(programsResult.docs.map(programToTitle).filter((title): title is Title => Boolean(title))),
+      categoryRowTitles: sortTitlesByAvailability(categoryRowTitles),
+      titles: sortTitlesByAvailability(recentTitles),
     };
   } catch (error) {
     console.warn(`Unable to load Payload category "${slug}"`, error);
@@ -370,25 +362,10 @@ async function getHomeTypeRows(): Promise<TypeProgramRow[]> {
           return null;
         }
 
-        const programsResult = await payload.find({
-          collection: "programs",
-          depth: 3,
-          limit: 80,
-          overrideAccess: true,
-          sort: "-updatedAt",
-          where: {
-            categories: {
-              contains: typeDoc.id,
-            },
-          },
-        });
+        const { categoryRowTitles } = await getCategoryProgramTitles(payload, typeDoc.id);
+        const titles = categoryRowTitles.filter(isAvailableTitle);
 
-        const titles = programsResult.docs
-          .map(programToTitle)
-          .filter(isTitle)
-          .filter(isAvailableTitle);
-
-        return titles.length > 0 ? { titles, type: tile } : null;
+        return titles.length > 0 ? { titles: sortTitlesBySchedule(titles), type: tile } : null;
       }),
     );
 
@@ -397,6 +374,44 @@ async function getHomeTypeRows(): Promise<TypeProgramRow[]> {
     console.warn("Unable to load Payload type rows for homepage", error);
     return [];
   }
+}
+
+async function getCategoryProgramTitles(
+  payload: Awaited<ReturnType<typeof getPayloadClient>>,
+  categoryId: number,
+): Promise<{ categoryRowTitles: Title[]; recentTitles: Title[] }> {
+  const categoryFilter = {
+    categories: {
+      contains: categoryId,
+    },
+  } as const;
+  const [scheduledResult, recentResult] = await Promise.all([
+    payload.find({
+      collection: "programs",
+      depth: 3,
+      overrideAccess: true,
+      pagination: false,
+      sort: "-updatedAt",
+      where: {
+        and: [categoryFilter, { is_Schedule: { equals: true } }],
+      },
+    }),
+    payload.find({
+      collection: "programs",
+      depth: 3,
+      limit: 80,
+      overrideAccess: true,
+      sort: "-updatedAt",
+      where: categoryFilter,
+    }),
+  ]);
+  const categoryRowPrograms = [...new Map(
+    [...scheduledResult.docs, ...recentResult.docs].map((program) => [program.id, program]),
+  ).values()];
+  const categoryRowTitles = sortTitlesBySchedule(categoryRowPrograms.map(programToTitle).filter(isTitle));
+  const recentTitles = recentResult.docs.map(programToTitle).filter(isTitle);
+
+  return { categoryRowTitles, recentTitles };
 }
 
 function heroImageToTitle(hero: HeroImage): Title | null {
@@ -532,6 +547,7 @@ function programToTitle(program: Program): Title | null {
     isDiscontinued: Boolean(program.is_discontinued),
     isGlobalProgram: Boolean(program.is_global_programs),
     isNew: Boolean(program.is_NEW),
+    isScheduled: Boolean(program.is_Schedule),
     posterImage: getProgramPosterImage(program),
     seasons: getProgramSeasons(program),
     source: "program",
@@ -544,6 +560,10 @@ function programToTitle(program: Program): Title | null {
 
 function sortTitlesByAvailability(titles: Title[]) {
   return [...titles].sort((a, b) => Number(Boolean(a.isDiscontinued)) - Number(Boolean(b.isDiscontinued)));
+}
+
+function sortTitlesBySchedule(titles: Title[]) {
+  return [...titles].sort((a, b) => Number(Boolean(b.isScheduled)) - Number(Boolean(a.isScheduled)));
 }
 
 function isAvailableTitle(title: Title) {
