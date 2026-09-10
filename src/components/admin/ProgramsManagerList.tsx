@@ -25,14 +25,10 @@ type ProgramDoc = Record<string, unknown> & {
   is_Award?: boolean | null
   companyProduce?: string | null
   companyProduceEn?: string | null
-  producer?: string | null
-  producerEn?: string | null
-  director?: string | null
-  directorEn?: string | null
-  artist?: string | null
-  artistEn?: string | null
-  writer?: string | null
-  writerEn?: string | null
+  producers?: Array<{ id: number | string; name?: string; nameTh?: string; nameEn?: string } | number> | null
+  directors?: Array<{ id: number | string; name?: string; nameTh?: string; nameEn?: string } | number> | null
+  artists?: Array<{ id: number | string; name?: string; nameTh?: string; nameEn?: string } | number> | null
+  writers?: Array<{ id: number | string; name?: string; nameTh?: string; nameEn?: string } | number> | null
 }
 
 const DEFAULT_SORT = '-updatedAt'

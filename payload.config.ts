@@ -22,6 +22,10 @@ import { Genres } from './collections/Genres.ts'
 import { SubGenres } from './collections/SubGenres.ts'
 import { HeroImages } from './collections/HeroImages.ts'
 import { Programs } from './collections/Programs.ts'
+import { Producers } from './collections/Producers.ts'
+import { Directors } from './collections/Directors.ts'
+import { Artists } from './collections/Artists.ts'
+import { Writers } from './collections/Writers.ts'
 import { VipaPrograms } from './collections/VipaPrograms.ts'
 import { Seasons } from './collections/Seasons.ts'
 import { Episodes } from './collections/Episodes.ts'
@@ -103,6 +107,10 @@ export default buildConfig({
     SubGenres,
     HeroImages,
     Programs,
+    Producers,
+    Directors,
+    Artists,
+    Writers,
     VipaPrograms,
     Seasons,
     Episodes,

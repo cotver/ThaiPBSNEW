@@ -22,6 +22,8 @@ import * as migration_20260901_024119_add_program_articles from './20260901_0241
 import * as migration_20260901_150335_add_article_featured_hero from './20260901_150335_add_article_featured_hero';
 import * as migration_20260908_103100_add_program_director from './20260908_103100_add_program_director';
 import * as migration_20260908_112300_add_program_credit_english_fields from './20260908_112300_add_program_credit_english_fields';
+import * as migration_20260910_023059_add_credit_collections from './20260910_023059_add_credit_collections';
+import * as migration_20260910_023503_add_credit_permissions from './20260910_023503_add_credit_permissions';
 
 export const migrations = [
   {
@@ -77,71 +79,81 @@ export const migrations = [
   {
     up: migration_20260703_030120_simplify_home_hero_images.up,
     down: migration_20260703_030120_simplify_home_hero_images.down,
-    name: '20260703_030120_simplify_home_hero_images'
+    name: '20260703_030120_simplify_home_hero_images',
   },
   {
     up: migration_20260703_090000_merge_types_into_categories.up,
     down: migration_20260703_090000_merge_types_into_categories.down,
-    name: '20260703_090000_merge_types_into_categories'
+    name: '20260703_090000_merge_types_into_categories',
   },
   {
     up: migration_20260703_091000_add_programs_is_discontinued.up,
     down: migration_20260703_091000_add_programs_is_discontinued.down,
-    name: '20260703_091000_add_programs_is_discontinued'
+    name: '20260703_091000_add_programs_is_discontinued',
   },
   {
     up: migration_20260703_092000_resync_episodes_id_sequence.up,
     down: migration_20260703_092000_resync_episodes_id_sequence.down,
-    name: '20260703_092000_resync_episodes_id_sequence'
+    name: '20260703_092000_resync_episodes_id_sequence',
   },
   {
     up: migration_20260703_093000_add_programs_is_continue.up,
     down: migration_20260703_093000_add_programs_is_continue.down,
-    name: '20260703_093000_add_programs_is_continue'
+    name: '20260703_093000_add_programs_is_continue',
   },
   {
     up: migration_20260703_094000_resync_seasons_and_episodes_id_sequences.up,
     down: migration_20260703_094000_resync_seasons_and_episodes_id_sequences.down,
-    name: '20260703_094000_resync_seasons_and_episodes_id_sequences'
+    name: '20260703_094000_resync_seasons_and_episodes_id_sequences',
   },
   {
     up: migration_20260705_124900_resync_media_id_sequence.up,
     down: migration_20260705_124900_resync_media_id_sequence.down,
-    name: '20260705_124900_resync_media_id_sequence'
+    name: '20260705_124900_resync_media_id_sequence',
   },
   {
     up: migration_20260705_130500_resync_videos_id_sequence.up,
     down: migration_20260705_130500_resync_videos_id_sequence.down,
-    name: '20260705_130500_resync_videos_id_sequence'
+    name: '20260705_130500_resync_videos_id_sequence',
   },
   {
     up: migration_20260706_090000_add_category_header_and_post_room.up,
     down: migration_20260706_090000_add_category_header_and_post_room.down,
-    name: '20260706_090000_add_category_header_and_post_room'
+    name: '20260706_090000_add_category_header_and_post_room',
   },
   {
     up: migration_20260706_100000_convert_category_post_room_groups.up,
     down: migration_20260706_100000_convert_category_post_room_groups.down,
-    name: '20260706_100000_convert_category_post_room_groups'
+    name: '20260706_100000_convert_category_post_room_groups',
   },
   {
     up: migration_20260901_024119_add_program_articles.up,
     down: migration_20260901_024119_add_program_articles.down,
-    name: '20260901_024119_add_program_articles'
+    name: '20260901_024119_add_program_articles',
   },
   {
     up: migration_20260901_150335_add_article_featured_hero.up,
     down: migration_20260901_150335_add_article_featured_hero.down,
-    name: '20260901_150335_add_article_featured_hero'
+    name: '20260901_150335_add_article_featured_hero',
   },
   {
     up: migration_20260908_103100_add_program_director.up,
     down: migration_20260908_103100_add_program_director.down,
-    name: '20260908_103100_add_program_director'
+    name: '20260908_103100_add_program_director',
   },
   {
     up: migration_20260908_112300_add_program_credit_english_fields.up,
     down: migration_20260908_112300_add_program_credit_english_fields.down,
-    name: '20260908_112300_add_program_credit_english_fields'
+    name: '20260908_112300_add_program_credit_english_fields',
+  },
+  {
+    up: migration_20260910_023059_add_credit_collections.up,
+    down: migration_20260910_023059_add_credit_collections.down,
+    name: '20260910_023059_add_credit_collections',
+  },
+  {
+    up: migration_20260910_023503_add_credit_permissions.up,
+    down: migration_20260910_023503_add_credit_permissions.down,
+    name: '20260910_023503_add_credit_permissions'
   },
 ];

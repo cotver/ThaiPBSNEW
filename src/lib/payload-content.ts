@@ -520,6 +520,14 @@ function programToTitle(program: Program): Title | null {
     cleanText(program.synopsisTh) ||
     cleanText(program.tags) ||
     "Watch this title from the ThaiPBS catalog.";
+  const producerFallback = cleanText(program.producerEn) || cleanText(program.producer);
+  const directorFallback = cleanText(program.directorEn) || cleanText(program.director);
+  const artistFallback = cleanText(program.artistEn) || cleanText(program.artist);
+  const writerFallback = cleanText(program.writerEn) || cleanText(program.writer);
+  const producers = creditRelationPeople(program.producers, producerFallback);
+  const directors = creditRelationPeople(program.directors, directorFallback);
+  const artists = creditRelationPeople(program.artists, artistFallback);
+  const writers = creditRelationPeople(program.writers, writerFallback);
 
   return {
     slug: program.slug,
@@ -531,10 +539,14 @@ function programToTitle(program: Program): Title | null {
     duration,
     description,
     companyProduce: cleanText(program.companyProduceEn) || cleanText(program.companyProduce) || undefined,
-    producer: cleanText(program.producerEn) || cleanText(program.producer) || undefined,
-    director: cleanText(program.directorEn) || cleanText(program.director) || undefined,
-    artist: cleanText(program.artistEn) || cleanText(program.artist) || undefined,
-    writer: cleanText(program.writerEn) || cleanText(program.writer) || undefined,
+    producer: producers.map((person) => person.name).join(", ") || undefined,
+    director: directors.map((person) => person.name).join(", ") || undefined,
+    artist: artists.map((person) => person.name).join(", ") || undefined,
+    writer: writers.map((person) => person.name).join(", ") || undefined,
+    producers: producers.length > 0 ? producers : undefined,
+    directors: directors.length > 0 ? directors : undefined,
+    artists: artists.length > 0 ? artists : undefined,
+    writers: writers.length > 0 ? writers : undefined,
     categoryNames: relationNames((program as { categories?: unknown }).categories),
     categorySlugs: relationSlugs((program as { categories?: unknown }).categories),
     progress: program.isNewHits ? "38%" : undefined,
@@ -990,6 +1002,35 @@ function relationNames(value: unknown): string[] {
       return cleanText(record.name) || cleanText(record.title) || cleanText(record.slug);
     })
     .filter(Boolean);
+}
+
+function creditRelationPeople(value: unknown, fallback: string): NonNullable<Title["producers"]> {
+  const items = Array.isArray(value) ? value : value == null ? [] : [value];
+  const people = items
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+
+      const record = item as { image?: unknown; name?: unknown; nameEn?: unknown; nameTh?: unknown };
+      const name = cleanText(record.nameEn) || cleanText(record.nameTh) || cleanText(record.name);
+
+      if (!name) {
+        return null;
+      }
+
+      const imageRecord = record.image && typeof record.image === "object"
+        ? record.image as { url?: unknown }
+        : null;
+      const image = cleanText(imageRecord?.url);
+
+      return { image: image || undefined, name };
+    })
+    .filter((person): person is { image: string | undefined; name: string } => Boolean(person));
+
+  const uniquePeople = [...new Map(people.map((person) => [person.name, person])).values()];
+
+  return uniquePeople.length > 0 ? uniquePeople : fallback ? [{ name: fallback }] : [];
 }
 
 function relationSlugs(value: unknown): string[] {

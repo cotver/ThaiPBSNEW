@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { Title, TitleEpisode, TitleSeason } from "@/lib/content";
+import type { Title, TitleCredit, TitleEpisode, TitleSeason } from "@/lib/content";
 import { ENABLE_TITLE_PLAYBACK } from "@/lib/features";
 import { DiscontinuedBadge } from "./DiscontinuedBadge";
 
@@ -808,33 +808,91 @@ function formatVideoTime(secondsLike: number): string {
 }
 
 function DetailsPanel({ title }: { title: Title }) {
+  const creditRows = [
+    { label: "Producer", people: title.producers ?? textCreditFallback(title.producer) },
+    { label: "Director", people: title.directors ?? textCreditFallback(title.director) },
+    { label: "Artist", people: title.artists ?? textCreditFallback(title.artist) },
+    { label: "Writer", people: title.writers ?? textCreditFallback(title.writer) },
+  ].filter((row) => row.people.length > 0);
+
   return (
-    <section className="grid gap-6 text-sm md:grid-cols-[1.4fr_1fr]">
-      <div>
-        <h2 className="text-sm font-black uppercase tracking-[0.18em] text-white/42">About</h2>
-        <p className="mt-3 leading-7 text-white/70">{title.description}</p>
+    <section className="space-y-9 text-sm">
+      <div className="grid gap-6 md:grid-cols-[1.4fr_1fr]">
+        <div>
+          <h2 className="text-sm font-black uppercase tracking-[0.18em] text-white/42">About</h2>
+          <p className="mt-3 leading-7 text-white/70">{title.description}</p>
+        </div>
+        <dl className="grid grid-cols-2 gap-x-5 gap-y-4 md:grid-cols-1">
+          {title.isDiscontinued ? (
+            <div>
+              <dt className="text-xs font-black uppercase tracking-[0.16em] text-white/34">Status</dt>
+              <dd className="mt-2">
+                <DiscontinuedBadge />
+              </dd>
+            </div>
+          ) : null}
+          <Meta label="Type" value={title.type} />
+          <Meta label="Genre" value={title.genre} />
+          <Meta label="Released" value={title.year} />
+          <Meta label="Rating" value={title.rating} />
+          {title.companyProduce?.trim() ? <Meta label="Company produce" value={title.companyProduce.trim()} /> : null}
+        </dl>
       </div>
-      <dl className="grid grid-cols-2 gap-x-5 gap-y-4 md:grid-cols-1">
-        {title.isDiscontinued ? (
-          <div>
-            <dt className="text-xs font-black uppercase tracking-[0.16em] text-white/34">Status</dt>
-            <dd className="mt-2">
-              <DiscontinuedBadge />
-            </dd>
-          </div>
-        ) : null}
-        <Meta label="Type" value={title.type} />
-        <Meta label="Genre" value={title.genre} />
-        <Meta label="Released" value={title.year} />
-        <Meta label="Rating" value={title.rating} />
-        {title.companyProduce?.trim() ? <Meta label="Company produce" value={title.companyProduce.trim()} /> : null}
-        {title.producer?.trim() ? <Meta label="Producer" value={title.producer.trim()} /> : null}
-        {title.director?.trim() ? <Meta label="Director" value={title.director.trim()} /> : null}
-        {title.artist?.trim() ? <Meta label="Artist" value={title.artist.trim()} /> : null}
-        {title.writer?.trim() ? <Meta label="Writer" value={title.writer.trim()} /> : null}
-      </dl>
+
+      {creditRows.length > 0 ? (
+        <div className="space-y-8 border-t border-white/10 pt-8">
+          {creditRows.map((row) => (
+            <CreditRow key={row.label} label={row.label} people={row.people} />
+          ))}
+        </div>
+      ) : null}
     </section>
   );
+}
+
+function textCreditFallback(value?: string): TitleCredit[] {
+  const name = value?.trim();
+  return name ? [{ name }] : [];
+}
+
+function CreditRow({ label, people }: { label: string; people: TitleCredit[] }) {
+  return (
+    <section aria-labelledby={`credit-${label.toLowerCase()}`}>
+      <h3
+        className="text-xs font-black uppercase tracking-[0.18em] text-white/42"
+        id={`credit-${label.toLowerCase()}`}
+      >
+        {label}
+      </h3>
+      <ul className="mt-4 flex list-none flex-wrap gap-x-5 gap-y-6">
+        {people.map((person, index) => (
+          <li className="w-24 text-center" key={`${person.name}-${index}`}>
+            <div className="relative mx-auto grid size-20 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-cyan-300/35 via-blue-500/25 to-violet-500/35 ring-1 ring-white/15">
+              {person.image ? (
+                <Image
+                  alt={person.name}
+                  className="object-cover"
+                  fill
+                  sizes="80px"
+                  src={person.image}
+                />
+              ) : (
+                <span className="text-lg font-black text-white/80">{creditInitials(person.name)}</span>
+              )}
+            </div>
+            <p className="mt-2 line-clamp-2 text-xs font-semibold leading-5 text-white/78">{person.name}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function creditInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return [...parts[0]].slice(0, 2).join("").toUpperCase();
+  return `${[...parts[0]][0] ?? ""}${[...parts[parts.length - 1]][0] ?? ""}`.toUpperCase();
 }
 
 function seasonLabel(season: TitleSeason) {

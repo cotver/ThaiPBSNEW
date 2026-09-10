@@ -13,6 +13,10 @@ export type Title = {
   director?: string;
   artist?: string;
   writer?: string;
+  producers?: TitleCredit[];
+  directors?: TitleCredit[];
+  artists?: TitleCredit[];
+  writers?: TitleCredit[];
   categoryNames?: string[];
   categorySlugs?: string[];
   progress?: string;
@@ -35,6 +39,11 @@ export type Title = {
   trailerMimeType?: string;
   trailerUrl?: string;
   typeSlugs?: string[];
+};
+
+export type TitleCredit = {
+  image?: string;
+  name: string;
 };
 
 export type TitleEpisode = {

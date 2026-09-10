@@ -84,6 +84,10 @@ export interface Config {
     subGenres: SubGenre;
     heroImages: HeroImage;
     programs: Program;
+    producers: Producer;
+    directors: Director;
+    artists: Artist;
+    writers: Writer;
     vipaPrograms: VipaProgram;
     seasons: Season;
     episodes: Episode;
@@ -96,6 +100,18 @@ export interface Config {
   collectionsJoins: {
     programs: {
       articles: 'articles';
+    };
+    producers: {
+      programs: 'programs';
+    };
+    directors: {
+      programs: 'programs';
+    };
+    artists: {
+      programs: 'programs';
+    };
+    writers: {
+      programs: 'programs';
     };
   };
   collectionsSelect: {
@@ -116,6 +132,10 @@ export interface Config {
     subGenres: SubGenresSelect<false> | SubGenresSelect<true>;
     heroImages: HeroImagesSelect<false> | HeroImagesSelect<true>;
     programs: ProgramsSelect<false> | ProgramsSelect<true>;
+    producers: ProducersSelect<false> | ProducersSelect<true>;
+    directors: DirectorsSelect<false> | DirectorsSelect<true>;
+    artists: ArtistsSelect<false> | ArtistsSelect<true>;
+    writers: WritersSelect<false> | WritersSelect<true>;
     vipaPrograms: VipaProgramsSelect<false> | VipaProgramsSelect<true>;
     seasons: SeasonsSelect<false> | SeasonsSelect<true>;
     episodes: EpisodesSelect<false> | EpisodesSelect<true>;
@@ -348,6 +368,10 @@ export interface User {
               | 'synopsisEn'
               | 'companyProduce'
               | 'companyProduceEn'
+              | 'producers'
+              | 'directors'
+              | 'artists'
+              | 'writers'
               | 'producer'
               | 'producerEn'
               | 'director'
@@ -817,6 +841,10 @@ export interface RoleProfile {
               | 'synopsisEn'
               | 'companyProduce'
               | 'companyProduceEn'
+              | 'producers'
+              | 'directors'
+              | 'artists'
+              | 'writers'
               | 'producer'
               | 'producerEn'
               | 'director'
@@ -1285,6 +1313,10 @@ export interface UserGroup {
               | 'synopsisEn'
               | 'companyProduce'
               | 'companyProduceEn'
+              | 'producers'
+              | 'directors'
+              | 'artists'
+              | 'writers'
               | 'producer'
               | 'producerEn'
               | 'director'
@@ -1625,35 +1657,51 @@ export interface Program {
    */
   companyProduceEn?: string | null;
   /**
-   * Producer (Thai)
+   * Producers
+   */
+  producers?: (number | Producer)[] | null;
+  /**
+   * Directors
+   */
+  directors?: (number | Director)[] | null;
+  /**
+   * Artists
+   */
+  artists?: (number | Artist)[] | null;
+  /**
+   * Writers
+   */
+  writers?: (number | Writer)[] | null;
+  /**
+   * Producer (Thai) (Text)
    */
   producer?: string | null;
   /**
-   * Producer (English)
+   * Producer (English) (Text)
    */
   producerEn?: string | null;
   /**
-   * Director (Thai)
+   * Director (Thai) (Text)
    */
   director?: string | null;
   /**
-   * Director (English)
+   * Director (English) (Text)
    */
   directorEn?: string | null;
   /**
-   * Artist (Thai)
+   * Artist (Thai) (Text)
    */
   artist?: string | null;
   /**
-   * Artist (English)
+   * Artist (English) (Text)
    */
   artistEn?: string | null;
   /**
-   * Writer (Thai)
+   * Writer (Thai) (Text)
    */
   writer?: string | null;
   /**
-   * Writer (English)
+   * Writer (English) (Text)
    */
   writerEn?: string | null;
   /**
@@ -2109,6 +2157,154 @@ export interface Video {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+}
+/**
+ * Producers that can be related to multiple programs.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "producers".
+ */
+export interface Producer {
+  id: number;
+  /**
+   * Producer image
+   */
+  image?: (number | null) | Media;
+  /**
+   * Computed from English name, falling back to Thai name.
+   */
+  name: string;
+  /**
+   * Producer name in Thai
+   */
+  nameTh?: string | null;
+  /**
+   * Producer name in English
+   */
+  nameEn?: string | null;
+  descriptionTh?: string | null;
+  descriptionEn?: string | null;
+  /**
+   * Programs related to this producer.
+   */
+  programs?: {
+    docs?: (number | Program)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Directors that can be related to multiple programs.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "directors".
+ */
+export interface Director {
+  id: number;
+  /**
+   * Director image
+   */
+  image?: (number | null) | Media;
+  /**
+   * Computed from English name, falling back to Thai name.
+   */
+  name: string;
+  /**
+   * Director name in Thai
+   */
+  nameTh?: string | null;
+  /**
+   * Director name in English
+   */
+  nameEn?: string | null;
+  descriptionTh?: string | null;
+  descriptionEn?: string | null;
+  /**
+   * Programs related to this director.
+   */
+  programs?: {
+    docs?: (number | Program)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Artists that can be related to multiple programs.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "artists".
+ */
+export interface Artist {
+  id: number;
+  /**
+   * Artist image
+   */
+  image?: (number | null) | Media;
+  /**
+   * Computed from English name, falling back to Thai name.
+   */
+  name: string;
+  /**
+   * Artist name in Thai
+   */
+  nameTh?: string | null;
+  /**
+   * Artist name in English
+   */
+  nameEn?: string | null;
+  descriptionTh?: string | null;
+  descriptionEn?: string | null;
+  /**
+   * Programs related to this artist.
+   */
+  programs?: {
+    docs?: (number | Program)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Writers that can be related to multiple programs.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "writers".
+ */
+export interface Writer {
+  id: number;
+  /**
+   * Writer image
+   */
+  image?: (number | null) | Media;
+  /**
+   * Computed from English name, falling back to Thai name.
+   */
+  name: string;
+  /**
+   * Writer name in Thai
+   */
+  nameTh?: string | null;
+  /**
+   * Writer name in English
+   */
+  nameEn?: string | null;
+  descriptionTh?: string | null;
+  descriptionEn?: string | null;
+  /**
+   * Programs related to this writer.
+   */
+  programs?: {
+    docs?: (number | Program)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * Reusable genre names for programs.
@@ -3112,6 +3308,22 @@ export interface PayloadLockedDocument {
         value: number | Program;
       } | null)
     | ({
+        relationTo: 'producers';
+        value: number | Producer;
+      } | null)
+    | ({
+        relationTo: 'directors';
+        value: number | Director;
+      } | null)
+    | ({
+        relationTo: 'artists';
+        value: number | Artist;
+      } | null)
+    | ({
+        relationTo: 'writers';
+        value: number | Writer;
+      } | null)
+    | ({
         relationTo: 'vipaPrograms';
         value: number | VipaProgram;
       } | null)
@@ -3548,6 +3760,10 @@ export interface ProgramsSelect<T extends boolean = true> {
   synopsisEn?: T;
   companyProduce?: T;
   companyProduceEn?: T;
+  producers?: T;
+  directors?: T;
+  artists?: T;
+  writers?: T;
   producer?: T;
   producerEn?: T;
   director?: T;
@@ -3628,6 +3844,66 @@ export interface ProgramsSelect<T extends boolean = true> {
   asset_update?: T;
   seasons?: T;
   articles?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "producers_select".
+ */
+export interface ProducersSelect<T extends boolean = true> {
+  image?: T;
+  name?: T;
+  nameTh?: T;
+  nameEn?: T;
+  descriptionTh?: T;
+  descriptionEn?: T;
+  programs?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "directors_select".
+ */
+export interface DirectorsSelect<T extends boolean = true> {
+  image?: T;
+  name?: T;
+  nameTh?: T;
+  nameEn?: T;
+  descriptionTh?: T;
+  descriptionEn?: T;
+  programs?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "artists_select".
+ */
+export interface ArtistsSelect<T extends boolean = true> {
+  image?: T;
+  name?: T;
+  nameTh?: T;
+  nameEn?: T;
+  descriptionTh?: T;
+  descriptionEn?: T;
+  programs?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "writers_select".
+ */
+export interface WritersSelect<T extends boolean = true> {
+  image?: T;
+  name?: T;
+  nameTh?: T;
+  nameEn?: T;
+  descriptionTh?: T;
+  descriptionEn?: T;
+  programs?: T;
   updatedAt?: T;
   createdAt?: T;
 }

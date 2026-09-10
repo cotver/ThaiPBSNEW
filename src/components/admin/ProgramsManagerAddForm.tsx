@@ -133,6 +133,10 @@ export type EditInitialData = {
   seasons: Array<Record<string, unknown> & { episodes?: Record<string, unknown>[] }>
 }
 
+function getApiBase(): string {
+  return getPayloadApiBase()
+}
+
 function makeKey(): string {
   // Stable key for React list rendering + reordering.
   // Avoid index keys so input state doesn't "jump" when reordering.
@@ -1109,6 +1113,13 @@ type SubGenreDoc = {
   name?: string
   slug?: string
   genre?: number | GenreDoc | null
+}
+
+type CreditDoc = {
+  id: number
+  name?: string
+  nameTh?: string
+  nameEn?: string
 }
 
 export type AwardOption = {
@@ -2897,6 +2908,10 @@ export function ProgramsManagerAddForm(props?: {
   const [synopsisEn, setSynopsisEn] = useState('')
   const [companyProduce, setCompanyProduce] = useState('')
   const [companyProduceEn, setCompanyProduceEn] = useState('')
+  const [producers, setProducers] = useState<number[]>([])
+  const [directors, setDirectors] = useState<number[]>([])
+  const [artists, setArtists] = useState<number[]>([])
+  const [writers, setWriters] = useState<number[]>([])
   const [producer, setProducer] = useState('')
   const [producerEn, setProducerEn] = useState('')
   const [director, setDirector] = useState('')
@@ -2973,6 +2988,10 @@ export function ProgramsManagerAddForm(props?: {
   const [categoryOptions, setCategoryOptions] = useState<CategoryDoc[]>([])
   const [genreOptions, setGenreOptions] = useState<GenreDoc[]>([])
   const [subGenreOptions, setSubGenreOptions] = useState<SubGenreDoc[]>([])
+  const [producerOptions, setProducerOptions] = useState<CreditDoc[]>([])
+  const [directorOptions, setDirectorOptions] = useState<CreditDoc[]>([])
+  const [artistOptions, setArtistOptions] = useState<CreditDoc[]>([])
+  const [writerOptions, setWriterOptions] = useState<CreditDoc[]>([])
   const [awardOptions, setAwardOptions] = useState<AwardOption[]>(initialAwardOptions)
   const [viewsHelperOpen, setViewsHelperOpen] = useState(false)
 
@@ -3085,6 +3104,43 @@ export function ProgramsManagerAddForm(props?: {
       .catch(() => {})
   }, [initialAwardOptions])
 
+  React.useEffect(() => {
+    const base = getApiBase()
+    if (!base) return
+
+    const loadCredits = async (collection: string): Promise<CreditDoc[]> => {
+      const response = await fetch(`${base}/${collection}?limit=500&depth=0&sort=name`, {
+        credentials: 'include',
+      })
+      if (!response.ok) return []
+      const data = await response.json()
+      const docs = (data?.docs ?? []) as unknown
+      if (!Array.isArray(docs)) return []
+      return docs
+        .map((doc) => ({
+          id: Number((doc as { id?: unknown }).id),
+          name: String((doc as { name?: unknown }).name ?? '').trim() || undefined,
+          nameTh: String((doc as { nameTh?: unknown }).nameTh ?? '').trim() || undefined,
+          nameEn: String((doc as { nameEn?: unknown }).nameEn ?? '').trim() || undefined,
+        }))
+        .filter((doc) => Number.isFinite(doc.id) && doc.id > 0)
+    }
+
+    Promise.all([
+      loadCredits('producers'),
+      loadCredits('directors'),
+      loadCredits('artists'),
+      loadCredits('writers'),
+    ])
+      .then(([nextProducers, nextDirectors, nextArtists, nextWriters]) => {
+        setProducerOptions(nextProducers)
+        setDirectorOptions(nextDirectors)
+        setArtistOptions(nextArtists)
+        setWriterOptions(nextWriters)
+      })
+      .catch(() => {})
+  }, [])
+
   const toggleSeasonCollapsed = (seasonKey: string) => {
     setCollapsedSeasons((prev) => {
       const next = new Set(prev)
@@ -3157,6 +3213,10 @@ export function ProgramsManagerAddForm(props?: {
     setSynopsisEn(String(p.synopsisEn ?? ''))
     setCompanyProduce(String(p.companyProduce ?? ''))
     setCompanyProduceEn(String(p.companyProduceEn ?? ''))
+    setProducers(relationIds((p as { producers?: unknown }).producers))
+    setDirectors(relationIds((p as { directors?: unknown }).directors))
+    setArtists(relationIds((p as { artists?: unknown }).artists))
+    setWriters(relationIds((p as { writers?: unknown }).writers))
     setProducer(String(p.producer ?? ''))
     setProducerEn(String(p.producerEn ?? ''))
     setDirector(String(p.director ?? ''))
@@ -3312,10 +3372,6 @@ export function ProgramsManagerAddForm(props?: {
     }
     setLoadedEdit(true)
   }, [isEdit, initialData, loadedEdit])
-
-  const getApiBase = () => {
-    return getPayloadApiBase()
-  }
 
   const bulkAddMax = 1000
 
@@ -3748,6 +3804,10 @@ export function ProgramsManagerAddForm(props?: {
             synopsisEn: synopsisEn.trim() || null,
             companyProduce: companyProduce.trim() || null,
             companyProduceEn: companyProduceEn.trim() || null,
+            producers,
+            directors,
+            artists,
+            writers,
             producer: producer.trim() || null,
             producerEn: producerEn.trim() || null,
             director: director.trim() || null,
@@ -4017,6 +4077,10 @@ export function ProgramsManagerAddForm(props?: {
           synopsisEn: synopsisEn.trim() || null,
           companyProduce: companyProduce.trim() || null,
           companyProduceEn: companyProduceEn.trim() || null,
+          producers,
+          directors,
+          artists,
+          writers,
           producer: producer.trim() || null,
           producerEn: producerEn.trim() || null,
           director: director.trim() || null,
@@ -4212,6 +4276,10 @@ export function ProgramsManagerAddForm(props?: {
       setSynopsisEn('')
       setCompanyProduce('')
       setCompanyProduceEn('')
+      setProducers([])
+      setDirectors([])
+      setArtists([])
+      setWriters([])
       setProducer('')
       setProducerEn('')
       setDirector('')
@@ -5037,74 +5105,114 @@ export function ProgramsManagerAddForm(props?: {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{L('producer', 'Producer (Thai)')}</label>
+                <label className="block text-sm font-medium mb-1">{L('producers', 'Producers')}</label>
+                <TaxonomyMultiDropdown
+                  emptyLabel="Select producers..."
+                  noOptionsLabel="No producers yet"
+                  options={producerOptions}
+                  value={producers}
+                  onChange={setProducers}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{L('directors', 'Directors')}</label>
+                <TaxonomyMultiDropdown
+                  emptyLabel="Select directors..."
+                  noOptionsLabel="No directors yet"
+                  options={directorOptions}
+                  value={directors}
+                  onChange={setDirectors}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{L('artists', 'Artists')}</label>
+                <TaxonomyMultiDropdown
+                  emptyLabel="Select artists..."
+                  noOptionsLabel="No artists yet"
+                  options={artistOptions}
+                  value={artists}
+                  onChange={setArtists}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{L('writers', 'Writers')}</label>
+                <TaxonomyMultiDropdown
+                  emptyLabel="Select writers..."
+                  noOptionsLabel="No writers yet"
+                  options={writerOptions}
+                  value={writers}
+                  onChange={setWriters}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{L('producer', 'Producer (Thai) (Text)')}</label>
                 <input
                   type="text"
                   value={producer}
-                  onChange={(e) => setProducer(e.target.value)}
+                  onChange={(event) => setProducer(event.target.value)}
                   className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{L('producerEn', 'Producer (English)')}</label>
+                <label className="block text-sm font-medium mb-1">{L('producerEn', 'Producer (English) (Text)')}</label>
                 <input
                   type="text"
                   value={producerEn}
-                  onChange={(e) => setProducerEn(e.target.value)}
+                  onChange={(event) => setProducerEn(event.target.value)}
                   className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{L('director', 'Director (Thai)')}</label>
+                <label className="block text-sm font-medium mb-1">{L('director', 'Director (Thai) (Text)')}</label>
                 <input
                   type="text"
                   value={director}
-                  onChange={(e) => setDirector(e.target.value)}
+                  onChange={(event) => setDirector(event.target.value)}
                   className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{L('directorEn', 'Director (English)')}</label>
+                <label className="block text-sm font-medium mb-1">{L('directorEn', 'Director (English) (Text)')}</label>
                 <input
                   type="text"
                   value={directorEn}
-                  onChange={(e) => setDirectorEn(e.target.value)}
+                  onChange={(event) => setDirectorEn(event.target.value)}
                   className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{L('artist', 'Artist (Thai)')}</label>
+                <label className="block text-sm font-medium mb-1">{L('artist', 'Artist (Thai) (Text)')}</label>
                 <input
                   type="text"
                   value={artist}
-                  onChange={(e) => setArtist(e.target.value)}
+                  onChange={(event) => setArtist(event.target.value)}
                   className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{L('artistEn', 'Artist (English)')}</label>
+                <label className="block text-sm font-medium mb-1">{L('artistEn', 'Artist (English) (Text)')}</label>
                 <input
                   type="text"
                   value={artistEn}
-                  onChange={(e) => setArtistEn(e.target.value)}
+                  onChange={(event) => setArtistEn(event.target.value)}
                   className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{L('writer', 'Writer (Thai)')}</label>
+                <label className="block text-sm font-medium mb-1">{L('writer', 'Writer (Thai) (Text)')}</label>
                 <input
                   type="text"
                   value={writer}
-                  onChange={(e) => setWriter(e.target.value)}
+                  onChange={(event) => setWriter(event.target.value)}
                   className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{L('writerEn', 'Writer (English)')}</label>
+                <label className="block text-sm font-medium mb-1">{L('writerEn', 'Writer (English) (Text)')}</label>
                 <input
                   type="text"
                   value={writerEn}
-                  onChange={(e) => setWriterEn(e.target.value)}
+                  onChange={(event) => setWriterEn(event.target.value)}
                   className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
                 />
               </div>

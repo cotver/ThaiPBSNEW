@@ -48,8 +48,27 @@ function formatRelationshipValue(value: unknown): string {
     .map((item) => {
       if (typeof item === 'number' || typeof item === 'string') return String(item)
       if (item && typeof item === 'object') {
-        const record = item as { name?: unknown; title?: unknown; slug?: unknown }
-        return String(record.name ?? record.title ?? record.slug ?? '').trim()
+        const record = item as {
+          _displayTitle?: unknown
+          name?: unknown
+          nameEn?: unknown
+          nameTh?: unknown
+          slug?: unknown
+          title?: unknown
+          titleEn?: unknown
+          titleTh?: unknown
+        }
+        return String(
+          record.name ??
+          record.nameEn ??
+          record.nameTh ??
+          record._displayTitle ??
+          record.title ??
+          record.titleEn ??
+          record.titleTh ??
+          record.slug ??
+          '',
+        ).trim()
       }
       return ''
     })
@@ -283,7 +302,14 @@ export function ProgramsManagerListTable({
       )
     }
     const raw = program[columnId]
-    if (columnId === 'genre' || columnId === 'genre_sub') {
+    if (
+      columnId === 'genre' ||
+      columnId === 'genre_sub' ||
+      columnId === 'producers' ||
+      columnId === 'directors' ||
+      columnId === 'artists' ||
+      columnId === 'writers'
+    ) {
       const str = formatRelationshipValue(raw)
       return (
         <td className="p-3 align-middle text-sm max-w-[220px] truncate" key={columnId} title={str.length > 50 ? str : undefined}>
