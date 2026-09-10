@@ -1,6 +1,7 @@
 import { BrandTiles } from "@/components/BrandTiles";
 import { ContentRow } from "@/components/ContentRow";
 import { HeroCarousel } from "@/components/HeroCarousel";
+import { StudiosShowcase } from "@/components/StudiosShowcase";
 import { hiddenCatalogSectionsEnabled } from "@/lib/feature-flags";
 import { getCatalogCollections, getCategoryTiles } from "@/lib/payload-content";
 import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
@@ -58,6 +59,7 @@ export default async function HomePage() {
           </>
         ) : null}
       </section>
+      <StudiosShowcase />
     </>
   );
 }

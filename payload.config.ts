@@ -33,6 +33,7 @@ import { VipaPrograms } from './collections/VipaPrograms.ts'
 import { Seasons } from './collections/Seasons.ts'
 import { Episodes } from './collections/Episodes.ts'
 import { Articles } from './collections/Articles.ts'
+import { columnCollections } from './collections/ColumnCollections.ts'
 
 const payloadDatabaseUrl = process.env.PAYLOAD_DATABASE_URL || process.env.DATABASE_URL || ''
 const payloadDbSchema = process.env.PAYLOAD_DB_SCHEMA || 'payload'
@@ -131,6 +132,7 @@ export default buildConfig({
       Seasons,
       Episodes,
       Articles,
+      ...columnCollections,
     ]),
   ),
 

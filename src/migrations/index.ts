@@ -25,6 +25,10 @@ import * as migration_20260908_112300_add_program_credit_english_fields from './
 import * as migration_20260910_023059_add_credit_collections from './20260910_023059_add_credit_collections';
 import * as migration_20260910_023503_add_credit_permissions from './20260910_023503_add_credit_permissions';
 import * as migration_20260910_041500_add_editor_role from './20260910_041500_add_editor_role';
+import * as migration_20260910_073652_add_bilingual_column_content from './20260910_073652_add_bilingual_column_content';
+import * as migration_20260910_152421_add_column_article_feature_fields from './20260910_152421_add_column_article_feature_fields';
+import * as migration_20260910_153102_add_column_article_promotion_fields from './20260910_153102_add_column_article_promotion_fields';
+import * as migration_20260910_153459_add_column_article_markets_and_events from './20260910_153459_add_column_article_markets_and_events';
 
 export const migrations = [
   {
@@ -155,11 +159,31 @@ export const migrations = [
   {
     up: migration_20260910_023503_add_credit_permissions.up,
     down: migration_20260910_023503_add_credit_permissions.down,
-    name: '20260910_023503_add_credit_permissions'
+    name: '20260910_023503_add_credit_permissions',
   },
   {
     up: migration_20260910_041500_add_editor_role.up,
     down: migration_20260910_041500_add_editor_role.down,
     name: '20260910_041500_add_editor_role',
+  },
+  {
+    up: migration_20260910_073652_add_bilingual_column_content.up,
+    down: migration_20260910_073652_add_bilingual_column_content.down,
+    name: '20260910_073652_add_bilingual_column_content'
+  },
+  {
+    up: migration_20260910_152421_add_column_article_feature_fields.up,
+    down: migration_20260910_152421_add_column_article_feature_fields.down,
+    name: '20260910_152421_add_column_article_feature_fields',
+  },
+  {
+    up: migration_20260910_153102_add_column_article_promotion_fields.up,
+    down: migration_20260910_153102_add_column_article_promotion_fields.down,
+    name: '20260910_153102_add_column_article_promotion_fields',
+  },
+  {
+    up: migration_20260910_153459_add_column_article_markets_and_events.up,
+    down: migration_20260910_153459_add_column_article_markets_and_events.down,
+    name: '20260910_153459_add_column_article_markets_and_events',
   },
 ];

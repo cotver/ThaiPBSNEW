@@ -89,6 +89,10 @@ export function finalArticleHref(slug: string) {
   return `/prototype/final/article/${encodeURIComponent(slug)}`;
 }
 
+export function columnArticleHref(slug: string) {
+  return `/article/${encodeURIComponent(slug)}`;
+}
+
 export function titleEyebrow(title: Title) {
   if (title.eyebrow) {
     return title.eyebrow;

@@ -92,6 +92,15 @@ export interface Config {
     seasons: Season;
     episodes: Episode;
     articles: Article;
+    'column-articles': ColumnArticle;
+    'column-analytics-events': ColumnAnalyticsEvent;
+    'column-article-stats': ColumnArticleStat;
+    'column-categories': ColumnCategory;
+    'column-subcategories': ColumnSubcategory;
+    'column-tags': ColumnTag;
+    'column-authors': ColumnAuthor;
+    'column-media': ColumnMedia;
+    'column-videos': ColumnVideo;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -112,6 +121,9 @@ export interface Config {
     };
     writers: {
       programs: 'programs';
+    };
+    'column-videos': {
+      articles: 'column-articles';
     };
   };
   collectionsSelect: {
@@ -140,6 +152,15 @@ export interface Config {
     seasons: SeasonsSelect<false> | SeasonsSelect<true>;
     episodes: EpisodesSelect<false> | EpisodesSelect<true>;
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
+    'column-articles': ColumnArticlesSelect<false> | ColumnArticlesSelect<true>;
+    'column-analytics-events': ColumnAnalyticsEventsSelect<false> | ColumnAnalyticsEventsSelect<true>;
+    'column-article-stats': ColumnArticleStatsSelect<false> | ColumnArticleStatsSelect<true>;
+    'column-categories': ColumnCategoriesSelect<false> | ColumnCategoriesSelect<true>;
+    'column-subcategories': ColumnSubcategoriesSelect<false> | ColumnSubcategoriesSelect<true>;
+    'column-tags': ColumnTagsSelect<false> | ColumnTagsSelect<true>;
+    'column-authors': ColumnAuthorsSelect<false> | ColumnAuthorsSelect<true>;
+    'column-media': ColumnMediaSelect<false> | ColumnMediaSelect<true>;
+    'column-videos': ColumnVideosSelect<false> | ColumnVideosSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -186,9 +207,9 @@ export interface UserAuthOperations {
 export interface User {
   id: number;
   /**
-   * Editors can manage all collections in the Programs sidebar group. Users use assigned CMS roles or groups.
+   * Editors manage Programs. Writers manage Column. Users use assigned CMS roles or groups.
    */
-  role: 'super-admin' | 'editor' | 'user';
+  role: 'super-admin' | 'editor' | 'writer' | 'user';
   /**
    * CMS-created permission roles assigned to this user.
    */
@@ -3217,6 +3238,277 @@ export interface HeroImage {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-articles".
+ */
+export interface ColumnArticle {
+  id: number;
+  titleTh: string;
+  titleEn?: string | null;
+  slug: string;
+  excerptTh?: string | null;
+  excerptEn?: string | null;
+  descriptionTh?: string | null;
+  descriptionEn?: string | null;
+  heroImages: {
+    vertical: {
+      image: number | ColumnMedia;
+      id?: string | null;
+    }[];
+    horizontal: {
+      image: number | ColumnMedia;
+      id?: string | null;
+    }[];
+  };
+  /**
+   * Videos related to this article.
+   */
+  videos?: (number | ColumnVideo)[] | null;
+  categories?: (number | ColumnCategory)[] | null;
+  subcategories?: (number | ColumnSubcategory)[] | null;
+  tags?: (number | ColumnTag)[] | null;
+  author: number | ColumnAuthor;
+  /**
+   * Mark this article as featured.
+   */
+  isFeature?: boolean | null;
+  /**
+   * Optional. Leave empty to keep this article featured indefinitely.
+   */
+  featureUntil?: string | null;
+  /**
+   * Mark this article as having new episodes.
+   */
+  isNewEpisodes?: boolean | null;
+  /**
+   * Optional. Leave empty to show New Episodes indefinitely.
+   */
+  newEpisodesUntil?: string | null;
+  /**
+   * Mark this article as coming soon.
+   */
+  comingSoon?: boolean | null;
+  comingSoonDate?: string | null;
+  /**
+   * Include this article in Press Releases.
+   */
+  isPressReleases?: boolean | null;
+  /**
+   * Include this article in Markets and Events.
+   */
+  isMarketsAndEvents?: boolean | null;
+  publishedDate?: string | null;
+  contentTh: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  contentEn?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-media".
+ */
+export interface ColumnMedia {
+  id: number;
+  alt?: string | null;
+  caption?: string | null;
+  credit?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-videos".
+ */
+export interface ColumnVideo {
+  id: number;
+  title: string;
+  /**
+   * Description of the video for accessibility.
+   */
+  alt?: string | null;
+  /**
+   * Articles that use this video.
+   */
+  articles?: {
+    docs?: (number | ColumnArticle)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-categories".
+ */
+export interface ColumnCategory {
+  id: number;
+  _order?: string | null;
+  nameTh: string;
+  nameEn?: string | null;
+  slug: string;
+  descriptionTh?: string | null;
+  descriptionEn?: string | null;
+  coverImage?: (number | null) | ColumnMedia;
+  pageStyle:
+    | 'split-image'
+    | 'full-image-cta'
+    | 'framed-image-overlay'
+    | 'poster-split'
+    | 'dark-center-cta'
+    | 'editorial-band'
+    | 'dark-line-cta'
+    | 'image-title-brand';
+  sortOrder?: number | null;
+  showInNavigation?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-subcategories".
+ */
+export interface ColumnSubcategory {
+  id: number;
+  _order?: string | null;
+  nameTh: string;
+  nameEn?: string | null;
+  category: number | ColumnCategory;
+  slug: string;
+  descriptionTh?: string | null;
+  descriptionEn?: string | null;
+  sortOrder?: number | null;
+  showInNavigation?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-tags".
+ */
+export interface ColumnTag {
+  id: number;
+  nameTh: string;
+  nameEn?: string | null;
+  slug: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-authors".
+ */
+export interface ColumnAuthor {
+  id: number;
+  nameTh: string;
+  nameEn?: string | null;
+  slug: string;
+  avatar?: (number | null) | ColumnMedia;
+  bioTh?: string | null;
+  bioEn?: string | null;
+  socialLinks?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-analytics-events".
+ */
+export interface ColumnAnalyticsEvent {
+  id: number;
+  eventType: 'article_view' | 'article_click' | 'article_like' | 'article_unlike';
+  visitorId: string;
+  sessionId?: string | null;
+  article?: (number | null) | ColumnArticle;
+  path?: string | null;
+  referrer?: string | null;
+  userAgent?: string | null;
+  consentSnapshot?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-article-stats".
+ */
+export interface ColumnArticleStat {
+  id: number;
+  article: number | ColumnArticle;
+  views?: number | null;
+  uniqueViews?: number | null;
+  clicks?: number | null;
+  uniqueClicks?: number | null;
+  likes?: number | null;
+  uniqueLikes?: number | null;
+  monthlyStats?:
+    | {
+        monthYear: string;
+        views?: number | null;
+        uniqueViews?: number | null;
+        clicks?: number | null;
+        uniqueClicks?: number | null;
+        likes?: number | null;
+        uniqueLikes?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -3338,6 +3630,42 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'articles';
         value: number | Article;
+      } | null)
+    | ({
+        relationTo: 'column-articles';
+        value: number | ColumnArticle;
+      } | null)
+    | ({
+        relationTo: 'column-analytics-events';
+        value: number | ColumnAnalyticsEvent;
+      } | null)
+    | ({
+        relationTo: 'column-article-stats';
+        value: number | ColumnArticleStat;
+      } | null)
+    | ({
+        relationTo: 'column-categories';
+        value: number | ColumnCategory;
+      } | null)
+    | ({
+        relationTo: 'column-subcategories';
+        value: number | ColumnSubcategory;
+      } | null)
+    | ({
+        relationTo: 'column-tags';
+        value: number | ColumnTag;
+      } | null)
+    | ({
+        relationTo: 'column-authors';
+        value: number | ColumnAuthor;
+      } | null)
+    | ({
+        relationTo: 'column-media';
+        value: number | ColumnMedia;
+      } | null)
+    | ({
+        relationTo: 'column-videos';
+        value: number | ColumnVideo;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -4094,6 +4422,204 @@ export interface ArticlesSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-articles_select".
+ */
+export interface ColumnArticlesSelect<T extends boolean = true> {
+  titleTh?: T;
+  titleEn?: T;
+  slug?: T;
+  excerptTh?: T;
+  excerptEn?: T;
+  descriptionTh?: T;
+  descriptionEn?: T;
+  heroImages?:
+    | T
+    | {
+        vertical?:
+          | T
+          | {
+              image?: T;
+              id?: T;
+            };
+        horizontal?:
+          | T
+          | {
+              image?: T;
+              id?: T;
+            };
+      };
+  videos?: T;
+  categories?: T;
+  subcategories?: T;
+  tags?: T;
+  author?: T;
+  isFeature?: T;
+  featureUntil?: T;
+  isNewEpisodes?: T;
+  newEpisodesUntil?: T;
+  comingSoon?: T;
+  comingSoonDate?: T;
+  isPressReleases?: T;
+  isMarketsAndEvents?: T;
+  publishedDate?: T;
+  contentTh?: T;
+  contentEn?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-analytics-events_select".
+ */
+export interface ColumnAnalyticsEventsSelect<T extends boolean = true> {
+  eventType?: T;
+  visitorId?: T;
+  sessionId?: T;
+  article?: T;
+  path?: T;
+  referrer?: T;
+  userAgent?: T;
+  consentSnapshot?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-article-stats_select".
+ */
+export interface ColumnArticleStatsSelect<T extends boolean = true> {
+  article?: T;
+  views?: T;
+  uniqueViews?: T;
+  clicks?: T;
+  uniqueClicks?: T;
+  likes?: T;
+  uniqueLikes?: T;
+  monthlyStats?:
+    | T
+    | {
+        monthYear?: T;
+        views?: T;
+        uniqueViews?: T;
+        clicks?: T;
+        uniqueClicks?: T;
+        likes?: T;
+        uniqueLikes?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-categories_select".
+ */
+export interface ColumnCategoriesSelect<T extends boolean = true> {
+  _order?: T;
+  nameTh?: T;
+  nameEn?: T;
+  slug?: T;
+  descriptionTh?: T;
+  descriptionEn?: T;
+  coverImage?: T;
+  pageStyle?: T;
+  sortOrder?: T;
+  showInNavigation?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-subcategories_select".
+ */
+export interface ColumnSubcategoriesSelect<T extends boolean = true> {
+  _order?: T;
+  nameTh?: T;
+  nameEn?: T;
+  category?: T;
+  slug?: T;
+  descriptionTh?: T;
+  descriptionEn?: T;
+  sortOrder?: T;
+  showInNavigation?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-tags_select".
+ */
+export interface ColumnTagsSelect<T extends boolean = true> {
+  nameTh?: T;
+  nameEn?: T;
+  slug?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-authors_select".
+ */
+export interface ColumnAuthorsSelect<T extends boolean = true> {
+  nameTh?: T;
+  nameEn?: T;
+  slug?: T;
+  avatar?: T;
+  bioTh?: T;
+  bioEn?: T;
+  socialLinks?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-media_select".
+ */
+export interface ColumnMediaSelect<T extends boolean = true> {
+  alt?: T;
+  caption?: T;
+  credit?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-videos_select".
+ */
+export interface ColumnVideosSelect<T extends boolean = true> {
+  title?: T;
+  alt?: T;
+  articles?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

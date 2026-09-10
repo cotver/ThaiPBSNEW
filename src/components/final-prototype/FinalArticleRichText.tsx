@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import type { Media } from "../../../payload-types";
-import { finalArticleHref, titleHref } from "@/lib/content";
+import { columnArticleHref, finalArticleHref, titleHref } from "@/lib/content";
 import { FinalArticleEmbed } from "./FinalArticleEmbed";
 
 type RichTextNode = {
@@ -134,8 +134,12 @@ function renderRelationship(node: RichTextNode, key: string): ReactNode {
 
 function renderBlock(node: RichTextNode, key: string): ReactNode {
   const fields = blockFields(node);
-  if (fields.blockType === "articleImageGroup") return <ArticleImageGroup fields={fields} key={key} />;
-  if (fields.blockType === "articleEmbed") return <FinalArticleEmbed fields={fields} key={key} />;
+  if (["articleImageGroup", "columnArticleImageGroup"].includes(cleanText(fields.blockType))) {
+    return <ArticleImageGroup fields={fields} key={key} />;
+  }
+  if (["articleEmbed", "columnArticleEmbed"].includes(cleanText(fields.blockType))) {
+    return <FinalArticleEmbed fields={fields} key={key} />;
+  }
   return null;
 }
 
@@ -179,8 +183,10 @@ function relationshipHref(value: unknown): string {
   const related = record.value && typeof record.value === "object" ? record.value as Record<string, unknown> : {};
   const slug = cleanText(related.slug);
   if (relationTo === "articles" && slug) return finalArticleHref(slug);
+  if (relationTo === "column-articles" && slug) return columnArticleHref(slug);
   if (relationTo === "programs" && slug) return titleHref(slug);
   if (relationTo === "categories" && slug) return `/category/${encodeURIComponent(slug)}`;
+  if (["column-categories", "column-subcategories"].includes(relationTo) && slug) return `/home#studio-${encodeURIComponent(slug)}`;
   return "#";
 }
 

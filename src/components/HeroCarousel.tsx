@@ -164,7 +164,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
       const video = trailerVideoRef.current;
       if (!video) return;
 
-      if (!heroInView || trailerEnded || trailerFailed) {
+      if (!heroInView || document.hidden || trailerEnded || trailerFailed) {
         video.pause();
         return;
       }
@@ -193,21 +193,26 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
       window.setTimeout(() => playTrailerVideo(), 900),
     ];
 
-    function retryWhenActive() {
-      if (document.hidden) return;
+    function syncWhenVisibilityChanges() {
       playTrailerVideo();
     }
 
-    window.addEventListener("focus", retryWhenActive);
-    document.addEventListener("visibilitychange", retryWhenActive);
+    window.addEventListener("focus", syncWhenVisibilityChanges);
+    document.addEventListener("visibilitychange", syncWhenVisibilityChanges);
 
     return () => {
       window.cancelAnimationFrame(frame);
       timers.forEach((timer) => window.clearTimeout(timer));
-      window.removeEventListener("focus", retryWhenActive);
-      document.removeEventListener("visibilitychange", retryWhenActive);
+      window.removeEventListener("focus", syncWhenVisibilityChanges);
+      document.removeEventListener("visibilitychange", syncWhenVisibilityChanges);
     };
   }, [activeTrailerIsInternal, activeTrailerUrl, heroInView, playTrailerVideo, trailerFailed]);
+
+  useEffect(() => {
+    if (!heroInView) {
+      trailerVideoRef.current?.pause();
+    }
+  }, [heroInView]);
 
   useEffect(() => {
     const hero = heroRef.current;
@@ -227,13 +232,17 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
+  const syncTrailerIframePlayback = useCallback(() => {
     const iframe = trailerIframeRef.current;
     if (!iframe?.contentWindow) return;
 
     try {
       iframe.contentWindow.postMessage(
-        JSON.stringify({ event: "command", func: heroInView && !trailerEnded ? "playVideo" : "pauseVideo", args: [] }),
+        JSON.stringify({
+          event: "command",
+          func: heroInView && !document.hidden && !trailerEnded ? "playVideo" : "pauseVideo",
+          args: [],
+        }),
         "*",
       );
       iframe.contentWindow.postMessage(
@@ -247,7 +256,14 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         );
       }
     } catch {}
-  }, [activeTrailerUrl, heroInView, trailerEnded, trailerMuted]);
+  }, [heroInView, trailerEnded, trailerMuted]);
+
+  useEffect(() => {
+    syncTrailerIframePlayback();
+    document.addEventListener("visibilitychange", syncTrailerIframePlayback);
+
+    return () => document.removeEventListener("visibilitychange", syncTrailerIframePlayback);
+  }, [activeTrailerUrl, syncTrailerIframePlayback]);
 
   useEffect(() => {
     if (!activeTrailerUrl || trailerEnded) return;
@@ -422,7 +438,10 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                 className={`absolute inset-0 h-full w-full ${
                   showInlineTrailer ? "opacity-100" : "opacity-0"
                 } transition-opacity duration-700 ease-out`}
-                onLoad={() => markTrailerLoaded(trailerUrl)}
+                onLoad={() => {
+                  markTrailerLoaded(trailerUrl);
+                  syncTrailerIframePlayback();
+                }}
                 ref={trailerIframeRef}
                 referrerPolicy="strict-origin-when-cross-origin"
                 src={`${trailerEmbedUrl}?autoplay=1&mute=${trailerMuted ? 1 : 0}&playsinline=1&rel=0&enablejsapi=1`}

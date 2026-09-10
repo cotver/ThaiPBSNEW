@@ -9,6 +9,14 @@ function resolveUploadDir(value, fallback) {
 
 const mediaDir = resolveUploadDir(process.env.PAYLOAD_MEDIA_DIR, 'payload-uploads/media')
 const videosDir = resolveUploadDir(process.env.PAYLOAD_VIDEOS_DIR, 'payload-uploads/videos')
+const columnMediaDir = resolveUploadDir(
+  process.env.PAYLOAD_COLUMN_MEDIA_DIR,
+  'payload-uploads/column-media',
+)
+const columnVideosDir = resolveUploadDir(
+  process.env.PAYLOAD_COLUMN_VIDEOS_DIR,
+  'payload-uploads/column-videos',
+)
 
 module.exports = {
   apps: [
@@ -26,6 +34,8 @@ module.exports = {
         PORT: '3008',
         PAYLOAD_MEDIA_DIR: mediaDir,
         PAYLOAD_VIDEOS_DIR: videosDir,
+        PAYLOAD_COLUMN_MEDIA_DIR: columnMediaDir,
+        PAYLOAD_COLUMN_VIDEOS_DIR: columnVideosDir,
       },
     },
   ],

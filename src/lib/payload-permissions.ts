@@ -99,7 +99,7 @@ type PermissionSource = {
 
 type PermissionUser = PermissionSource & {
   id?: number | string
-  role?: 'super-admin' | 'editor' | 'user' | null
+  role?: 'super-admin' | 'editor' | 'writer' | 'user' | null
   roles?: RelationValue[] | null
   groups?: RelationValue[] | null
 }
@@ -1055,10 +1055,11 @@ export const userPermissionFields: CollectionConfig['fields'] = [
     options: [
       { label: 'Super Admin', value: 'super-admin' },
       { label: 'Editor', value: 'editor' },
+      { label: 'Writer', value: 'writer' },
       { label: 'User', value: 'user' },
     ],
     admin: {
-      description: 'Editors can manage all collections in the Programs sidebar group. Users use assigned CMS roles or groups.',
+      description: 'Editors manage Programs. Writers manage Column. Users use assigned CMS roles or groups.',
     },
   },
   {
