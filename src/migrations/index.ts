@@ -24,6 +24,7 @@ import * as migration_20260908_103100_add_program_director from './20260908_1031
 import * as migration_20260908_112300_add_program_credit_english_fields from './20260908_112300_add_program_credit_english_fields';
 import * as migration_20260910_023059_add_credit_collections from './20260910_023059_add_credit_collections';
 import * as migration_20260910_023503_add_credit_permissions from './20260910_023503_add_credit_permissions';
+import * as migration_20260910_041500_add_editor_role from './20260910_041500_add_editor_role';
 
 export const migrations = [
   {
@@ -155,5 +156,10 @@ export const migrations = [
     up: migration_20260910_023503_add_credit_permissions.up,
     down: migration_20260910_023503_add_credit_permissions.down,
     name: '20260910_023503_add_credit_permissions'
+  },
+  {
+    up: migration_20260910_041500_add_editor_role.up,
+    down: migration_20260910_041500_add_editor_role.down,
+    name: '20260910_041500_add_editor_role',
   },
 ];

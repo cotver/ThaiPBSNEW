@@ -186,9 +186,9 @@ export interface UserAuthOperations {
 export interface User {
   id: number;
   /**
-   * Only Super Admin is built in. All other access comes from CMS roles or groups.
+   * Editors can manage all collections in the Programs sidebar group. Users use assigned CMS roles or groups.
    */
-  role: 'super-admin' | 'user';
+  role: 'super-admin' | 'editor' | 'user';
   /**
    * CMS-created permission roles assigned to this user.
    */

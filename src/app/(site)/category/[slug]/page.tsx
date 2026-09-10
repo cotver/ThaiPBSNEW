@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ContentRow } from "@/components/ContentRow";
 import { PostRoomImageGallery } from "@/components/PostRoomImageGallery";
+import { hiddenCatalogSectionsEnabled } from "@/lib/feature-flags";
 import { buildTitleCollections, getCategoryPage, type PostRoomGroupTile } from "@/lib/payload-content";
 import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
 import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
@@ -19,6 +20,7 @@ export default async function CategoryPage({
 }) {
   const { slug } = await params;
   const query = await searchParams;
+  const showHiddenCatalogSections = hiddenCatalogSectionsEnabled();
   const cookieStore = await cookies();
   const continueWatchingSlugs = parseWatchHistoryCookie(cookieStore.get(watchHistoryCookieName)?.value);
   const savedTitleSlugs = parseSavedTitlesCookie(cookieStore.get(savedTitlesCookieName)?.value);
@@ -114,52 +116,56 @@ export default async function CategoryPage({
               titles={collections.recommended}
               viewAllHref={`/browse?section=recommended&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Recommended For You`)}`}
             />
-            <ContentRow
-              layout="wide"
-              matchSourceTitles={collections.continueWatching}
-              removable
-              title="Continue Watching"
-              titles={collections.continueWatching}
-              viewAllHref={`/browse?section=continue-watching&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Continue Watching`)}`}
-            />
-            <ContentRow
-              layout="vertical"
-              matchSourceTitles={collections.continueWatching}
-              title="Continue Programs"
-              titles={collections.continuePrograms}
-              viewAllHref={`/browse?section=continue-programs&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Continue Programs`)}`}
-            />
-            <ContentRow
-              layout="vertical"
-              matchSourceTitles={collections.continueWatching}
-              title="Discontinued Programs"
-              titles={collections.discontinuedPrograms}
-              viewAllHref={`/browse?section=discontinued-programs&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Discontinued Programs`)}`}
-            />
-            {collections.yearRows.map((row) => (
-              <ContentRow
-                key={row.year}
-                layout="vertical"
-                matchSourceTitles={collections.continueWatching}
-                title={`ThaiPBS Year ${row.year}`}
-                titles={row.titles}
-                viewAllHref={`/browse?section=year&year=${encodeURIComponent(String(row.year))}&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} ThaiPBS Year ${row.year}`)}`}
-              />
-            ))}
-            <ContentRow
-              layout="vertical"
-              matchSourceTitles={collections.continueWatching}
-              title="Thai Programs"
-              titles={collections.thaiPrograms}
-              viewAllHref={`/browse?section=thai&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Thai Programs`)}`}
-            />
-            <ContentRow
-              layout="vertical"
-              matchSourceTitles={collections.continueWatching}
-              title="International Programs"
-              titles={collections.internationalPrograms}
-              viewAllHref={`/browse?section=international&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} International Programs`)}`}
-            />
+            {showHiddenCatalogSections ? (
+              <>
+                <ContentRow
+                  layout="wide"
+                  matchSourceTitles={collections.continueWatching}
+                  removable
+                  title="Continue Watching"
+                  titles={collections.continueWatching}
+                  viewAllHref={`/browse?section=continue-watching&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Continue Watching`)}`}
+                />
+                <ContentRow
+                  layout="vertical"
+                  matchSourceTitles={collections.continueWatching}
+                  title="Continue Programs"
+                  titles={collections.continuePrograms}
+                  viewAllHref={`/browse?section=continue-programs&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Continue Programs`)}`}
+                />
+                <ContentRow
+                  layout="vertical"
+                  matchSourceTitles={collections.continueWatching}
+                  title="Discontinued Programs"
+                  titles={collections.discontinuedPrograms}
+                  viewAllHref={`/browse?section=discontinued-programs&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Discontinued Programs`)}`}
+                />
+                {collections.yearRows.map((row) => (
+                  <ContentRow
+                    key={row.year}
+                    layout="vertical"
+                    matchSourceTitles={collections.continueWatching}
+                    title={`ThaiPBS Year ${row.year}`}
+                    titles={row.titles}
+                    viewAllHref={`/browse?section=year&year=${encodeURIComponent(String(row.year))}&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} ThaiPBS Year ${row.year}`)}`}
+                  />
+                ))}
+                <ContentRow
+                  layout="vertical"
+                  matchSourceTitles={collections.continueWatching}
+                  title="Thai Programs"
+                  titles={collections.thaiPrograms}
+                  viewAllHref={`/browse?section=thai&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} Thai Programs`)}`}
+                />
+                <ContentRow
+                  layout="vertical"
+                  matchSourceTitles={collections.continueWatching}
+                  title="International Programs"
+                  titles={collections.internationalPrograms}
+                  viewAllHref={`/browse?section=international&category=${encodeURIComponent(category.slug)}&label=${encodeURIComponent(`${category.name} International Programs`)}`}
+                />
+              </>
+            ) : null}
           </>
         )}
       </section>

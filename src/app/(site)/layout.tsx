@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/AppShell";
+import { watchlistNavigationEnabled } from "@/lib/feature-flags";
 import { getTypeNavItems } from "@/lib/payload-content";
 import "../globals.css";
 
@@ -19,7 +20,9 @@ export default async function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
-        <AppShell typeNavItems={typeNavItems}>{children}</AppShell>
+        <AppShell showWatchlist={watchlistNavigationEnabled()} typeNavItems={typeNavItems}>
+          {children}
+        </AppShell>
       </body>
     </html>
   );

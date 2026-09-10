@@ -30,6 +30,35 @@ export const managedCollections = [
 ] as const
 export type ManagedCollection = (typeof managedCollections)[number]
 
+export const programsGroupCollections = [
+  'media',
+  'videos',
+  'landing',
+  'trends',
+  'content',
+  'header',
+  'footer',
+  'languages',
+  'awards',
+  'categories',
+  'genres',
+  'subGenres',
+  'heroImages',
+  'programs',
+  'producers',
+  'directors',
+  'artists',
+  'writers',
+  'vipaPrograms',
+  'seasons',
+  'episodes',
+  'articles',
+] as const
+
+export function isProgramsGroupCollection(collection: string): boolean {
+  return (programsGroupCollections as readonly string[]).includes(collection)
+}
+
 export const adminPages = [
   'dashboard',
   'season-sales',
@@ -70,7 +99,7 @@ type PermissionSource = {
 
 type PermissionUser = PermissionSource & {
   id?: number | string
-  role?: 'super-admin' | 'user' | null
+  role?: 'super-admin' | 'editor' | 'user' | null
   roles?: RelationValue[] | null
   groups?: RelationValue[] | null
 }
@@ -614,6 +643,10 @@ function isSuperAdmin(context: PermissionContext): boolean {
   return context.user?.role === 'super-admin'
 }
 
+function isEditor(context: PermissionContext): boolean {
+  return context.user?.role === 'editor'
+}
+
 function isSelf(context: PermissionContext, id?: number | string | null): boolean {
   const userId = idFromRelation(context.user?.id)
   return userId != null && id != null && String(userId) === String(id)
@@ -639,6 +672,7 @@ function sourceAllowsOperation(
 function canUseCollection(context: PermissionContext, collection: ManagedCollection, operation: Operation): boolean {
   if (!context.user) return operation === 'read' && !['users', 'roleProfiles', 'userGroups'].includes(collection)
   if (isSuperAdmin(context)) return true
+  if (isEditor(context) && isProgramsGroupCollection(collection)) return true
 
   return permissionSources(context).some((source) => sourceAllowsOperation(source, collection, operation))
 }
@@ -774,6 +808,7 @@ export function canEditField(
 ): boolean {
   if (!context.user) return false
   if (isSuperAdmin(context)) return true
+  if (isEditor(context) && isProgramsGroupCollection(collection)) return true
   if (!canUseCollection(context, collection, operation)) return false
 
   return permissionSources(context).some((source) => sourceAllowsField(source, collection, field))
@@ -854,6 +889,20 @@ function isManagedCollection(slug: string): slug is ManagedCollection {
   return (managedCollections as readonly string[]).includes(slug)
 }
 
+/**
+ * Collection access is the common security boundary for REST, GraphQL, and
+ * server-side Payload operations that opt into access control. Keep the CMS
+ * authentication requirement here so newly-added collections cannot
+ * accidentally inherit Payload's permissive default write access.
+ */
+function requireCMSAuthentication(access?: Access, allowEditor = false): Access {
+  return async (args) => {
+    if (!args.req.user) return false
+    if (allowEditor && isEditor(await getPermissionContext(args.req))) return true
+    return access ? access(args) : true
+  }
+}
+
 function fieldName(field: Field): string | null {
   return 'name' in field && typeof field.name === 'string' ? field.name : null
 }
@@ -879,15 +928,29 @@ function withFieldPermission(collection: ManagedCollection, field: Field): Field
 export function withCollectionPermissions<T extends CollectionConfig[]>(collections: T): T {
   return collections.map((collection) => {
     const slug = collection.slug
-    if (!isManagedCollection(slug)) return collection
+    const isProgramsGroup = collection.admin?.group === 'Programs'
+    const securedCollection = isManagedCollection(slug)
+      ? {
+          ...collection,
+          access: {
+            ...(collection.access ?? {}),
+            ...collectionAccess(slug),
+          },
+          fields: collection.fields?.map((field) => withFieldPermission(slug, field)) ?? [],
+        }
+      : collection
 
     return {
-      ...collection,
+      ...securedCollection,
+      // Payload allows collection operations by default when access is absent.
+      // Require a CMS session for every mutation, including collections that do
+      // not participate in the granular role/field permission system above.
       access: {
-        ...(collection.access ?? {}),
-        ...collectionAccess(slug),
+        ...(securedCollection.access ?? {}),
+        create: requireCMSAuthentication(securedCollection.access?.create, isProgramsGroup),
+        update: requireCMSAuthentication(securedCollection.access?.update, isProgramsGroup),
+        delete: requireCMSAuthentication(securedCollection.access?.delete, isProgramsGroup),
       },
-      fields: collection.fields?.map((field) => withFieldPermission(slug, field)) ?? [],
     }
   }) as T
 }
@@ -896,6 +959,12 @@ export async function canViewAdminPage(req: Parameters<Access>[0]['req'], page: 
   const context = await getPermissionContext(req)
   if (!context.user) return false
   if (isSuperAdmin(context)) return true
+  if (
+    isEditor(context) &&
+    ['programs-manager', 'add-program-season-ep', 'programs-manager-edit', 'programs-detail-upload'].includes(page)
+  ) {
+    return true
+  }
 
   return permissionSources(context).some((source) => (source.allowedAdminPages ?? []).includes(page))
 }
@@ -985,10 +1054,11 @@ export const userPermissionFields: CollectionConfig['fields'] = [
     defaultValue: 'user',
     options: [
       { label: 'Super Admin', value: 'super-admin' },
+      { label: 'Editor', value: 'editor' },
       { label: 'User', value: 'user' },
     ],
     admin: {
-      description: 'Only Super Admin is built in. All other access comes from CMS roles or groups.',
+      description: 'Editors can manage all collections in the Programs sidebar group. Users use assigned CMS roles or groups.',
     },
   },
   {

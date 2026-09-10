@@ -8,15 +8,20 @@ import { navItems, type NavItem } from "@/lib/content";
 
 export function AppShell({
   children,
+  showWatchlist = false,
   typeNavItems = [],
 }: {
   children: React.ReactNode;
+  showWatchlist?: boolean;
   typeNavItems?: NavItem[];
 }) {
   const pathname = usePathname();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
-  const appNavItems = [...navItems, ...typeNavItems];
+  const appNavItems = [
+    ...navItems.filter((item) => showWatchlist || item.href !== "/watchlist"),
+    ...typeNavItems,
+  ];
 
   useEffect(() => {
     const activeElement = document.activeElement;

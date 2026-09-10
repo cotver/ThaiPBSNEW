@@ -14,6 +14,7 @@ export const Users: CollectionConfig = {
       admin: {
         useAsTitle: 'email',
         defaultColumns: ['email', 'role', 'updatedAt'],
+        hidden: ({ user }) => user?.role !== 'super-admin',
       },
       access: collectionAccess('users'),
       hooks: {

@@ -4,7 +4,10 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 import { buildConfig, type CollectionConfig } from 'payload'
 import { ArticleEmbedBlock } from './blocks/ArticleEmbedBlock.ts'
 import { ArticleImageGroupBlock } from './blocks/ArticleImageGroupBlock.ts'
-import { withCollectionPermissions } from './src/lib/payload-permissions.ts'
+import {
+  isProgramsGroupCollection,
+  withCollectionPermissions,
+} from './src/lib/payload-permissions.ts'
 import { Users } from './collections/Users.ts'
 import { RoleProfiles } from './collections/RoleProfiles.ts'
 import { UserGroups } from './collections/UserGroups.ts'
@@ -33,19 +36,17 @@ import { Articles } from './collections/Articles.ts'
 
 const payloadDatabaseUrl = process.env.PAYLOAD_DATABASE_URL || process.env.DATABASE_URL || ''
 const payloadDbSchema = process.env.PAYLOAD_DB_SCHEMA || 'payload'
-const ungroupedCollectionSlugs = new Set(['users', 'roleProfiles', 'userGroups'])
-
 const groupProgramCollections = (collections: CollectionConfig[]): CollectionConfig[] =>
   collections.map((collection) =>
-    ungroupedCollectionSlugs.has(collection.slug)
-      ? collection
-      : {
+    isProgramsGroupCollection(collection.slug)
+      ? {
           ...collection,
           admin: {
             ...collection.admin,
             group: 'Programs',
           },
-        },
+        }
+      : collection,
   )
 
 export default buildConfig({
