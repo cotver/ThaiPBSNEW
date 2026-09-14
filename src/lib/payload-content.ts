@@ -1,4 +1,4 @@
-import type { Category, Episode, HeroImage, Landing, Media, Program, Season, Video } from "../../payload-types";
+import type { Category, ColumnCategory, Episode, HeroImage, Landing, Media, Program, Season, Video } from "../../payload-types";
 import type { NavItem, Title } from "@/lib/content";
 import { getPayloadClient } from "@/lib/payload-client";
 
@@ -229,6 +229,32 @@ export async function getTypeNavItems(): Promise<NavItem[]> {
       }));
   } catch (error) {
     console.warn("Unable to load Payload categories for AppShell navigation", error);
+    return [];
+  }
+}
+
+export async function getColumnNavItems(): Promise<NavItem[]> {
+  try {
+    const payload = await getPayloadClient();
+    const result = await payload.find({
+      collection: "column-categories",
+      depth: 0,
+      limit: 100,
+      overrideAccess: true,
+      pagination: false,
+      sort: "sortOrder",
+    });
+
+    return (result.docs as ColumnCategory[])
+      .filter((category) => category.showInNavigation !== false && Boolean(category.slug))
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.id - b.id)
+      .map((category) => ({
+        href: `/studios/${encodeURIComponent(category.slug)}`,
+        icon: "film",
+        label: category.nameEn?.trim() || category.nameTh,
+      }));
+  } catch (error) {
+    console.warn("Unable to load Column categories for AppShell navigation", error);
     return [];
   }
 }

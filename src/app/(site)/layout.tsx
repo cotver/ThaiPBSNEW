@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/AppShell";
 import { watchlistNavigationEnabled } from "@/lib/feature-flags";
-import { getTypeNavItems } from "@/lib/payload-content";
+import { getColumnNavItems, getTypeNavItems } from "@/lib/payload-content";
 import "../globals.css";
 
 export const metadata: Metadata = {
@@ -15,12 +15,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const typeNavItems = await getTypeNavItems();
+  const [typeNavItems, columnNavItems] = await Promise.all([getTypeNavItems(), getColumnNavItems()]);
 
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
-        <AppShell showWatchlist={watchlistNavigationEnabled()} typeNavItems={typeNavItems}>
+        <AppShell columnNavItems={columnNavItems} showWatchlist={watchlistNavigationEnabled()} typeNavItems={typeNavItems}>
           {children}
         </AppShell>
       </body>

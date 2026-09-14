@@ -8,16 +8,21 @@ import { navItems, type NavItem } from "@/lib/content";
 
 export function AppShell({
   children,
+  columnNavItems = [],
   showWatchlist = false,
   typeNavItems = [],
 }: {
   children: React.ReactNode;
+  columnNavItems?: NavItem[];
   showWatchlist?: boolean;
   typeNavItems?: NavItem[];
 }) {
   const pathname = usePathname();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [studiosSectionState, setStudiosSectionState] = useState({ path: "", visible: false });
   const sidebarRef = useRef<HTMLElement>(null);
+  const studiosSectionVisibleRef = useRef(false);
+  const studiosSectionVisible = pathname === "/home" && studiosSectionState.path === pathname && studiosSectionState.visible;
   const appNavItems = [
     ...navItems.filter((item) => showWatchlist || item.href !== "/watchlist"),
     ...typeNavItems,
@@ -55,78 +60,180 @@ export function AppShell({
     };
   }, []);
 
+  useEffect(() => {
+    if (pathname !== "/home") return;
+
+    const studiosSection = document.querySelector('[aria-label="Thai PBS Studios"]');
+    if (!studiosSection) return;
+
+    // Cache the section's document position before the content width changes.
+    // Using this fixed scroll threshold prevents the animated reflow from
+    // moving the trigger and toggling the navigation repeatedly.
+    const sectionDocumentTop = studiosSection.getBoundingClientRect().top + window.scrollY;
+    const updateVisibility = () => {
+      const enterAt = sectionDocumentTop - window.innerHeight * 0.25;
+      const leaveAt = enterAt - Math.max(80, window.innerHeight * 0.1);
+      const current = studiosSectionVisibleRef.current;
+      const next = current ? window.scrollY >= leaveAt : window.scrollY >= enterAt;
+
+      if (next === current) return;
+
+      studiosSectionVisibleRef.current = next;
+      setStudiosSectionState({ path: pathname, visible: next });
+    };
+
+    updateVisibility();
+    window.addEventListener("scroll", updateVisibility, { passive: true });
+    window.addEventListener("resize", updateVisibility);
+
+    return () => {
+      window.removeEventListener("scroll", updateVisibility);
+      window.removeEventListener("resize", updateVisibility);
+      studiosSectionVisibleRef.current = false;
+    };
+  }, [pathname]);
+
   if (pathname === "/" || pathname === "/prototype") {
     return <main className="min-h-screen bg-black text-white">{children}</main>;
   }
 
   return (
     <main className="min-h-screen overflow-x-clip bg-[#030714] text-white">
-      <aside
-        className={`disney-sidebar fixed left-0 top-0 z-40 hidden h-screen flex-col bg-gradient-to-r from-[#030714] via-[#030714]/98 to-transparent py-7 lg:flex ${
-          sidebarExpanded ? "w-[292px]" : "w-[92px]"
+      <nav
+        aria-hidden={!studiosSectionVisible}
+        aria-label="Primary navigation"
+        inert={!studiosSectionVisible}
+        className={`fixed inset-x-0 top-0 z-40 hidden h-[76px] items-center border-b border-white/10 bg-[#030714]/95 px-5 shadow-lg shadow-black/20 backdrop-blur-xl transition-[opacity,transform] duration-500 ease-in-out lg:flex ${
+          studiosSectionVisible ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-3 opacity-0"
         }`}
+      >
+          <Link
+            aria-label="ThaiPBS Parvilions home"
+            className="mr-7 flex h-12 w-12 shrink-0 items-center justify-center"
+            href="/"
+          >
+            <Image alt="ThaiPBS Parvilions" className="h-11 w-11 object-contain" height={48} priority src="/LOGO/Logo.png" width={48} />
+          </Link>
+          <div className="flex min-w-0 flex-1 items-center">
+            <div className="flex min-w-0 max-w-full items-center gap-1 overflow-x-auto text-[12px] font-black uppercase text-white/52">
+              {appNavItems.map((item) => {
+                const active = item.href !== "/" && pathname.startsWith(item.href);
+
+                return (
+                  <Link
+                    aria-current={active ? "page" : undefined}
+                    className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-2 transition duration-200 hover:bg-white/8 hover:text-white ${active ? "bg-white/10 text-white" : ""}`}
+                    href={item.href}
+                    key={item.href}
+                  >
+                    <Icon name={item.icon} active={active} small />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+            {columnNavItems.length ? (
+              <div className="group/column relative ml-2 shrink-0 border-l border-white/10 pl-2">
+                <button
+                  aria-haspopup="true"
+                  className="flex items-center gap-2 rounded-md px-3 py-2 text-[12px] font-black uppercase text-white/52 transition duration-200 hover:bg-white/8 hover:text-white group-focus-within/column:bg-white/10"
+                  type="button"
+                >
+                  <Icon name="film" small />
+                  <span>Column</span>
+                  <svg aria-hidden="true" className="size-3 transition-transform duration-200 group-hover/column:rotate-180 group-focus-within/column:rotate-180" fill="none" viewBox="0 0 24 24">
+                    <path d="m6 9 6 6 6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                  </svg>
+                </button>
+                <div className="pointer-events-none absolute left-0 top-full z-50 min-w-56 translate-y-2 rounded-md border border-white/12 bg-[#030714]/98 p-2 opacity-0 shadow-2xl shadow-black/40 backdrop-blur-xl transition-[opacity,transform] duration-200 group-hover/column:pointer-events-auto group-hover/column:translate-y-0 group-hover/column:opacity-100 group-focus-within/column:pointer-events-auto group-focus-within/column:translate-y-0 group-focus-within/column:opacity-100">
+                  {columnNavItems.map((item) => {
+                    const active = pathname.startsWith(item.href);
+
+                    return (
+                      <Link
+                        aria-current={active ? "page" : undefined}
+                        className={`block rounded px-3 py-2 text-[11px] font-black uppercase transition hover:bg-white/10 hover:text-white ${active ? "bg-white/10 text-white" : "text-white/68"}`}
+                        href={item.href}
+                        key={item.href}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </nav>
+
+      <aside
+        aria-hidden={studiosSectionVisible}
+        className={`disney-sidebar fixed left-0 top-0 z-40 hidden h-screen flex-col bg-gradient-to-r from-[#030714] via-[#030714]/98 to-transparent py-7 transition-[width,opacity,transform] duration-500 ease-in-out lg:flex ${
+          sidebarExpanded ? "w-[292px]" : "w-[92px]"
+        } ${studiosSectionVisible ? "pointer-events-none -translate-x-5 opacity-0" : "translate-x-0 opacity-100"}`}
+        inert={studiosSectionVisible}
         onPointerLeave={() => setSidebarExpanded(false)}
         ref={sidebarRef}
       >
-        <Link
-          aria-label="ThaiPBS Parvilions home"
-          className="ml-5 flex w-12 shrink-0 flex-col items-center justify-start"
-          href="/"
-          onClick={(event) => { event.currentTarget.blur(); setSidebarExpanded(false); }}
-        >
-          <Image
-            alt="ThaiPBS Parvilions"
-            className="h-12 w-12 object-contain"
-            height={48}
-            priority
-            src="/LOGO/Logo.png"
-            width={48}
-          />
-          <span aria-hidden className="relative -mt-1 block h-[15px] w-16 overflow-hidden">
+          <Link
+            aria-label="ThaiPBS Parvilions home"
+            className="ml-5 flex w-12 shrink-0 flex-col items-center justify-start"
+            href="/"
+            onClick={(event) => { event.currentTarget.blur(); setSidebarExpanded(false); }}
+          >
             <Image
-              alt=""
-              className="absolute left-0 top-0 h-16 w-16 max-w-none -translate-y-[25px] object-contain"
-              height={1772}
+              alt="ThaiPBS Parvilions"
+              className="h-12 w-12 object-contain"
+              height={48}
               priority
-              src="/LOGO/tagline.png"
-              width={1772}
+              src="/LOGO/Logo.png"
+              width={48}
             />
-          </span>
-        </Link>
-        <nav className="absolute left-5 top-1/2 flex -translate-y-1/2 flex-col gap-6 text-[12px] font-black uppercase text-white/46">
-          {appNavItems.map((item) => {
-            const active =
-              item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+            <span aria-hidden className="relative -mt-1 block h-[15px] w-16 overflow-hidden">
+              <Image
+                alt=""
+                className="absolute left-0 top-0 h-16 w-16 max-w-none -translate-y-[25px] object-contain"
+                height={1772}
+                priority
+                src="/LOGO/tagline.png"
+                width={1772}
+              />
+            </span>
+          </Link>
+          <nav className="absolute left-5 top-1/2 flex -translate-y-1/2 flex-col gap-6 text-[12px] font-black uppercase text-white/46">
+            {appNavItems.map((item) => {
+              const active =
+                item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
 
-            return (
-              <Link
-                aria-current={active ? "page" : undefined}
-                className={`group/item flex h-10 items-center gap-7 whitespace-nowrap transition duration-200 hover:text-white ${
-                  sidebarExpanded ? "w-[248px] overflow-visible" : "w-12 overflow-hidden"
-                } ${
-                  active ? "text-white" : ""
-                }`}
-                href={item.href}
-                key={item.href}
-                onClick={(event) => { event.currentTarget.blur(); setSidebarExpanded(false); }}
-                onFocus={() => setSidebarExpanded(true)}
-              >
-                <span
-                  className="flex h-10 w-12 shrink-0 items-center justify-center"
-                  onPointerEnter={() => setSidebarExpanded(true)}
+              return (
+                <Link
+                  aria-current={active ? "page" : undefined}
+                  className={`group/item flex h-10 items-center gap-7 whitespace-nowrap transition duration-200 hover:text-white ${
+                    sidebarExpanded ? "w-[248px] overflow-visible" : "w-12 overflow-hidden"
+                  } ${
+                    active ? "text-white" : ""
+                  }`}
+                  href={item.href}
+                  key={item.href}
+                  onClick={(event) => { event.currentTarget.blur(); setSidebarExpanded(false); }}
+                  onFocus={() => setSidebarExpanded(true)}
                 >
-                  <Icon name={item.icon} active={active} />
-                </span>
-                <span className="disney-nav-label block min-w-max translate-x-2 opacity-0 transition duration-300">
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
-        </nav>
-      </aside>
+                  <span
+                    className="flex h-10 w-12 shrink-0 items-center justify-center"
+                    onPointerEnter={() => setSidebarExpanded(true)}
+                  >
+                    <Icon name={item.icon} active={active} />
+                  </span>
+                  <span className="disney-nav-label block min-w-max translate-x-2 opacity-0 transition duration-300">
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </nav>
+        </aside>
 
-      <div className="relative pb-20 lg:pl-[92px]">{children}</div>
+      <div className={`app-shell-content relative pb-20 transition-[padding-left] duration-500 ease-in-out ${studiosSectionVisible ? "" : "lg:pl-[92px]"}`}>{children}</div>
 
       <nav
         className="fixed inset-x-0 bottom-0 z-40 grid h-16 border-t border-white/10 bg-[#030714]/95 px-1 backdrop-blur-xl lg:hidden"

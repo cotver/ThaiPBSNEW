@@ -42,7 +42,12 @@ a {
 }
 
 .disney-sidebar {
-  transition: width 300ms ease;
+  transition: width 500ms ease-in-out, opacity 500ms ease-in-out, transform 500ms ease-in-out;
+  will-change: width, opacity, transform;
+}
+
+.app-shell-content {
+  overflow-anchor: none;
 }
 
 .disney-sidebar:focus-within .disney-nav-label,
