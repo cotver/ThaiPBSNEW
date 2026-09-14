@@ -19,10 +19,11 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
-  const [studiosSectionState, setStudiosSectionState] = useState({ path: "", visible: false });
+  const [studiosNavState, setStudiosNavState] = useState({ path: "", fullWidth: false, topNav: false });
   const sidebarRef = useRef<HTMLElement>(null);
-  const studiosSectionVisibleRef = useRef(false);
-  const studiosSectionVisible = pathname === "/home" && studiosSectionState.path === pathname && studiosSectionState.visible;
+  const studiosNavPhaseRef = useRef({ fullWidth: false, topNav: false });
+  const studiosFullWidth = pathname === "/home" && studiosNavState.path === pathname && studiosNavState.fullWidth;
+  const studiosTopNav = pathname === "/home" && studiosNavState.path === pathname && studiosNavState.topNav;
   const appNavItems = [
     ...navItems.filter((item) => showWatchlist || item.href !== "/watchlist"),
     ...typeNavItems,
@@ -63,33 +64,52 @@ export function AppShell({
   useEffect(() => {
     if (pathname !== "/home") return;
 
-    const studiosSection = document.querySelector('[aria-label="Thai PBS Studios"]');
-    if (!studiosSection) return;
+    let entrance: HTMLElement | null = null;
+    let sectionDocumentTop = 0;
+    let connected = false;
 
-    // Cache the section's document position before the content width changes.
-    // Using this fixed scroll threshold prevents the animated reflow from
-    // moving the trigger and toggling the navigation repeatedly.
-    const sectionDocumentTop = studiosSection.getBoundingClientRect().top + window.scrollY;
-    const updateVisibility = () => {
-      const enterAt = sectionDocumentTop - window.innerHeight * 0.25;
-      const leaveAt = enterAt - Math.max(80, window.innerHeight * 0.1);
-      const current = studiosSectionVisibleRef.current;
-      const next = current ? window.scrollY >= leaveAt : window.scrollY >= enterAt;
+    const updateNavigation = () => {
+      if (!entrance) return;
+      const current = studiosNavPhaseRef.current;
+      // Keep this threshold fixed while the content padding animates.
+      const leaveAt = sectionDocumentTop - Math.max(80, window.innerHeight * 0.1);
+      const fullWidth = window.scrollY >= (current.fullWidth ? leaveAt : sectionDocumentTop);
+      const entranceRect = entrance.getBoundingClientRect();
+      const travel = Math.max(1, entranceRect.height - window.innerHeight);
+      const doorProgress = Math.min(1, Math.max(0, -entranceRect.top / travel));
+      const doorOpenEnd = Number(entrance.dataset.doorOpenEnd || 0.86);
+      const topNav = fullWidth && doorProgress >= doorOpenEnd - (current.topNav ? 0.015 : 0);
 
-      if (next === current) return;
-
-      studiosSectionVisibleRef.current = next;
-      setStudiosSectionState({ path: pathname, visible: next });
+      if (fullWidth === current.fullWidth && topNav === current.topNav) return;
+      if (fullWidth && !current.fullWidth) setSidebarExpanded(false);
+      studiosNavPhaseRef.current = { fullWidth, topNav };
+      setStudiosNavState({ path: pathname, fullWidth, topNav });
     };
 
-    updateVisibility();
-    window.addEventListener("scroll", updateVisibility, { passive: true });
-    window.addEventListener("resize", updateVisibility);
+    function connect() {
+      if (connected) return;
+      const showcase = document.querySelector<HTMLElement>("[data-studios-showcase]");
+      const foundEntrance = showcase?.querySelector<HTMLElement>("[data-studios-entrance]");
+      if (!showcase || !foundEntrance) return;
+      connected = true;
+      entrance = foundEntrance;
+      sectionDocumentTop = showcase.getBoundingClientRect().top + window.scrollY;
+      observer.disconnect();
+      updateNavigation();
+      window.addEventListener("scroll", updateNavigation, { passive: true });
+      window.addEventListener("resize", updateNavigation);
+    }
+
+    // The showcase can arrive after the shell when the page streams in.
+    const observer = new MutationObserver(connect);
+    connect();
+    if (!connected) observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
-      window.removeEventListener("scroll", updateVisibility);
-      window.removeEventListener("resize", updateVisibility);
-      studiosSectionVisibleRef.current = false;
+      observer.disconnect();
+      window.removeEventListener("scroll", updateNavigation);
+      window.removeEventListener("resize", updateNavigation);
+      studiosNavPhaseRef.current = { fullWidth: false, topNav: false };
     };
   }, [pathname]);
 
@@ -100,11 +120,11 @@ export function AppShell({
   return (
     <main className="min-h-screen overflow-x-clip bg-[#030714] text-white">
       <nav
-        aria-hidden={!studiosSectionVisible}
+        aria-hidden={!studiosTopNav}
         aria-label="Primary navigation"
-        inert={!studiosSectionVisible}
-        className={`fixed inset-x-0 top-0 z-40 hidden h-[76px] items-center border-b border-white/10 bg-[#030714]/95 px-5 shadow-lg shadow-black/20 backdrop-blur-xl transition-[opacity,transform] duration-500 ease-in-out lg:flex ${
-          studiosSectionVisible ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-3 opacity-0"
+        inert={!studiosTopNav}
+        className={`fixed inset-x-0 top-0 z-40 hidden h-[76px] items-center border-b border-white/10 bg-[#030714]/95 px-5 shadow-lg shadow-black/20 backdrop-blur-xl transition-[opacity,transform] duration-700 ease-out lg:flex ${
+          studiosTopNav ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-full opacity-0"
         }`}
       >
           <Link
@@ -167,11 +187,11 @@ export function AppShell({
         </nav>
 
       <aside
-        aria-hidden={studiosSectionVisible}
+        aria-hidden={studiosFullWidth}
         className={`disney-sidebar fixed left-0 top-0 z-40 hidden h-screen flex-col bg-gradient-to-r from-[#030714] via-[#030714]/98 to-transparent py-7 transition-[width,opacity,transform] duration-500 ease-in-out lg:flex ${
           sidebarExpanded ? "w-[292px]" : "w-[92px]"
-        } ${studiosSectionVisible ? "pointer-events-none -translate-x-5 opacity-0" : "translate-x-0 opacity-100"}`}
-        inert={studiosSectionVisible}
+        } ${studiosFullWidth ? "pointer-events-none -translate-x-full opacity-0" : "translate-x-0 opacity-100"}`}
+        inert={studiosFullWidth}
         onPointerLeave={() => setSidebarExpanded(false)}
         ref={sidebarRef}
       >
@@ -233,7 +253,7 @@ export function AppShell({
           </nav>
         </aside>
 
-      <div className={`app-shell-content relative pb-20 transition-[padding-left] duration-500 ease-in-out ${studiosSectionVisible ? "" : "lg:pl-[92px]"}`}>{children}</div>
+      <div className={`app-shell-content relative pb-20 transition-[padding-left] duration-700 ease-in-out ${studiosFullWidth ? "lg:pl-0" : "lg:pl-[92px]"}`}>{children}</div>
 
       <nav
         className="fixed inset-x-0 bottom-0 z-40 grid h-16 border-t border-white/10 bg-[#030714]/95 px-1 backdrop-blur-xl lg:hidden"

@@ -6,6 +6,7 @@ import { columnArticleHref } from "@/lib/content";
 import { visiblePageTaxonomy } from "@/lib/column-page-taxonomy";
 import { StudiosCatalog, type StudiosCatalogArticle, type StudiosCatalogCategory } from "./StudiosCatalog";
 import { StudiosHero, type StudiosHeroItem } from "./StudiosHero";
+import { BeadedCurtainEntrance } from "./BeadedCurtainEntrance";
 import styles from "./StudiosShowcase.module.css";
 
 export type StudiosNewsItem = {
@@ -267,12 +268,13 @@ export async function getStudioNewsBySection(section: StudiosNewsSection): Promi
 }
 
 export async function StudiosShowcase() {
+  const entranceTitle = "ThaiPBS Journal";
   const { categories, otherCategories, featuredArticles, marketsAndEvents, pressReleases } = await getStudioContent(20);
   const hasNews = pressReleases.length > 0 || marketsAndEvents.length > 0;
   if (!featuredArticles.length && !categories.length && !otherCategories.length && !hasNews) return null;
-
   return (
-    <section className={styles.showcase} aria-label="Thai PBS Studios">
+    <section className={styles.showcase} aria-label={entranceTitle} data-studios-showcase>
+      <BeadedCurtainEntrance title={entranceTitle} />
       {featuredArticles.length ? <StudiosHero items={featuredArticles} /> : null}
 
       {categories.length ? (

@@ -88,3 +88,9 @@
   .pressGrid,.eventGrid{grid-template-columns:1fr}
   .pressCard{grid-template-columns:minmax(0,40%) minmax(0,1fr)}
 }
+
+/* The categories reached through the doorway share its black interior. */
+.catalog{background:#000}
+.catalog .selections{margin-top:0}
+.catalog .selectionCard{background:#000;text-align:center}
+.catalog .selectionTitle{text-align:center}

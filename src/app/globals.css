@@ -42,7 +42,7 @@ a {
 }
 
 .disney-sidebar {
-  transition: width 500ms ease-in-out, opacity 500ms ease-in-out, transform 500ms ease-in-out;
+  transition: width 500ms ease-in-out, opacity 650ms ease-in-out, transform 650ms ease-in-out;
   will-change: width, opacity, transform;
 }
 
