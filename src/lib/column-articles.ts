@@ -61,6 +61,7 @@ function mapArticle(article: ColumnArticle): ColumnArticleDetail {
 
 export async function getColumnArticleBySlug(slug: string): Promise<ColumnArticleDetail | undefined> {
   try {
+    const normalizedSlug = normalizeSlugLookupKey(slug);
     const payload = await getPayloadClient();
     const result = await payload.find({
       collection: "column-articles",
@@ -70,7 +71,12 @@ export async function getColumnArticleBySlug(slug: string): Promise<ColumnArticl
       pagination: false,
       where: {
         and: [
-          { slug: { equals: slug } },
+          {
+            or: [
+              { slug: { equals: slug } },
+              { slug: { equals: normalizedSlug } },
+            ],
+          },
           { _status: { equals: "published" } },
         ],
       },
@@ -80,5 +86,13 @@ export async function getColumnArticleBySlug(slug: string): Promise<ColumnArticl
   } catch (error) {
     console.warn(`Unable to load Column Article: ${slug}`, error);
     return undefined;
+  }
+}
+
+function normalizeSlugLookupKey(value: string): string {
+  try {
+    return decodeURIComponent(value).trim().replace(/\s+/g, " ");
+  } catch {
+    return value.trim().replace(/\s+/g, " ");
   }
 }
