@@ -29,6 +29,9 @@ import * as migration_20260910_073652_add_bilingual_column_content from './20260
 import * as migration_20260910_152421_add_column_article_feature_fields from './20260910_152421_add_column_article_feature_fields';
 import * as migration_20260910_153102_add_column_article_promotion_fields from './20260910_153102_add_column_article_promotion_fields';
 import * as migration_20260910_153459_add_column_article_markets_and_events from './20260910_153459_add_column_article_markets_and_events';
+import * as migration_20260914_091500_add_column_article_is_normal from './20260914_091500_add_column_article_is_normal';
+import * as migration_20260914_093000_add_column_taxonomy_show_in_page from './20260914_093000_add_column_taxonomy_show_in_page';
+import * as migration_20260914_101500_add_column_taxonomy_page_sort_order from './20260914_101500_add_column_taxonomy_page_sort_order';
 
 export const migrations = [
   {
@@ -185,5 +188,20 @@ export const migrations = [
     up: migration_20260910_153459_add_column_article_markets_and_events.up,
     down: migration_20260910_153459_add_column_article_markets_and_events.down,
     name: '20260910_153459_add_column_article_markets_and_events',
+  },
+  {
+    up: migration_20260914_091500_add_column_article_is_normal.up,
+    down: migration_20260914_091500_add_column_article_is_normal.down,
+    name: '20260914_091500_add_column_article_is_normal',
+  },
+  {
+    up: migration_20260914_093000_add_column_taxonomy_show_in_page.up,
+    down: migration_20260914_093000_add_column_taxonomy_show_in_page.down,
+    name: '20260914_093000_add_column_taxonomy_show_in_page',
+  },
+  {
+    up: migration_20260914_101500_add_column_taxonomy_page_sort_order.up,
+    down: migration_20260914_101500_add_column_taxonomy_page_sort_order.down,
+    name: '20260914_101500_add_column_taxonomy_page_sort_order',
   },
 ];

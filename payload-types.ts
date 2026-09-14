@@ -3296,6 +3296,7 @@ export interface ColumnArticle {
    * Include this article in Markets and Events.
    */
   isMarketsAndEvents?: boolean | null;
+  isNormal?: boolean | null;
   publishedDate?: string | null;
   contentTh: {
     root: {
@@ -3406,6 +3407,11 @@ export interface ColumnCategory {
     | 'dark-line-cta'
     | 'image-title-brand';
   sortOrder?: number | null;
+  showInPage?: boolean | null;
+  /**
+   * Lower numbers appear first on the Studios page.
+   */
+  showInPageSortOrder?: number | null;
   showInNavigation?: boolean | null;
   updatedAt: string;
   createdAt: string;
@@ -3424,6 +3430,11 @@ export interface ColumnSubcategory {
   descriptionTh?: string | null;
   descriptionEn?: string | null;
   sortOrder?: number | null;
+  showInPage?: boolean | null;
+  /**
+   * Lower numbers appear first when subcategories are shown on the page.
+   */
+  showInPageSortOrder?: number | null;
   showInNavigation?: boolean | null;
   updatedAt: string;
   createdAt: string;
@@ -4464,6 +4475,7 @@ export interface ColumnArticlesSelect<T extends boolean = true> {
   comingSoonDate?: T;
   isPressReleases?: T;
   isMarketsAndEvents?: T;
+  isNormal?: T;
   publishedDate?: T;
   contentTh?: T;
   contentEn?: T;
@@ -4528,6 +4540,8 @@ export interface ColumnCategoriesSelect<T extends boolean = true> {
   coverImage?: T;
   pageStyle?: T;
   sortOrder?: T;
+  showInPage?: T;
+  showInPageSortOrder?: T;
   showInNavigation?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -4545,6 +4559,8 @@ export interface ColumnSubcategoriesSelect<T extends boolean = true> {
   descriptionTh?: T;
   descriptionEn?: T;
   sortOrder?: T;
+  showInPage?: T;
+  showInPageSortOrder?: T;
   showInNavigation?: T;
   updatedAt?: T;
   createdAt?: T;

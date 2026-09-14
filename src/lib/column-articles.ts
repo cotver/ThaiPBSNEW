@@ -8,6 +8,7 @@ import type {
   ColumnVideo,
 } from "../../payload-types";
 import { getPayloadClient } from "@/lib/payload-client";
+import { visiblePageTaxonomy } from "@/lib/column-page-taxonomy";
 
 export type ColumnArticleDetail = {
   author?: string;
@@ -37,10 +38,9 @@ function mapArticle(article: ColumnArticle): ColumnArticleDetail {
   const hero = typeof heroValue === "object" ? heroValue as ColumnMedia : undefined;
   const author = typeof article.author === "object" ? article.author as ColumnAuthor : undefined;
   const video = article.videos?.find((item): item is ColumnVideo => typeof item === "object" && Boolean(item.url));
-  const categories = (article.categories || [])
-    .filter((item): item is ColumnCategory => typeof item === "object")
+  const categories = visiblePageTaxonomy(article.categories)
     .map((item) => ({ name: label(item), slug: item.slug }));
-  const tags = [...(article.subcategories || []), ...(article.tags || [])]
+  const tags = [...visiblePageTaxonomy(article.subcategories), ...(article.tags || [])]
     .filter((item): item is ColumnSubcategory | ColumnTag => typeof item === "object")
     .map(label);
 

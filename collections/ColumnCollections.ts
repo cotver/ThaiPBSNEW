@@ -184,7 +184,7 @@ export const ColumnCategories: CollectionConfig = {
   orderable: true,
   admin: columnAdmin({
     useAsTitle: 'nameTh',
-    defaultColumns: ['nameTh', 'nameEn', 'slug', 'pageStyle', 'showInNavigation'],
+    defaultColumns: ['nameTh', 'nameEn', 'slug', 'pageStyle', 'sortOrder', 'showInPage', 'showInPageSortOrder', 'showInNavigation'],
   }),
   defaultSort: '_order',
   access: editableAccess,
@@ -218,6 +218,9 @@ export const ColumnCategories: CollectionConfig = {
       ],
     },
     { name: 'sortOrder', type: 'number', defaultValue: 0 },
+    { name: 'showInPage', label: 'Show in Page', type: 'checkbox', defaultValue: true },
+    { name: 'showInPageSortOrder', label: 'Show in Page Sort Order', type: 'number', defaultValue: 0,
+      admin: { description: 'Lower numbers appear first on the Studios page.' } },
     { name: 'showInNavigation', type: 'checkbox', defaultValue: true },
   ],
 }
@@ -228,7 +231,7 @@ export const ColumnSubcategories: CollectionConfig = {
   orderable: true,
   admin: columnAdmin({
     useAsTitle: 'nameTh',
-    defaultColumns: ['nameTh', 'nameEn', 'category', 'slug', 'showInNavigation'],
+    defaultColumns: ['nameTh', 'nameEn', 'category', 'slug', 'sortOrder', 'showInPage', 'showInPageSortOrder', 'showInNavigation'],
   }),
   defaultSort: '_order',
   access: editableAccess,
@@ -246,6 +249,9 @@ export const ColumnSubcategories: CollectionConfig = {
     { name: 'descriptionTh', label: 'Description (TH)', type: 'textarea' },
     { name: 'descriptionEn', label: 'Description (EN)', type: 'textarea' },
     { name: 'sortOrder', type: 'number', defaultValue: 0 },
+    { name: 'showInPage', label: 'Show in Page', type: 'checkbox', defaultValue: true },
+    { name: 'showInPageSortOrder', label: 'Show in Page Sort Order', type: 'number', defaultValue: 0,
+      admin: { description: 'Lower numbers appear first when subcategories are shown on the page.' } },
     { name: 'showInNavigation', type: 'checkbox', defaultValue: true },
   ],
 }
@@ -328,6 +334,17 @@ export const ColumnArticles: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
+      ({ data, originalDoc }) => {
+        const isNewEpisodes = data?.isNewEpisodes ?? originalDoc?.isNewEpisodes
+        const comingSoon = data?.comingSoon ?? originalDoc?.comingSoon
+        const isPressReleases = data?.isPressReleases ?? originalDoc?.isPressReleases
+        const isMarketsAndEvents = data?.isMarketsAndEvents ?? originalDoc?.isMarketsAndEvents
+
+        return {
+          ...data,
+          isNormal: !isNewEpisodes && !comingSoon && !isPressReleases && !isMarketsAndEvents,
+        }
+      },
       ({ data, originalDoc }) => {
         const status = data?._status ?? originalDoc?._status
         if (status !== 'published' || originalDoc?.publishedDate) return data
@@ -481,6 +498,14 @@ export const ColumnArticles: CollectionConfig = {
       admin: {
         description: 'Include this article in Markets and Events.',
       },
+    },
+    {
+      name: 'isNormal',
+      label: 'Normal',
+      type: 'checkbox',
+      defaultValue: true,
+      index: true,
+      admin: { hidden: true },
     },
     { name: 'publishedDate', type: 'date', admin: { readOnly: true } },
     {

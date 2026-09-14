@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./StudiosShowcase.module.css";
 
-type CatalogFilter = "new" | "newEpisodes" | "comingSoon";
+export type CatalogFilter = "new" | "newEpisodes" | "comingSoon";
 
 export type StudiosCatalogArticle = {
   badge: string;
@@ -14,15 +14,16 @@ export type StudiosCatalogArticle = {
   id: number;
   href: string;
   imageAlt: string;
-  imageUrl: string;
+  imageUrl?: string;
   tags: string[];
   title: string;
 };
 
 export type StudiosCatalogCategory = {
-  articles: Record<CatalogFilter, StudiosCatalogArticle[]>;
+  articles: Record<CatalogFilter | "all", StudiosCatalogArticle[]>;
   coverAlt: string;
   coverImageUrl?: string;
+  description?: string;
   id: number;
   name: string;
   slug: string;
@@ -34,13 +35,79 @@ const filters: { label: string; value: CatalogFilter }[] = [
   { label: "Coming Soon", value: "comingSoon" },
 ];
 
+export function StudiosArticleCard({ article }: { article: StudiosCatalogArticle }) {
+  return (
+    <article className={styles.programCard}>
+      <Link aria-label={`Read ${article.title}`} className={styles.programImage} href={article.href}>
+        {article.imageUrl ? <Image alt={article.imageAlt} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 20vw" src={article.imageUrl} /> : null}
+        {article.badge ? <span className={styles.newBadge}>{article.badge}</span> : null}
+      </Link>
+      <h4><Link href={article.href}>{article.title}</Link></h4>
+      {article.dateLabel ? <p className={styles.format}>{article.dateLabel}</p> : null}
+      {article.description ? <p className={styles.cardDescription}>{article.description}</p> : null}
+      {article.tags.length ? <ul>{article.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul> : null}
+    </article>
+  );
+}
+
 function CategorySection({ category }: { category: StudiosCatalogCategory }) {
   const availableFilters = filters.filter((filter) => category.articles[filter.value].length > 0);
   const [activeFilter, setActiveFilter] = useState<CatalogFilter>(availableFilters[0]?.value || "new");
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const railRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef({ active: false, moved: false, startX: 0, startScroll: 0 });
   const visibleFilter = availableFilters.some((filter) => filter.value === activeFilter)
     ? activeFilter
     : availableFilters[0]?.value || "new";
   const articles = category.articles[visibleFilter];
+
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+
+    const updateScrollState = () => {
+      setCanScrollLeft(rail.scrollLeft > 2);
+      setCanScrollRight(rail.scrollLeft < rail.scrollWidth - rail.clientWidth - 2);
+    };
+
+    rail.scrollLeft = 0;
+    updateScrollState();
+    const resizeObserver = new ResizeObserver(updateScrollState);
+    resizeObserver.observe(rail);
+    return () => resizeObserver.disconnect();
+  }, [visibleFilter, articles.length]);
+
+  function scrollRail(direction: -1 | 1) {
+    const rail = railRef.current;
+    if (!rail) return;
+    rail.scrollBy({ left: direction * Math.max(rail.clientWidth * 0.82, 320), behavior: "smooth" });
+  }
+
+  function startDrag(event: React.MouseEvent<HTMLDivElement>) {
+    if (event.button !== 0 || !railRef.current) return;
+    dragRef.current = { active: true, moved: false, startX: event.clientX, startScroll: railRef.current.scrollLeft };
+  }
+
+  function moveDrag(event: React.MouseEvent<HTMLDivElement>) {
+    const rail = railRef.current;
+    const drag = dragRef.current;
+    if (!rail || !drag.active) return;
+    const delta = event.clientX - drag.startX;
+    if (Math.abs(delta) > 6) drag.moved = true;
+    if (drag.moved) rail.scrollLeft = drag.startScroll - delta;
+  }
+
+  function stopDrag() {
+    dragRef.current.active = false;
+  }
+
+  function preventClickAfterDrag(event: React.MouseEvent<HTMLDivElement>) {
+    if (!dragRef.current.moved) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dragRef.current.moved = false;
+  }
 
   if (!availableFilters.length) return null;
 
@@ -49,7 +116,9 @@ function CategorySection({ category }: { category: StudiosCatalogCategory }) {
       <div className={styles.sectionHeading}>
         <div>
           <h3 id={`studio-${category.slug}-heading`}>{category.name}</h3>
-          <span className={styles.articleCount}>{articles.length} articles</span>
+          <Link className={styles.viewAll} href={`/studios/${encodeURIComponent(category.slug)}?filter=${visibleFilter}`}>
+            View All <span aria-hidden="true">›</span>
+          </Link>
         </div>
         <div className={styles.filters} role="group" aria-label={`Filter ${category.name} articles`}>
           {availableFilters.map((filter) => (
@@ -65,41 +134,59 @@ function CategorySection({ category }: { category: StudiosCatalogCategory }) {
         </div>
       </div>
 
-      <div className={styles.programGrid}>
-        {articles.map((article) => (
-          <article className={styles.programCard} key={article.id}>
-            <Link aria-label={`Read ${article.title}`} className={styles.programImage} href={article.href}>
-              <Image alt={article.imageAlt} fill sizes="(max-width: 720px) 84vw, 31vw" src={article.imageUrl} />
-              <span className={styles.newBadge}>{article.badge}</span>
-            </Link>
-            <h4><Link href={article.href}>{article.title}</Link></h4>
-            {article.dateLabel ? <p className={styles.format}>{article.dateLabel}</p> : null}
-            {article.description ? <p className={styles.cardDescription}>{article.description}</p> : null}
-            {article.tags.length ? <ul>{article.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul> : null}
-          </article>
-        ))}
+      <div className={styles.programRail}>
+        {canScrollLeft ? (
+          <button aria-label={`Scroll ${category.name} articles left`} className={`${styles.railArrow} ${styles.railArrowLeft}`} onClick={() => scrollRail(-1)} type="button">‹</button>
+        ) : null}
+        <div
+          aria-label={`${category.name} articles`}
+          className={styles.programGrid}
+          onClickCapture={preventClickAfterDrag}
+          onDragStart={(event) => event.preventDefault()}
+          onMouseDown={startDrag}
+          onMouseLeave={stopDrag}
+          onMouseMove={moveDrag}
+          onMouseUp={stopDrag}
+          onScroll={() => {
+            const rail = railRef.current;
+            if (!rail) return;
+            setCanScrollLeft(rail.scrollLeft > 2);
+            setCanScrollRight(rail.scrollLeft < rail.scrollWidth - rail.clientWidth - 2);
+          }}
+          ref={railRef}
+          role="region"
+          tabIndex={0}
+        >
+          {articles.map((article) => <StudiosArticleCard article={article} key={article.id} />)}
+        </div>
+        {canScrollRight ? (
+          <button aria-label={`Scroll ${category.name} articles right`} className={`${styles.railArrow} ${styles.railArrowRight}`} onClick={() => scrollRail(1)} type="button">›</button>
+        ) : null}
       </div>
     </section>
   );
 }
 
 export function StudiosCatalog({ categories }: { categories: StudiosCatalogCategory[] }) {
-  const visibleCategories = categories.filter((category) => Object.values(category.articles).some((articles) => articles.length));
-  if (!visibleCategories.length) return null;
+  const articleCategories = categories.filter((category) => filters.some((filter) => category.articles[filter.value].length));
+  if (!categories.length) return null;
 
   return (
     <>
-      {visibleCategories.map((category) => <CategorySection category={category} key={category.id} />)}
+      {articleCategories.map((category) => <CategorySection category={category} key={category.id} />)}
 
       <section className={styles.selections} aria-label="Column Categories">
-        {visibleCategories.map((category) => (
-          <a className={styles.selectionCard} href={`#studio-${category.slug}`} key={category.id}>
+        {categories.map((category) => (
+          <Link
+            className={styles.selectionCard}
+            href={`/studios/${encodeURIComponent(category.slug)}`}
+            key={category.id}
+          >
             <span className={styles.selectionArt}>
               {category.coverImageUrl ? <Image alt={category.coverAlt} fill sizes="(max-width: 720px) 100vw, 33vw" src={category.coverImageUrl} /> : null}
-              <span>{category.name}</span>
             </span>
             <strong className={styles.selectionTitle}>{category.name}</strong>
-          </a>
+          </Link>
         ))}
       </section>
     </>

@@ -3,11 +3,12 @@ import Link from "next/link";
 import type { ColumnArticle, ColumnCategory, ColumnMedia, ColumnSubcategory, ColumnTag, ColumnVideo } from "../../payload-types";
 import { getPayloadClient } from "@/lib/payload-client";
 import { columnArticleHref } from "@/lib/content";
+import { visiblePageTaxonomy } from "@/lib/column-page-taxonomy";
 import { StudiosCatalog, type StudiosCatalogArticle, type StudiosCatalogCategory } from "./StudiosCatalog";
 import { StudiosHero, type StudiosHeroItem } from "./StudiosHero";
 import styles from "./StudiosShowcase.module.css";
 
-type StudiosNewsItem = {
+export type StudiosNewsItem = {
   date: string;
   description?: string;
   id: number;
@@ -35,7 +36,7 @@ function featuredArticleToHero(article: ColumnArticle): StudiosHeroItem | null {
   if (!image?.url) return null;
 
   const populatedVideo = article.videos?.find((video): video is ColumnVideo => typeof video === "object" && Boolean(video.url));
-  const labels = [...(article.categories || []), ...(article.subcategories || [])]
+  const labels = [...visiblePageTaxonomy(article.categories), ...visiblePageTaxonomy(article.subcategories)]
     .map(relationLabel)
     .filter((label): label is string => Boolean(label));
 
@@ -93,11 +94,30 @@ function articleToNewsItem(article: ColumnArticle, useEventDate = false): Studio
   };
 }
 
-function articleToCatalogItem(article: ColumnArticle, badge: string, dateLabel?: string): StudiosCatalogArticle | null {
-  const image = articleImage(article);
-  if (!image?.url) return null;
+export function StudiosPressCard({ item }: { item: StudiosNewsItem }) {
+  return (
+    <Link className={styles.pressCard} href={item.href}>
+      <span className={styles.pressImage}>{item.imageUrl ? <Image alt={item.imageAlt} fill sizes="(max-width: 720px) 38vw, 18vw" src={item.imageUrl} /> : null}</span>
+      <span className={styles.pressCopy}><time>{item.date}</time><strong>{item.title}</strong>{item.description ? <small>{item.description}</small> : null}</span>
+    </Link>
+  );
+}
 
-  const tags = [...(article.subcategories || []), ...(article.tags || [])]
+export function StudiosEventCard({ item }: { item: StudiosNewsItem }) {
+  return (
+    <Link className={styles.eventCard} href={item.href}>
+      <div className={styles.eventMark}>{item.mark}</div>
+      <div><h3>{item.title}</h3><p>{item.date}</p>{item.description ? <small>{item.description}</small> : null}</div>
+      <span className={styles.calendarIcon} aria-hidden>▦</span>
+    </Link>
+  );
+}
+
+function articleToCatalogItem(article: ColumnArticle, badge: string, dateLabel?: string, includeWithoutImage = false): StudiosCatalogArticle | null {
+  const image = articleImage(article);
+  if (!image?.url && !includeWithoutImage) return null;
+
+  const tags = [...visiblePageTaxonomy(article.subcategories), ...(article.tags || [])]
     .map(relationLabel)
     .filter((label): label is string => Boolean(label));
 
@@ -107,8 +127,8 @@ function articleToCatalogItem(article: ColumnArticle, badge: string, dateLabel?:
     description: article.descriptionEn || article.excerptEn || article.descriptionTh || article.excerptTh || undefined,
     id: article.id,
     href: columnArticleHref(article.slug),
-    imageAlt: image.alt || article.titleEn || article.titleTh,
-    imageUrl: image.url,
+    imageAlt: image?.alt || article.titleEn || article.titleTh,
+    imageUrl: image?.url || undefined,
     tags: [...new Set(tags)],
     title: article.titleEn || article.titleTh,
   };
@@ -118,11 +138,12 @@ function categoryToCatalog(
   category: ColumnCategory,
   publishedArticles: ColumnArticle[],
   now: number,
+  articleLimit?: number,
 ): StudiosCatalogCategory {
   const articles = publishedArticles.filter((article) =>
     article.categories?.some((articleCategory) => relationId(articleCategory) === category.id),
   );
-  const newArticles = articles.filter((article) => !article.isNewEpisodes && !article.comingSoon);
+  const newArticles = articles.filter((article) => article.isNormal);
   const newEpisodes = articles.filter((article) =>
     Boolean(article.isNewEpisodes) &&
     (!article.newEpisodesUntil || new Date(article.newEpisodesUntil).getTime() > now),
@@ -131,15 +152,17 @@ function categoryToCatalog(
     Boolean(article.comingSoon) &&
     (!article.comingSoonDate || new Date(article.comingSoonDate).getTime() > now),
   );
-  const mapArticles = (items: ColumnArticle[], badge: string, dateFor?: (article: ColumnArticle) => string | undefined) =>
+  const mapArticles = (items: ColumnArticle[], badge: string, dateFor?: (article: ColumnArticle) => string | undefined, includeWithoutImage = false) =>
     items
-      .map((article) => articleToCatalogItem(article, badge, dateFor?.(article)))
-      .filter((article): article is StudiosCatalogArticle => Boolean(article));
+      .map((article) => articleToCatalogItem(article, badge, dateFor?.(article), includeWithoutImage))
+      .filter((article): article is StudiosCatalogArticle => Boolean(article))
+      .slice(0, articleLimit);
   const cover = typeof category.coverImage === "object" ? category.coverImage : undefined;
   const fallbackCover = articles.map(articleImage).find((image) => Boolean(image?.url));
 
   return {
     articles: {
+      all: mapArticles(articles, "", undefined, true),
       comingSoon: mapArticles(comingSoon, "Coming Soon", (article) =>
         article.comingSoonDate ? `Coming ${formatArticleDate(article.comingSoonDate)}` : undefined,
       ),
@@ -150,14 +173,16 @@ function categoryToCatalog(
     },
     coverAlt: cover?.alt || fallbackCover?.alt || category.nameEn || category.nameTh,
     coverImageUrl: cover?.url || fallbackCover?.url || undefined,
+    description: category.descriptionEn?.trim() || category.descriptionTh?.trim() || undefined,
     id: category.id,
     name: category.nameEn || category.nameTh,
     slug: category.slug,
   };
 }
 
-async function getStudioContent(): Promise<{
+async function getStudioContent(categoryArticleLimit?: number): Promise<{
   categories: StudiosCatalogCategory[];
+  otherCategories: StudiosCatalogCategory[];
   featuredArticles: StudiosHeroItem[];
   marketsAndEvents: StudiosNewsItem[];
   pressReleases: StudiosNewsItem[];
@@ -179,7 +204,7 @@ async function getStudioContent(): Promise<{
         depth: 1,
         overrideAccess: true,
         pagination: false,
-        sort: "_order",
+        sort: "showInPageSortOrder",
       }),
     ]);
 
@@ -187,7 +212,12 @@ async function getStudioContent(): Promise<{
       .filter((article) => article.isFeature && (!article.featureUntil || new Date(article.featureUntil).getTime() > now))
       .map(featuredArticleToHero)
       .filter((item): item is StudiosHeroItem => Boolean(item));
-    const categories = categoryResult.docs.map((category) => categoryToCatalog(category, articleResult.docs, now));
+    const categories = visiblePageTaxonomy(categoryResult.docs)
+      .map((category) => categoryToCatalog(category, articleResult.docs, now, categoryArticleLimit));
+    const otherCategories = categoryResult.docs
+      .filter((category) => category.showInPage === false)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.id - b.id)
+      .map((category) => categoryToCatalog(category, articleResult.docs, now, categoryArticleLimit));
     const pressReleases = articleResult.docs
       .filter((article) => article.isPressReleases)
       .map((article) => articleToNewsItem(article));
@@ -195,55 +225,101 @@ async function getStudioContent(): Promise<{
       .filter((article) => article.isMarketsAndEvents)
       .map((article) => articleToNewsItem(article, true));
 
-    return { categories, featuredArticles, marketsAndEvents, pressReleases };
+    return { categories, otherCategories, featuredArticles, marketsAndEvents, pressReleases };
   } catch (error) {
     console.warn("Unable to load Column Studios content", error);
-    return { categories: [], featuredArticles: [], marketsAndEvents: [], pressReleases: [] };
+    return { categories: [], otherCategories: [], featuredArticles: [], marketsAndEvents: [], pressReleases: [] };
+  }
+}
+
+export async function getStudioCategoryCatalogBySlug(slug: string): Promise<StudiosCatalogCategory | undefined> {
+  const { categories, otherCategories } = await getStudioContent();
+  return [...categories, ...otherCategories].find((category) => category.slug === slug);
+}
+
+export type StudiosNewsSection = "press-releases" | "markets-and-events";
+
+export async function getStudioNewsBySection(section: StudiosNewsSection): Promise<StudiosNewsItem[]> {
+  try {
+    const payload = await getPayloadClient();
+    const result = await payload.find({
+      collection: "column-articles",
+      depth: 2,
+      overrideAccess: true,
+      pagination: false,
+      sort: "-publishedDate",
+      where: {
+        and: [
+          { _status: { equals: "published" } },
+          section === "press-releases"
+            ? { isPressReleases: { equals: true } }
+            : { isMarketsAndEvents: { equals: true } },
+        ],
+      },
+    });
+    return result.docs.map((article) => articleToNewsItem(article, section === "markets-and-events"));
+  } catch (error) {
+    console.warn(`Unable to load Studios ${section}`, error);
+    return [];
   }
 }
 
 export async function StudiosShowcase() {
-  const { categories, featuredArticles, marketsAndEvents, pressReleases } = await getStudioContent();
-  const catalogCategories = categories.filter((category) => Object.values(category.articles).some((articles) => articles.length));
+  const { categories, otherCategories, featuredArticles, marketsAndEvents, pressReleases } = await getStudioContent(20);
   const hasNews = pressReleases.length > 0 || marketsAndEvents.length > 0;
-  if (!featuredArticles.length && !catalogCategories.length && !hasNews) return null;
+  if (!featuredArticles.length && !categories.length && !otherCategories.length && !hasNews) return null;
 
   return (
     <section className={styles.showcase} aria-label="Thai PBS Studios">
       {featuredArticles.length ? <StudiosHero items={featuredArticles} /> : null}
 
-      {catalogCategories.length ? (
+      {categories.length ? (
         <div className={styles.catalog} id="catalog">
-          <StudiosCatalog categories={catalogCategories} />
+          <StudiosCatalog categories={categories} />
         </div>
+      ) : null}
+
+      {otherCategories.length ? (
+        <section className={styles.otherCategories} aria-label="More Studios categories">
+          <div className={styles.otherCategoryGrid}>
+            {otherCategories.map((category) => (
+              <Link className={styles.otherCategoryCard} href={`/studios/${encodeURIComponent(category.slug)}`} key={category.id}>
+                <span className={styles.otherCategoryImage}>
+                  {category.coverImageUrl ? (
+                    <Image alt={category.coverAlt} fill sizes="(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 25vw" src={category.coverImageUrl} />
+                  ) : null}
+                </span>
+                <span className={styles.otherCategoryCopy}>
+                  <strong>{category.name}</strong>
+                  {category.description ? <p>{category.description}</p> : null}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
       ) : null}
 
       {hasNews ? (
         <section className={styles.lightSection} id="news" aria-label="Studios news and events">
           {pressReleases.length ? (
             <>
-              <h2>Press Releases</h2>
+              <div className={styles.newsHeading}>
+                <h2>Press Releases</h2>
+                <Link className={styles.newsViewAll} href="/studios/news/press-releases">View All <span aria-hidden="true">›</span></Link>
+              </div>
               <div className={styles.pressGrid}>
-                {pressReleases.map((item) => (
-                  <Link className={styles.pressCard} href={item.href} key={item.id}>
-                    <span className={styles.pressImage}>{item.imageUrl ? <Image alt={item.imageAlt} fill sizes="(max-width: 720px) 38vw, 18vw" src={item.imageUrl} /> : null}</span>
-                    <span className={styles.pressCopy}><time>{item.date}</time><strong>{item.title}</strong>{item.description ? <small>{item.description}</small> : null}</span>
-                  </Link>
-                ))}
+                {pressReleases.slice(0, 10).map((item) => <StudiosPressCard item={item} key={item.id} />)}
               </div>
             </>
           ) : null}
           {marketsAndEvents.length ? (
             <>
-              <h2 className={pressReleases.length ? styles.eventsTitle : undefined}>Markets and Events</h2>
+              <div className={`${styles.newsHeading} ${pressReleases.length ? styles.eventsTitle : ""}`}>
+                <h2>Markets and Events</h2>
+                <Link className={styles.newsViewAll} href="/studios/news/markets-and-events">View All <span aria-hidden="true">›</span></Link>
+              </div>
               <div className={styles.eventGrid}>
-                {marketsAndEvents.map((item) => (
-                  <Link className={styles.eventCard} href={item.href} key={item.id}>
-                    <div className={styles.eventMark}>{item.mark}</div>
-                    <div><h3>{item.title}</h3><p>{item.date}</p>{item.description ? <small>{item.description}</small> : null}</div>
-                    <span className={styles.calendarIcon} aria-hidden>▦</span>
-                  </Link>
-                ))}
+                {marketsAndEvents.slice(0, 10).map((item) => <StudiosEventCard item={item} key={item.id} />)}
               </div>
             </>
           ) : null}

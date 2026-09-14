@@ -40,6 +40,12 @@ const categories: SeedCategory[] = [
   { image: "bangkok-after-dark.png", nameEn: "Drama", nameTh: "ละคร", slug: "drama" },
   { image: "sound-of-us.png", nameEn: "Junior", nameTh: "เยาวชน", slug: "junior" },
   { image: "river-of-life.png", nameEn: "Unscripted", nameTh: "สารคดีและรายการ", slug: "unscripted" },
+  { image: "bangkok-after-dark.png", nameEn: "Comedy", nameTh: "ตลก", slug: "comedy" },
+  { image: "forest-rescue.png", nameEn: "Documentary", nameTh: "สารคดี", slug: "documentary" },
+  { image: "sound-of-us.png", nameEn: "Lifestyle", nameTh: "ไลฟ์สไตล์", slug: "lifestyle" },
+  { image: "river-of-life.png", nameEn: "Food & Travel", nameTh: "อาหารและท่องเที่ยว", slug: "food-and-travel" },
+  { image: "sound-of-us.png", nameEn: "Music", nameTh: "ดนตรี", slug: "music" },
+  { image: "forest-rescue.png", nameEn: "Animation", nameTh: "แอนิเมชัน", slug: "animation" },
 ];
 
 const articles: SeedArticle[] = [
@@ -148,6 +154,60 @@ const articles: SeedArticle[] = [
     titleTh: "เสียงพื้นบ้านใหม่",
   },
 ];
+
+// Additional catalogue entries keep the demo useful across every Studios category.
+// Each tuple is category, slug, English title, Thai title, English description,
+// Thai description, and an existing local artwork file.
+const additionalArticleDetails = [
+  ["drama", "the-last-ferry", "The Last Ferry", "เรือเที่ยวสุดท้าย", "A ferry captain returns home to uncover a secret along the river.", "กัปตันเรือข้ามฟากกลับบ้านเพื่อค้นหาความลับริมสายน้ำ", "river-of-life.png"],
+  ["comedy", "the-neighbourhood-cafe", "The Neighbourhood Cafe", "คาเฟ่ข้างบ้าน", "A tiny cafe brings together neighbours with very different plans.", "คาเฟ่เล็ก ๆ พาเพื่อนบ้านที่มีแผนชีวิตต่างกันมาพบกัน", "bangkok-after-dark.png"],
+  ["comedy", "office-on-the-river", "Office on the River", "ออฟฟิศริมน้ำ", "A floating office makes every workday an unexpected adventure.", "ออฟฟิศลอยน้ำทำให้ทุกวันทำงานกลายเป็นการผจญภัย", "river-of-life.png"],
+  ["comedy", "auntie-knows-best", "Auntie Knows Best", "ป้ารู้ดี", "A quick-witted aunt becomes the unlikely adviser to her entire street.", "คุณป้าหัวไวกลายเป็นที่ปรึกษาของคนทั้งซอยโดยไม่ตั้งใจ", "sound-of-us.png"],
+  ["comedy", "the-weekend-plan", "The Weekend Plan", "แผนวันหยุด", "Three friends try to enjoy one quiet weekend with hilarious results.", "เพื่อนสามคนพยายามพักผ่อนในวันหยุดที่ไม่เคยสงบ", "forest-rescue.png"],
+  ["comedy", "market-after-hours", "Market After Hours", "ตลาดหลังเลิกงาน", "Vendors swap their stalls for a late-night talent show.", "พ่อค้าแม่ค้าเปลี่ยนแผงขายของเป็นเวทีประกวดความสามารถยามค่ำ", "bangkok-after-dark.png"],
+  ["documentary", "forest-guardians", "Forest Guardians", "ผู้พิทักษ์ผืนป่า", "Rangers protect a fragile forest through changing seasons.", "เจ้าหน้าที่พิทักษ์ป่าดูแลผืนป่าที่เปราะบางผ่านฤดูกาลที่เปลี่ยนไป", "forest-rescue.png"],
+  ["documentary", "the-river-remembers", "The River Remembers", "สายน้ำยังจดจำ", "Communities share the stories carried by Thailand's waterways.", "ชุมชนเล่าเรื่องราวที่สายน้ำของไทยพัดพามา", "river-of-life.png"],
+  ["documentary", "city-at-dawn", "City at Dawn", "เมืองยามรุ่งสาง", "Meet the workers who keep Bangkok moving before sunrise.", "พบผู้คนที่ทำให้กรุงเทพฯ ตื่นขึ้นก่อนพระอาทิตย์", "bangkok-after-dark.png"],
+  ["documentary", "voices-of-the-hills", "Voices of the Hills", "เสียงจากขุนเขา", "Mountain families preserve knowledge passed down for generations.", "ครอบครัวบนภูเขารักษาภูมิปัญญาที่สืบทอดมาหลายรุ่น", "forest-rescue.png"],
+  ["documentary", "living-coast", "Living Coast", "ชายฝั่งมีชีวิต", "Coastal communities restore habitats for people and wildlife.", "ชุมชนชายฝั่งฟื้นฟูถิ่นอาศัยของผู้คนและสัตว์ป่า", "river-of-life.png"],
+  ["lifestyle", "small-space-big-ideas", "Small Space, Big Ideas", "พื้นที่เล็กไอเดียใหญ่", "Creative residents make the most of compact city homes.", "ชาวเมืองสร้างสรรค์บ้านหลังเล็กให้ใช้ชีวิตได้เต็มที่", "bangkok-after-dark.png"],
+  ["lifestyle", "everyday-makers", "Everyday Makers", "คนทำของ", "Meet the craftspeople giving familiar objects a new life.", "พบช่างฝีมือที่มอบชีวิตใหม่ให้สิ่งของใกล้ตัว", "sound-of-us.png"],
+  ["lifestyle", "the-green-balcony", "The Green Balcony", "ระเบียงสีเขียว", "Urban gardeners turn balconies into pockets of nature.", "คนปลูกต้นไม้ในเมืองเปลี่ยนระเบียงเป็นมุมธรรมชาติ", "forest-rescue.png"],
+  ["lifestyle", "second-chance-style", "Second Chance Style", "สไตล์ครั้งที่สอง", "Designers rework discarded clothes into fresh looks.", "นักออกแบบนำเสื้อผ้าเก่ามาสร้างเป็นสไตล์ใหม่", "sound-of-us.png"],
+  ["lifestyle", "good-morning-neighbour", "Good Morning, Neighbour", "อรุณสวัสดิ์เพื่อนบ้าน", "A new morning ritual connects people across the city.", "กิจวัตรยามเช้ารูปแบบใหม่เชื่อมผู้คนทั่วเมือง", "bangkok-after-dark.png"],
+  ["food-and-travel", "flavours-of-the-river", "Flavours of the River", "รสชาติริมสายน้ำ", "Follow local cooks and the ingredients that travel by boat.", "ตามพ่อครัวแม่ครัวท้องถิ่นและวัตถุดิบที่เดินทางมากับเรือ", "river-of-life.png"],
+  ["food-and-travel", "one-street-five-stories", "One Street, Five Stories", "ถนนหนึ่งสายห้าเรื่องเล่า", "A single street reveals five unforgettable food traditions.", "ถนนหนึ่งสายเผยเรื่องราวอาหารห้าแบบที่น่าจดจำ", "bangkok-after-dark.png"],
+  ["food-and-travel", "the-northern-table", "The Northern Table", "สำรับเหนือ", "Families share recipes shaped by the northern highlands.", "ครอบครัวแบ่งปันตำรับอาหารที่เติบโตจากภูเขาทางเหนือ", "forest-rescue.png"],
+  ["food-and-travel", "island-kitchen", "Island Kitchen", "ครัวกลางเกาะ", "Island cooks turn the day's catch into treasured meals.", "คนครัวบนเกาะเปลี่ยนอาหารทะเลสดเป็นมื้อพิเศษ", "river-of-life.png"],
+  ["food-and-travel", "roadside-breakfast", "Roadside Breakfast", "อาหารเช้าข้างทาง", "Early risers discover the breakfast stalls that define a town.", "คนตื่นเช้าตามหาร้านอาหารเช้าที่เป็นหัวใจของเมือง", "bangkok-after-dark.png"],
+  ["music", "songs-of-the-city", "Songs of the City", "เพลงของเมือง", "Street musicians reveal the sounds behind Bangkok's daily rhythm.", "นักดนตรีข้างถนนเผยเสียงที่สร้างจังหวะชีวิตกรุงเทพฯ", "sound-of-us.png"],
+  ["music", "new-folk-sessions", "New Folk Sessions", "พื้นบ้านเสียงใหม่", "Young artists reinterpret the folk songs they grew up hearing.", "ศิลปินรุ่นใหม่ตีความเพลงพื้นบ้านที่คุ้นเคยอีกครั้ง", "sound-of-us.png"],
+  ["music", "river-jam", "River Jam", "แจมริมแม่น้ำ", "Musicians from different traditions meet for a riverside performance.", "นักดนตรีต่างแนวมาร่วมบรรเลงริมแม่น้ำ", "river-of-life.png"],
+  ["music", "the-next-chorus", "The Next Chorus", "ท่อนฮุกบทใหม่", "A youth choir prepares for its first major concert.", "คณะนักร้องประสานเสียงเยาวชนเตรียมตัวขึ้นคอนเสิร์ตใหญ่ครั้งแรก", "sound-of-us.png"],
+  ["music", "soundcheck-bangkok", "Soundcheck Bangkok", "ซาวด์เช็กกรุงเทพฯ", "Go behind the scenes with the crews who build a live show.", "เบื้องหลังทีมงานที่ร่วมกันสร้างการแสดงดนตรีสด", "bangkok-after-dark.png"],
+  ["animation", "little-river-big-world", "Little River, Big World", "สายน้ำเล็กโลกกว้าง", "A curious young fish explores the river beyond home.", "ปลาน้อยขี้สงสัยออกสำรวจสายน้ำไกลจากบ้าน", "river-of-life.png"],
+  ["animation", "forest-friends", "Forest Friends", "เพื่อนป่าหรรษา", "Forest animals solve everyday problems by working together.", "สัตว์ป่าช่วยกันแก้ปัญหาเล็ก ๆ ในแต่ละวัน", "forest-rescue.png"],
+  ["animation", "cloud-post-office", "Cloud Post Office", "ไปรษณีย์บนเมฆ", "A cloud messenger delivers letters across a magical sky.", "บุรุษไปรษณีย์เมฆส่งจดหมายข้ามท้องฟ้ามหัศจรรย์", "sound-of-us.png"],
+  ["animation", "the-tiny-inventors", "The Tiny Inventors", "นักประดิษฐ์ตัวจิ๋ว", "Inventive children build playful solutions for their neighbourhood.", "เด็กนักประดิษฐ์สร้างวิธีแก้ปัญหาสนุก ๆ ให้ชุมชน", "bangkok-after-dark.png"],
+  ["animation", "moonlight-garden", "Moonlight Garden", "สวนจันทร์ส่อง", "A night garden comes alive when its smallest visitor arrives.", "สวนยามค่ำคืนมีชีวิตเมื่อแขกตัวน้อยเดินทางมาถึง", "forest-rescue.png"],
+] as const;
+
+articles.push(...additionalArticleDetails.map(([
+  category, slug, titleEn, titleTh, descriptionEn, descriptionTh, image,
+], index): SeedArticle => ({
+  category,
+  descriptionEn,
+  descriptionTh,
+  image,
+  isFeature: index % 9 === 0,
+  isMarketsAndEvents: index % 11 === 0,
+  isNewEpisodes: index % 7 === 0,
+  isPressReleases: index % 13 === 0,
+  publishedDaysAgo: index + 8,
+  slug,
+  titleEn,
+  titleTh,
+})));
 
 function daysFromNow(days: number): string {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
@@ -266,7 +326,11 @@ async function upsertCategory(
     return updated.id;
   }
 
-  const created = await payload.create({ collection: "column-categories", data, overrideAccess: true });
+  const created = await payload.create({
+    collection: "column-categories",
+    data: { ...data, showInPageSortOrder: sortOrder },
+    overrideAccess: true,
+  });
   return created.id;
 }
 
