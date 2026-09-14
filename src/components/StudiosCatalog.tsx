@@ -167,13 +167,13 @@ function CategorySection({ category }: { category: StudiosCatalogCategory }) {
   );
 }
 
-export function StudiosCatalog({ categories }: { categories: StudiosCatalogCategory[] }) {
+export function StudiosCatalog({ categories, showArticleSections = false }: { categories: StudiosCatalogCategory[]; showArticleSections?: boolean }) {
   const articleCategories = categories.filter((category) => filters.some((filter) => category.articles[filter.value].length));
   if (!categories.length) return null;
 
   return (
     <>
-      {articleCategories.map((category) => <CategorySection category={category} key={category.id} />)}
+      {showArticleSections ? articleCategories.map((category) => <CategorySection category={category} key={category.id} />) : null}
 
       <section className={styles.selections} aria-label="Column Categories">
         {categories.map((category) => (

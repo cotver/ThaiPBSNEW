@@ -106,7 +106,9 @@ export function StudiosPressCard({ item }: { item: StudiosNewsItem }) {
 export function StudiosEventCard({ item }: { item: StudiosNewsItem }) {
   return (
     <Link className={styles.eventCard} href={item.href}>
-      <div className={styles.eventMark}>{item.mark}</div>
+      <span className={styles.eventImage}>
+        {item.imageUrl ? <Image alt={item.imageAlt} fill sizes="(max-width: 700px) 95px, 130px" src={item.imageUrl} /> : <span className={styles.eventMark}>{item.mark}</span>}
+      </span>
       <div><h3>{item.title}</h3><p>{item.date}</p>{item.description ? <small>{item.description}</small> : null}</div>
       <span className={styles.calendarIcon} aria-hidden>▦</span>
     </Link>
@@ -275,7 +277,7 @@ export async function StudiosShowcase() {
 
       {categories.length ? (
         <div className={styles.catalog} id="catalog">
-          <StudiosCatalog categories={categories} />
+          <StudiosCatalog categories={categories} showArticleSections={false} />
         </div>
       ) : null}
 
