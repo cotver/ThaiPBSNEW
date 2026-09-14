@@ -65,7 +65,8 @@ export default async function ColumnArticlePage({ params }: PageProps) {
         <aside className={styles.meta} aria-label="Article information">
           <div><span>Published</span><time dateTime={article.date}>{formatDate(article.date)}</time></div>
           {article.author ? <div><span>Words by</span><strong>{article.author}</strong></div> : null}
-          {article.tags.length ? <div><span>Filed under</span><p>{article.tags.join(" · ")}</p></div> : null}
+          {article.categories.length ? <div><span>Category</span><p>{article.categories.map((item) => item.name).join(" · ")}</p></div> : null}
+          {article.tags.length ? <div><span>Tags</span><p>{article.tags.join(" · ")}</p></div> : null}
         </aside>
 
         <article className={styles.body}>

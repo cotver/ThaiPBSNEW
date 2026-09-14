@@ -45,6 +45,7 @@ function renderNode(node: RichTextNode, key: string, parentListType?: RichTextNo
   switch (node.type) {
     case "heading": {
       const children = renderChildren(node.children);
+      if (node.tag === "h1") return <h1 key={key} style={style}>{children}</h1>;
       if (node.tag === "h3") return <h3 key={key} style={style}>{children}</h3>;
       if (node.tag === "h4") return <h4 key={key} style={style}>{children}</h4>;
       if (node.tag === "h5") return <h5 key={key} style={style}>{children}</h5>;
