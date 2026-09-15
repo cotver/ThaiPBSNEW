@@ -24,6 +24,13 @@ const nextConfig: NextConfig = {
         pathname: "/ott/hk/v1/images/Viu_logo.svg",
         search: "",
       },
+      {
+        protocol: "https",
+        hostname: "tvfinternational.com",
+        port: "",
+        pathname: "/themes/international/images/tvf_logo4.png",
+        search: "",
+      },
     ],
   },
   webpack(config) {

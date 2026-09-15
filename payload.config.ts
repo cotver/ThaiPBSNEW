@@ -137,7 +137,8 @@ export default buildConfig({
   ),
 
   upload: {
-    useTempFiles: false,
+    useTempFiles: true,
+    tempFileDir: process.env.PAYLOAD_UPLOAD_TEMP_DIR || './payload-uploads/tmp',
     uploadTimeout: 0,
   },
 

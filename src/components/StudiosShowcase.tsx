@@ -8,6 +8,7 @@ import { getMarketCompanies, type MarketCompanySummary } from "@/lib/d1-market";
 import { StudiosCatalog, type StudiosCatalogArticle, type StudiosCatalogCategory } from "./StudiosCatalog";
 import { StudiosHero, type StudiosHeroItem } from "./StudiosHero";
 import { BeadedCurtainEntrance } from "./BeadedCurtainEntrance";
+import { StudiosContentReveal } from "./StudiosContentReveal";
 import styles from "./StudiosShowcase.module.css";
 
 export type StudiosNewsItem = {
@@ -122,6 +123,10 @@ const officialMarketLogos: Record<string, { alt: string; src: string }> = {
     alt: "Netflix",
     src: "https://images.ctfassets.net/4cd45et68cgf/7LrExJ6PAj6MSIPkDyCO86/542b1dfabbf3959908f69be546879952/Netflix-Brand-Logo.png",
   },
+  tvf: {
+    alt: "TVF International",
+    src: "https://tvfinternational.com/themes/international/images/tvf_logo4.png",
+  },
   viu: {
     alt: "Viu",
     src: "https://www.viu.com/ott/hk/v1/images/Viu_logo.svg",
@@ -152,6 +157,7 @@ function marketLogoBrand(companySlug: string): string | undefined {
 
   if (compactSlug.includes("netflix")) return "netflix";
   if (compactSlug === "viu" || compactSlug.startsWith("viu")) return "viu";
+  if (compactSlug === "tvf" || compactSlug.includes("tvfinternational") || compactSlug.includes("tvfmedia")) return "tvf";
   if (compactSlug.includes("disney")) return "disney";
   if (compactSlug === "max" || compactSlug.includes("hbo")) return "hbo";
   if (compactSlug.includes("iqiyi") || compactSlug.includes("iqyi")) return "iqiyi";
@@ -212,7 +218,7 @@ export function StudiosMarketCompanyCard({ company }: { company: MarketCompanySu
         <MarketCompanyLogo
           companyName={company.name}
           companySlug={company.slug}
-          sizes="(max-width: 519px) 72vw, (max-width: 759px) 36vw, (max-width: 1049px) 24vw, (max-width: 1359px) 18vw, 14vw"
+          sizes="(max-width: 519px) 72vw, (max-width: 759px) 36vw, 23vw"
         />
       </span>
     </Link>
@@ -380,60 +386,72 @@ export async function StudiosShowcase() {
   return (
     <section className={styles.showcase} aria-label={entranceTitle} data-studios-showcase>
       <BeadedCurtainEntrance title={entranceTitle} />
-      {featuredArticles.length ? <StudiosHero items={featuredArticles} /> : null}
-
-      {categories.length ? (
-        <div className={styles.catalog} id="catalog">
-          <StudiosCatalog categories={categories} showArticleSections={false} />
-        </div>
-      ) : null}
-
-      {otherCategories.length ? (
-        <section className={styles.otherCategories} aria-label="More Studios categories">
-          <div className={styles.otherCategoryGrid}>
-            {otherCategories.map((category) => (
-              <Link className={styles.otherCategoryCard} href={`/studios/${encodeURIComponent(category.slug)}`} key={category.id}>
-                <span className={styles.otherCategoryImage}>
-                  {category.coverImageUrl ? (
-                    <Image alt={category.coverAlt} fill sizes="(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 25vw" src={category.coverImageUrl} />
-                  ) : null}
-                </span>
-                <span className={styles.otherCategoryCopy}>
-                  <strong>{category.name}</strong>
-                  {category.description ? <p>{category.description}</p> : null}
-                </span>
-              </Link>
-            ))}
+      <StudiosContentReveal>
+        {featuredArticles.length ? (
+          <div className={styles.revealSection} data-studios-reveal-section>
+            <StudiosHero items={featuredArticles} />
           </div>
-        </section>
-      ) : null}
+        ) : null}
 
-      {hasNews ? (
-        <section className={styles.lightSection} id="news" aria-label="Studios news and events">
-          {pressReleases.length ? (
-            <>
-              <div className={styles.newsHeading}>
-                <h2>Press Releases</h2>
-                <Link className={styles.newsViewAll} href="/studios/news/press-releases">View All <span aria-hidden="true">›</span></Link>
+        {categories.length ? (
+          <div className={styles.revealSection} data-studios-reveal-section>
+            <div className={styles.catalog} id="catalog">
+              <StudiosCatalog categories={categories} showArticleSections={false} />
+            </div>
+          </div>
+        ) : null}
+
+        {otherCategories.length ? (
+          <div className={styles.revealSection} data-studios-reveal-section>
+            <section className={styles.otherCategories} aria-label="More Studios categories">
+              <div className={styles.otherCategoryGrid}>
+                {otherCategories.map((category) => (
+                  <Link className={styles.otherCategoryCard} href={`/studios/${encodeURIComponent(category.slug)}`} key={category.id}>
+                    <span className={styles.otherCategoryImage}>
+                      {category.coverImageUrl ? (
+                        <Image alt={category.coverAlt} fill sizes="(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 25vw" src={category.coverImageUrl} />
+                      ) : null}
+                    </span>
+                    <span className={styles.otherCategoryCopy}>
+                      <strong>{category.name}</strong>
+                      {category.description ? <p>{category.description}</p> : null}
+                    </span>
+                  </Link>
+                ))}
               </div>
-              <div className={styles.pressGrid}>
-                {pressReleases.slice(0, 10).map((item) => <StudiosPressCard item={item} key={item.id} />)}
-              </div>
-            </>
-          ) : null}
-          {marketLogoCompanies.length ? (
-            <>
-              <div className={`${styles.newsHeading} ${pressReleases.length ? styles.eventsTitle : ""}`}>
-                <h2>Markets and Events</h2>
-                <Link className={styles.newsViewAll} href="/studios/news/markets-and-events">View All <span aria-hidden="true">›</span></Link>
-              </div>
-              <div data-market-logo-grid>
-                {marketLogoCompanies.slice(0, 10).map((company) => <StudiosMarketCompanyCard company={company} key={company.slug} />)}
-              </div>
-            </>
-          ) : null}
-        </section>
-      ) : null}
+            </section>
+          </div>
+        ) : null}
+
+        {hasNews ? (
+          <div className={styles.revealSection} data-studios-reveal-section>
+            <section className={styles.lightSection} id="news" aria-label="Studios news and events">
+              {pressReleases.length ? (
+                <>
+                  <div className={styles.newsHeading}>
+                    <h2>Press Releases</h2>
+                    <Link className={styles.newsViewAll} href="/studios/news/press-releases">View All <span aria-hidden="true">›</span></Link>
+                  </div>
+                  <div className={styles.pressGrid}>
+                    {pressReleases.slice(0, 10).map((item) => <StudiosPressCard item={item} key={item.id} />)}
+                  </div>
+                </>
+              ) : null}
+              {marketLogoCompanies.length ? (
+                <>
+                  <div className={`${styles.newsHeading} ${pressReleases.length ? styles.eventsTitle : ""}`}>
+                    <h2>Markets and Events</h2>
+                    <Link className={styles.newsViewAll} href="/studios/news/markets-and-events">View All <span aria-hidden="true">›</span></Link>
+                  </div>
+                  <div data-market-logo-grid>
+                    {marketLogoCompanies.slice(0, 10).map((company) => <StudiosMarketCompanyCard company={company} key={company.slug} />)}
+                  </div>
+                </>
+              ) : null}
+            </section>
+          </div>
+        ) : null}
+      </StudiosContentReveal>
     </section>
   );
 }
