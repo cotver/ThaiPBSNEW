@@ -32,6 +32,7 @@ import * as migration_20260910_153459_add_column_article_markets_and_events from
 import * as migration_20260914_091500_add_column_article_is_normal from './20260914_091500_add_column_article_is_normal';
 import * as migration_20260914_093000_add_column_taxonomy_show_in_page from './20260914_093000_add_column_taxonomy_show_in_page';
 import * as migration_20260914_101500_add_column_taxonomy_page_sort_order from './20260914_101500_add_column_taxonomy_page_sort_order';
+import * as migration_20260915_064013_add_article_pdf from './20260915_064013_add_article_pdf';
 
 export const migrations = [
   {
@@ -203,5 +204,10 @@ export const migrations = [
     up: migration_20260914_101500_add_column_taxonomy_page_sort_order.up,
     down: migration_20260914_101500_add_column_taxonomy_page_sort_order.down,
     name: '20260914_101500_add_column_taxonomy_page_sort_order',
+  },
+  {
+    up: migration_20260915_064013_add_article_pdf.up,
+    down: migration_20260915_064013_add_article_pdf.down,
+    name: '20260915_064013_add_article_pdf',
   },
 ];

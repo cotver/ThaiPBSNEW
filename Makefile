@@ -29,7 +29,7 @@ install:
 
 # --- Development (run dev with PM2) ---
 dev:
-	mkdir -p payload-uploads/media payload-uploads/videos payload-uploads/column-media payload-uploads/column-videos
+	mkdir -p payload-uploads/media payload-uploads/videos payload-uploads/column-media payload-uploads/column-videos payload-uploads/article-pdf
 	pm2 start npm --name "$(APP_TEST_NAME)" --cwd $(APP_DIR) -- run dev -- -p $(PORT)
 
 # --- Pull latest code ---
@@ -47,7 +47,7 @@ deploy: pull
 	RELEASE_ID=$$(date +%Y%m%d%H%M%S); \
 	RELEASE_DIR="$(RELEASES_DIR)/$$RELEASE_ID"; \
 	mkdir -p "$(RELEASES_DIR)"; \
-	mkdir -p payload-uploads/media payload-uploads/videos payload-uploads/column-media payload-uploads/column-videos; \
+	mkdir -p payload-uploads/media payload-uploads/videos payload-uploads/column-media payload-uploads/column-videos payload-uploads/article-pdf; \
 	rsync -a --delete $(RSYNC_EXCLUDES) ./ "$$RELEASE_DIR"/; \
 	git rev-parse HEAD > "$$RELEASE_DIR/REVISION"; \
 	cd "$$RELEASE_DIR"; \
@@ -64,20 +64,21 @@ deploy: pull
 
 # --- Start/reload the currently active release ---
 start-current:
-	mkdir -p payload-uploads/media payload-uploads/videos payload-uploads/column-media payload-uploads/column-videos
+	mkdir -p payload-uploads/media payload-uploads/videos payload-uploads/column-media payload-uploads/column-videos payload-uploads/article-pdf
 	THAIPBSNEW_CWD="$$(pwd)/$(CURRENT_LINK)" pm2 startOrReload ecosystem.config.cjs --update-env
 
 # --- Copy uploads stranded inside old release folders back into persistent storage ---
 rescue-uploads:
 	@set -eu; \
-	mkdir -p payload-uploads/media payload-uploads/videos payload-uploads/column-media payload-uploads/column-videos; \
+	mkdir -p payload-uploads/media payload-uploads/videos payload-uploads/column-media payload-uploads/column-videos payload-uploads/article-pdf; \
 	if [ -d "$(RELEASES_DIR)" ]; then \
 		find "$(RELEASES_DIR)" -path "*/payload-uploads/media" -type d -exec sh -c 'cp -an "$$1"/. payload-uploads/media/ 2>/dev/null || true' sh {} \; ; \
 		find "$(RELEASES_DIR)" -path "*/payload-uploads/videos" -type d -exec sh -c 'cp -an "$$1"/. payload-uploads/videos/ 2>/dev/null || true' sh {} \; ; \
 		find "$(RELEASES_DIR)" -path "*/payload-uploads/column-media" -type d -exec sh -c 'cp -an "$$1"/. payload-uploads/column-media/ 2>/dev/null || true' sh {} \; ; \
 		find "$(RELEASES_DIR)" -path "*/payload-uploads/column-videos" -type d -exec sh -c 'cp -an "$$1"/. payload-uploads/column-videos/ 2>/dev/null || true' sh {} \; ; \
+		find "$(RELEASES_DIR)" -path "*/payload-uploads/article-pdf" -type d -exec sh -c 'cp -an "$$1"/. payload-uploads/article-pdf/ 2>/dev/null || true' sh {} \; ; \
 	fi; \
-	echo "Recovered uploads into Programs and Column upload directories"
+	echo "Recovered uploads into Programs, Column, and Article PDF upload directories"
 
 # --- Show available releases, newest first ---
 list-releases:
@@ -106,7 +107,7 @@ rollback:
 	fi; \
 	ln -sfn "$$RELEASE_DIR" "$(CURRENT_LINK).tmp"; \
 	mv -Tf "$(CURRENT_LINK).tmp" "$(CURRENT_LINK)"; \
-	mkdir -p payload-uploads/media payload-uploads/videos payload-uploads/column-media payload-uploads/column-videos; \
+	mkdir -p payload-uploads/media payload-uploads/videos payload-uploads/column-media payload-uploads/column-videos payload-uploads/article-pdf; \
 	pm2 delete "$(APP_NAME)" 2>/dev/null || true; \
 	THAIPBSNEW_CWD="$$(pwd)/$(CURRENT_LINK)" pm2 start ecosystem.config.cjs --update-env; \
 	pm2 save

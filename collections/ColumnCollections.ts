@@ -149,6 +149,21 @@ export const ColumnMedia: CollectionConfig = {
   ],
 }
 
+export const ArticlePDF: CollectionConfig = {
+  slug: 'articlePDF',
+  labels: { singular: 'ArticlePDF', plural: 'ArticlePDFs' },
+  admin: columnAdmin({
+    useAsTitle: 'filename',
+    defaultColumns: ['filename', 'updatedAt'],
+  }),
+  access: editableAccess,
+  upload: {
+    staticDir: process.env.PAYLOAD_ARTICLE_PDF_DIR || './payload-uploads/article-pdf',
+    mimeTypes: ['application/pdf'],
+  },
+  fields: [],
+}
+
 export const ColumnVideos: CollectionConfig = {
   slug: 'column-videos',
   labels: { singular: 'Video', plural: 'Videos' },
@@ -371,6 +386,13 @@ export const ColumnArticles: CollectionConfig = {
     { name: 'excerptEn', label: 'Excerpt (EN)', type: 'textarea' },
     { name: 'descriptionTh', label: 'Description (TH)', type: 'textarea' },
     { name: 'descriptionEn', label: 'Description (EN)', type: 'textarea' },
+    {
+      name: 'articlePDF',
+      label: 'ArticlePDF',
+      type: 'upload',
+      relationTo: 'articlePDF',
+      admin: { description: 'Upload a PDF for this article.' },
+    },
     {
       name: 'heroImages',
       type: 'group',
@@ -607,5 +629,6 @@ export const columnCollections: CollectionConfig[] = [
   ColumnTags,
   ColumnAuthors,
   ColumnMedia,
+  ArticlePDF,
   ColumnVideos,
 ]

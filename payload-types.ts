@@ -100,6 +100,7 @@ export interface Config {
     'column-tags': ColumnTag;
     'column-authors': ColumnAuthor;
     'column-media': ColumnMedia;
+    articlePDF: ArticlePDF;
     'column-videos': ColumnVideo;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -160,6 +161,7 @@ export interface Config {
     'column-tags': ColumnTagsSelect<false> | ColumnTagsSelect<true>;
     'column-authors': ColumnAuthorsSelect<false> | ColumnAuthorsSelect<true>;
     'column-media': ColumnMediaSelect<false> | ColumnMediaSelect<true>;
+    articlePDF: ArticlePDFSelect<false> | ArticlePDFSelect<true>;
     'column-videos': ColumnVideosSelect<false> | ColumnVideosSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -3249,6 +3251,10 @@ export interface ColumnArticle {
   excerptEn?: string | null;
   descriptionTh?: string | null;
   descriptionEn?: string | null;
+  /**
+   * Upload a PDF for this article.
+   */
+  articlePDF?: (number | null) | ArticlePDF;
   heroImages: {
     vertical: {
       image: number | ColumnMedia;
@@ -3331,6 +3337,24 @@ export interface ColumnArticle {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "articlePDF".
+ */
+export interface ArticlePDF {
+  id: number;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3673,6 +3697,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'column-media';
         value: number | ColumnMedia;
+      } | null)
+    | ({
+        relationTo: 'articlePDF';
+        value: number | ArticlePDF;
       } | null)
     | ({
         relationTo: 'column-videos';
@@ -4446,6 +4474,7 @@ export interface ColumnArticlesSelect<T extends boolean = true> {
   excerptEn?: T;
   descriptionTh?: T;
   descriptionEn?: T;
+  articlePDF?: T;
   heroImages?:
     | T
     | {
@@ -4605,6 +4634,23 @@ export interface ColumnMediaSelect<T extends boolean = true> {
   alt?: T;
   caption?: T;
   credit?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "articlePDF_select".
+ */
+export interface ArticlePDFSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   url?: T;

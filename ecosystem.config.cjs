@@ -17,6 +17,10 @@ const columnVideosDir = resolveUploadDir(
   process.env.PAYLOAD_COLUMN_VIDEOS_DIR,
   'payload-uploads/column-videos',
 )
+const articlePdfDir = resolveUploadDir(
+  process.env.PAYLOAD_ARTICLE_PDF_DIR,
+  'payload-uploads/article-pdf',
+)
 
 module.exports = {
   apps: [
@@ -36,6 +40,7 @@ module.exports = {
         PAYLOAD_VIDEOS_DIR: videosDir,
         PAYLOAD_COLUMN_MEDIA_DIR: columnMediaDir,
         PAYLOAD_COLUMN_VIDEOS_DIR: columnVideosDir,
+        PAYLOAD_ARTICLE_PDF_DIR: articlePdfDir,
       },
     },
   ],

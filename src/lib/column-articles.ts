@@ -1,4 +1,5 @@
 import type {
+  ArticlePDF,
   ColumnArticle,
   ColumnAuthor,
   ColumnCategory,
@@ -18,6 +19,8 @@ export type ColumnArticleDetail = {
   description?: string;
   heroAlt: string;
   heroUrl?: string;
+  pdfFilename?: string;
+  pdfUrl?: string;
   slug: string;
   tags: string[];
   title: string;
@@ -36,6 +39,9 @@ function mapArticle(article: ColumnArticle): ColumnArticleDetail {
   const title = article.titleEn || article.titleTh;
   const heroValue = article.heroImages.horizontal[0]?.image;
   const hero = typeof heroValue === "object" ? heroValue as ColumnMedia : undefined;
+  const pdf = article.articlePDF && typeof article.articlePDF === "object"
+    ? article.articlePDF as ArticlePDF
+    : undefined;
   const author = typeof article.author === "object" ? article.author as ColumnAuthor : undefined;
   const video = article.videos?.find((item): item is ColumnVideo => typeof item === "object" && Boolean(item.url));
   const categories = visiblePageTaxonomy(article.categories)
@@ -52,6 +58,8 @@ function mapArticle(article: ColumnArticle): ColumnArticleDetail {
     description: article.descriptionEn || article.excerptEn || article.descriptionTh || article.excerptTh || undefined,
     heroAlt: hero?.alt || title,
     heroUrl: hero?.url || undefined,
+    pdfFilename: pdf?.filename || undefined,
+    pdfUrl: pdf?.url || undefined,
     slug: article.slug,
     tags: [...new Set(tags)],
     title,

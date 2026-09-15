@@ -18,7 +18,7 @@ export default async function RootLayout({
   const [typeNavItems, columnNavItems] = await Promise.all([getTypeNavItems(), getColumnNavItems()]);
 
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className="h-full antialiased" data-scroll-behavior="smooth">
       <body className="min-h-full flex flex-col">
         <AppShell columnNavItems={columnNavItems} showWatchlist={watchlistNavigationEnabled()} typeNavItems={typeNavItems}>
           {children}

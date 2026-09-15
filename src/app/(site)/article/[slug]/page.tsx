@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArticlePdfPagesLoader } from "@/components/final-prototype/ArticlePdfPagesLoader";
 import { FinalArticleRichText } from "@/components/final-prototype/FinalArticleRichText";
 import { getColumnArticleBySlug } from "@/lib/column-articles";
 import styles from "./ColumnArticlePage.module.css";
@@ -70,6 +71,12 @@ export default async function ColumnArticlePage({ params }: PageProps) {
         </aside>
 
         <article className={styles.body}>
+          {article.pdfUrl ? (
+            <ArticlePdfPagesLoader
+              file={article.pdfUrl}
+              title={article.pdfFilename || "Article PDF"}
+            />
+          ) : null}
           {article.video ? (
             <figure className={styles.video}>
               <video aria-label={article.video.alt} controls playsInline poster={article.heroUrl} preload="metadata">
@@ -77,8 +84,10 @@ export default async function ColumnArticlePage({ params }: PageProps) {
               </video>
             </figure>
           ) : null}
-          <FinalArticleRichText content={article.content} />
+          {!article.pdfUrl ? <FinalArticleRichText content={article.content} /> : null}
         </article>
+
+        <div aria-hidden="true" className={styles.emptyRail} />
       </div>
     </main>
   );

@@ -84,6 +84,17 @@
 .eventImage img{object-fit:cover}
 .eventImage .eventMark{border-right:0;height:100%;width:100%}
 .eventMark{align-self:center;aspect-ratio:1/1;height:auto}
+.lightSection [data-market-logo-grid]{display:grid;gap:18px;grid-template-columns:1fr;margin:0 auto;max-width:1500px}
+.lightSection [data-market-logo-card]{aspect-ratio:16/9;background:#0a0a0a;border:1px solid rgba(0,0,0,.09);box-shadow:0 2px 5px rgba(0,0,0,.16);display:grid;overflow:hidden;place-items:center;position:relative;transition:box-shadow .2s ease,transform .2s ease}
+.lightSection [data-market-logo-card]:hover,.lightSection [data-market-logo-card]:focus-visible{box-shadow:0 10px 26px rgba(0,0,0,.22);transform:translateY(-3px)}
+.lightSection [data-market-logo-frame]{display:block;height:46%;position:relative;width:68%}
+.lightSection [data-market-brand="netflix"]{height:32%;width:72%}
+.lightSection [data-market-brand="viu"]{height:48%;width:64%}
+.lightSection [data-market-logo-image]{object-fit:contain}
+@media(min-width:520px){.lightSection [data-market-logo-grid]{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:760px){.lightSection [data-market-logo-grid]{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:1050px){.lightSection [data-market-logo-grid]{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(min-width:1360px){.lightSection [data-market-logo-grid]{grid-template-columns:repeat(5,minmax(0,1fr))}}
 @media(max-width:1200px){
   .pressGrid,.eventGrid{grid-template-columns:1fr}
   .pressCard{grid-template-columns:minmax(0,40%) minmax(0,1fr)}

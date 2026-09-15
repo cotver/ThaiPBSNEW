@@ -9,7 +9,30 @@ const nextConfig: NextConfig = {
       { pathname: "/api/**" },
       { pathname: "/**" },
     ],
-    remotePatterns: [],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.ctfassets.net",
+        port: "",
+        pathname: "/4cd45et68cgf/7LrExJ6PAj6MSIPkDyCO86/**",
+        search: "",
+      },
+      {
+        protocol: "https",
+        hostname: "www.viu.com",
+        port: "",
+        pathname: "/ott/hk/v1/images/Viu_logo.svg",
+        search: "",
+      },
+    ],
+  },
+  webpack(config) {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "pdfjs-dist$": "pdfjs-dist/build/pdf.min.mjs",
+    };
+
+    return config;
   },
   reactCompiler: false,
 };

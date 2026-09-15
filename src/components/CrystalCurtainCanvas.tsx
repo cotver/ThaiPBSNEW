@@ -324,6 +324,7 @@ export function CrystalCurtainCanvas({
     let visibleWidth = 0;
     let animationFrame = 0;
     let audioContext: AudioContext | null = null;
+    let initialChimePlayed = false;
     let lastNoteIndex = -1;
     let lastTime = 0;
     let nextJingleTime = 0;
@@ -484,9 +485,13 @@ export function CrystalCurtainCanvas({
       pointer.previousPosition.copy(pointer.position);
     }
 
-    function enableAudio() {
+    async function enableAudio() {
       if (!audioContext) audioContext = new AudioContext();
-      if (audioContext.state === "suspended") void audioContext.resume();
+      if (audioContext.state === "suspended") await audioContext.resume();
+      if (!initialChimePlayed && audioContext.state === "running") {
+        initialChimePlayed = true;
+        playCrystalJingle(0.34, 2);
+      }
     }
 
     function playCrystalJingle(strength: number, affectedBeads: number) {
@@ -683,7 +688,7 @@ export function CrystalCurtainCanvas({
     }
 
     function onPointerDown(event: PointerEvent) {
-      if (event.pointerType === "mouse") enableAudio();
+      if (event.isPrimary) void enableAudio();
     }
 
     function onPointerLeave() {

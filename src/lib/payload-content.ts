@@ -28,6 +28,11 @@ export type YearProgramRow = {
   year: number;
 };
 
+export type CatalogTitleMatch = {
+  aliases: string[];
+  title: Title;
+};
+
 export type CategoryTile = {
   id: number;
   imageUrl?: string;
@@ -119,6 +124,39 @@ export async function getCatalogTitles(): Promise<Title[]> {
   const titles = await getPayloadTitles();
 
   return titles;
+}
+
+export async function getCatalogTitleMatches(): Promise<CatalogTitleMatch[]> {
+  try {
+    const payload = await getPayloadClient();
+    const result = await payload.find({
+      collection: "programs",
+      depth: 3,
+      limit: 1000,
+      overrideAccess: true,
+      sort: "-updatedAt",
+    });
+
+    return result.docs
+      .map((program) => {
+        const title = programToTitle(program);
+        if (!title) return null;
+
+        return {
+          aliases: uniqueTextLines([
+            cleanText(program.titleTh),
+            cleanText(program.titleEn),
+            cleanText(program._displayTitle),
+            title.title,
+          ]),
+          title,
+        };
+      })
+      .filter((match): match is CatalogTitleMatch => Boolean(match));
+  } catch (error) {
+    console.warn("Unable to load Payload program title matches", error);
+    return [];
+  }
 }
 
 export async function getCatalogTitle(slug: string): Promise<Title | undefined> {
