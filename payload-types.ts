@@ -3304,7 +3304,7 @@ export interface ColumnArticle {
   isMarketsAndEvents?: boolean | null;
   isNormal?: boolean | null;
   publishedDate?: string | null;
-  contentTh: {
+  contentTh?: {
     root: {
       type: string;
       children: {
@@ -3318,7 +3318,7 @@ export interface ColumnArticle {
       version: number;
     };
     [k: string]: unknown;
-  };
+  } | null;
   contentEn?: {
     root: {
       type: string;

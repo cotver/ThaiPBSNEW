@@ -534,7 +534,6 @@ export const ColumnArticles: CollectionConfig = {
       name: 'contentTh',
       label: 'Content (TH)',
       type: 'richText',
-      required: true,
       editor: lexicalEditor({
         features: ({ defaultFeatures }) => [
           ...defaultFeatures,
