@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Title } from "@/lib/content";
 import { getCatalogTitleMatches } from "@/lib/payload-content";
+import { buildSlugLookupKeys } from "@/lib/slug-lookup";
 
 const DEFAULT_D1_URL = "https://d1-read-proxy.thaipbs.workers.dev/";
 const ONBOARDING_PAGE_LIMIT = 500;
@@ -197,7 +198,8 @@ export async function getMarketCompanies(): Promise<MarketCompanySummary[]> {
 export async function getMarketCompany(slug: string): Promise<MarketCompany | null> {
   try {
     const [deals, catalogMatches] = await Promise.all([loadOnboardingDeals(), getCatalogTitleMatches()]);
-    const companyGroup = groupDeals(deals).find((group) => marketCompanySlug(group.name) === slug);
+    const slugLookupKeys = new Set(buildSlugLookupKeys(slug));
+    const companyGroup = groupDeals(deals).find((group) => slugLookupKeys.has(marketCompanySlug(group.name)));
     if (!companyGroup) return null;
 
     const catalogByTitle = new Map<string, Title>();

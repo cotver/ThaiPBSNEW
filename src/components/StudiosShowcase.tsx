@@ -5,6 +5,7 @@ import { getPayloadClient } from "@/lib/payload-client";
 import { columnArticleHref } from "@/lib/content";
 import { visiblePageTaxonomy } from "@/lib/column-page-taxonomy";
 import { getMarketCompanies, type MarketCompanySummary } from "@/lib/d1-market";
+import { buildSlugLookupKeys } from "@/lib/slug-lookup";
 import { StudiosCatalog, type StudiosCatalogArticle, type StudiosCatalogCategory } from "./StudiosCatalog";
 import { StudiosHero, type StudiosHeroItem } from "./StudiosHero";
 import { BeadedCurtainEntrance } from "./BeadedCurtainEntrance";
@@ -346,7 +347,8 @@ async function getStudioContent(categoryArticleLimit?: number): Promise<{
 
 export async function getStudioCategoryCatalogBySlug(slug: string): Promise<StudiosCatalogCategory | undefined> {
   const { categories, otherCategories } = await getStudioContent();
-  return [...categories, ...otherCategories].find((category) => category.slug === slug);
+  const slugLookupKeys = new Set(buildSlugLookupKeys(slug));
+  return [...categories, ...otherCategories].find((category) => slugLookupKeys.has(category.slug));
 }
 
 export type StudiosNewsSection = "press-releases" | "markets-and-events";

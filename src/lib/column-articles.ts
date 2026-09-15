@@ -10,6 +10,7 @@ import type {
 } from "../../payload-types";
 import { getPayloadClient } from "@/lib/payload-client";
 import { visiblePageTaxonomy } from "@/lib/column-page-taxonomy";
+import { buildSlugLookupKeys } from "@/lib/slug-lookup";
 
 export type ColumnArticleDetail = {
   author?: string;
@@ -69,7 +70,7 @@ function mapArticle(article: ColumnArticle): ColumnArticleDetail {
 
 export async function getColumnArticleBySlug(slug: string): Promise<ColumnArticleDetail | undefined> {
   try {
-    const normalizedSlug = normalizeSlugLookupKey(slug);
+    const slugLookupKeys = buildSlugLookupKeys(slug);
     const payload = await getPayloadClient();
     const result = await payload.find({
       collection: "column-articles",
@@ -80,10 +81,7 @@ export async function getColumnArticleBySlug(slug: string): Promise<ColumnArticl
       where: {
         and: [
           {
-            or: [
-              { slug: { equals: slug } },
-              { slug: { equals: normalizedSlug } },
-            ],
+            or: slugLookupKeys.map((key) => ({ slug: { equals: key } })),
           },
           { _status: { equals: "published" } },
         ],
@@ -94,13 +92,5 @@ export async function getColumnArticleBySlug(slug: string): Promise<ColumnArticl
   } catch (error) {
     console.warn(`Unable to load Column Article: ${slug}`, error);
     return undefined;
-  }
-}
-
-function normalizeSlugLookupKey(value: string): string {
-  try {
-    return decodeURIComponent(value).trim().replace(/\s+/g, " ");
-  } catch {
-    return value.trim().replace(/\s+/g, " ");
   }
 }
