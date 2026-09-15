@@ -22,8 +22,11 @@ export function AppShell({
   const [studiosNavState, setStudiosNavState] = useState({ path: "", fullWidth: false, topNav: false });
   const sidebarRef = useRef<HTMLElement>(null);
   const studiosNavPhaseRef = useRef({ fullWidth: false, topNav: false });
-  const studiosFullWidth = pathname === "/home" && studiosNavState.path === pathname && studiosNavState.fullWidth;
-  const studiosTopNav = pathname === "/home" && studiosNavState.path === pathname && studiosNavState.topNav;
+  const studiosRelatedPage = pathname.startsWith("/studios") || pathname.startsWith("/article");
+  const homeStudiosFullWidth = pathname === "/home" && studiosNavState.path === pathname && studiosNavState.fullWidth;
+  const homeStudiosTopNav = pathname === "/home" && studiosNavState.path === pathname && studiosNavState.topNav;
+  const studiosFullWidth = studiosRelatedPage || homeStudiosFullWidth;
+  const studiosTopNav = studiosRelatedPage || homeStudiosTopNav;
   const appNavItems = [
     ...navItems.filter((item) => showWatchlist || item.href !== "/watchlist"),
     ...typeNavItems,
