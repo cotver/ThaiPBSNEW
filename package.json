@@ -8,8 +8,6 @@
     "build": "npx payload migrate && next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test:d1-api": "node scripts/test-d1-api.mjs",
-    "test:d1-api:full": "node scripts/test-d1-api.mjs --show-result",
     "seed:studios": "npx payload run scripts/seed-studios.ts",
     "copy:payload-to-pavillions": "node scripts/copy-payload-schema-data.cjs --from payload --to pavillions",
     "copy:drama-sitcom-programs": "node scripts/copy-drama-sitcom-programs.cjs --from payload --to pavillions"

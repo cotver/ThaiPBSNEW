@@ -14,6 +14,9 @@ export type D1OnboardingDeal = {
   endDate?: string;
   houseIdCount?: number;
   id: string;
+  logoImageApi?: string;
+  posterHorizontalImageApi?: string;
+  posterVerticalImageApi?: string;
   startDate?: string;
   status?: string;
   termYears?: number;
@@ -67,6 +70,9 @@ function parseDeal(value: unknown): D1OnboardingDeal | null {
     endDate: optionalString(row.end_date),
     houseIdCount: optionalNumber(row.house_id_count),
     id,
+    logoImageApi: optionalString(row.logo_image_api),
+    posterHorizontalImageApi: optionalString(row.poster_h_image_api),
+    posterVerticalImageApi: optionalString(row.poster_v_image_api),
     startDate: optionalString(row.start_date),
     status: optionalString(row.status),
     termYears: optionalNumber(row.term_years),

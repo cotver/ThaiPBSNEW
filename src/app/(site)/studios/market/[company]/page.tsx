@@ -19,9 +19,27 @@ function formatDealDate(value?: string): string | undefined {
   }).format(date);
 }
 
+function d1Artwork(program: MarketCompanyProgram) {
+  const asset = program.posterHorizontalImageApi
+    ? "poster-h"
+    : program.posterVerticalImageApi
+      ? "poster-v"
+      : program.logoImageApi
+        ? "logo"
+        : undefined;
+
+  return asset
+    ? {
+        asset,
+        src: `/api/d1/onboarding-deals/${encodeURIComponent(program.id)}/${asset}/image`,
+      }
+    : undefined;
+}
+
 function ProgramCard({ program }: { program: MarketCompanyProgram }) {
   const title = program.catalogTitle;
-  const image = title?.heroImage || title?.posterImage;
+  const fallbackArtwork = title ? undefined : d1Artwork(program);
+  const image = title?.heroImage || title?.posterImage || fallbackArtwork?.src;
   const canOpenTitle = Boolean(title && !title.isDiscontinued);
   const metadata = [
     program.contractType,
@@ -42,7 +60,16 @@ function ProgramCard({ program }: { program: MarketCompanyProgram }) {
   const content = (
     <article className={`group flex h-full min-w-0 flex-col overflow-hidden rounded-[8px] border border-white/10 bg-white/[0.03] transition ${canOpenTitle ? "hover:-translate-y-1 hover:border-white/25 hover:bg-white/[0.07]" : ""}`}>
       <div className={`relative aspect-video w-full shrink-0 overflow-hidden bg-gradient-to-br ${title?.tone || "from-slate-900 via-orange-700 to-amber-300"}`}>
-        {image ? <Image alt="" className="object-cover transition duration-300 group-hover:scale-[1.025]" fill sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, (max-width: 1279px) 33vw, (max-width: 1535px) 25vw, 20vw" src={image} /> : null}
+        {image ? (
+          <Image
+            alt={fallbackArtwork ? `${program.title} artwork` : ""}
+            className={`${fallbackArtwork && fallbackArtwork.asset !== "poster-h" ? "object-contain p-4" : "object-cover"} transition duration-300 group-hover:scale-[1.025]`}
+            fill
+            sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, (max-width: 1279px) 33vw, (max-width: 1535px) 25vw, 20vw"
+            src={image}
+            unoptimized={Boolean(fallbackArtwork)}
+          />
+        ) : null}
         {!image ? <span className="absolute inset-0 flex items-center justify-center p-5 text-center text-sm font-black leading-tight text-white/88">{program.title}</span> : null}
         <div className="absolute inset-0 bg-black/10" />
       </div>
