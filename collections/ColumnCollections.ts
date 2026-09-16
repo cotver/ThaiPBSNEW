@@ -1,5 +1,5 @@
 import { BlocksFeature, EXPERIMENTAL_TableFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
-import type { Access, Block, CollectionConfig } from 'payload'
+import type { Access, Block, CollectionBeforeDeleteHook, CollectionConfig } from 'payload'
 
 const COLUMN_GROUP = 'Column'
 
@@ -36,6 +36,23 @@ const editableAccess = {
   create: columnManager,
   update: columnManager,
   delete: columnManager,
+}
+
+const deleteColumnArticleDependents: CollectionBeforeDeleteHook = async ({ id, req }) => {
+  await req.payload.delete({
+    collection: 'column-article-stats',
+    where: { article: { equals: id } },
+    overrideAccess: true,
+    req,
+  })
+
+  await req.payload.update({
+    collection: 'column-analytics-events',
+    where: { article: { equals: id } },
+    data: { article: null },
+    overrideAccess: true,
+    req,
+  })
 }
 
 const columnAdmin = (admin: NonNullable<CollectionConfig['admin']> = {}) => ({
@@ -348,6 +365,7 @@ export const ColumnArticles: CollectionConfig = {
     delete: columnManager,
   },
   hooks: {
+    beforeDelete: [deleteColumnArticleDependents],
     beforeChange: [
       ({ data, originalDoc }) => {
         const isNewEpisodes = data?.isNewEpisodes ?? originalDoc?.isNewEpisodes
