@@ -378,7 +378,11 @@ export async function getStudioNewsBySection(section: StudiosNewsSection): Promi
   }
 }
 
-export async function StudiosShowcase() {
+export type StudiosShowcaseProps = {
+  showCurtain?: boolean;
+};
+
+export async function StudiosShowcase({ showCurtain = true }: StudiosShowcaseProps = {}) {
   const entranceTitle = "ThaiPBS Journal";
   const [studioContent, marketCompanies] = await Promise.all([getStudioContent(20), getMarketCompanies()]);
   const { categories, otherCategories, featuredArticles, pressReleases } = studioContent;
@@ -386,8 +390,13 @@ export async function StudiosShowcase() {
   const hasNews = pressReleases.length > 0 || marketLogoCompanies.length > 0;
   if (!featuredArticles.length && !categories.length && !otherCategories.length && !hasNews) return null;
   return (
-    <section className={styles.showcase} aria-label={entranceTitle} data-studios-showcase>
-      <BeadedCurtainEntrance title={entranceTitle} />
+    <section
+      className={styles.showcase}
+      aria-label={entranceTitle}
+      data-studios-curtain-visible={showCurtain}
+      data-studios-showcase
+    >
+      {showCurtain ? <BeadedCurtainEntrance title={entranceTitle} /> : null}
       <StudiosContentReveal>
         {featuredArticles.length ? (
           <div className={styles.revealSection} data-studios-reveal-section>

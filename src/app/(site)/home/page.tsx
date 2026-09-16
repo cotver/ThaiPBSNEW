@@ -59,7 +59,7 @@ export default async function HomePage() {
           </>
         ) : null}
       </section>
-      <StudiosShowcase />
+      <StudiosShowcase showCurtain={false} />
     </>
   );
 }
