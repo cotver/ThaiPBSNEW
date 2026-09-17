@@ -101,28 +101,23 @@ to `/etc/nginx/conf.d/pavilions.thaipbs.or.th.conf` instead.
 
 ## 6. Rebuild and restart the application securely
 
-The committed PM2 configuration now starts Next.js with
-`-H 127.0.0.1`. Therefore, port 3008 accepts connections only from the server
-itself, while Nginx can still proxy to it.
-
-Use the project's normal release process. A typical PM2 deployment is:
+The PM2 configuration starts Next.js on port 3008. Use the project's release
+process, which uses PM2's rolling reload so all workers are not stopped at the
+same time:
 
 ```bash
 cd /srv/ThaiPBSNEW
-npm ci
-npm run build
-pm2 reload ecosystem.config.cjs --update-env
-pm2 save
+make deploy
 ```
 
-Confirm the application is reachable locally and port 3008 is loopback-only:
+Confirm the application is reachable locally and check the port binding:
 
 ```bash
 curl -I http://127.0.0.1:3008/
 sudo ss -lntp | grep ':3008'
 ```
 
-The listening address should be `127.0.0.1:3008`, not `0.0.0.0:3008`.
+Next.js uses its default host binding, so it is not restricted to loopback.
 
 ## 7. Test HTTP before requesting the certificate
 
@@ -167,9 +162,8 @@ Repeat the LAN and external tests using `https://`.
 
 ## 9. Firewall verification
 
-The server should accept inbound TCP 80 and 443. Port 3008 should not be exposed
-by the router or server firewall. Binding the application to `127.0.0.1` adds a
-second layer of protection even if a firewall rule is accidentally changed.
+The server should accept inbound TCP 80 and 443. If port 3008 should remain
+private, enforce that with the router and server firewall.
 
 ## Troubleshooting
 

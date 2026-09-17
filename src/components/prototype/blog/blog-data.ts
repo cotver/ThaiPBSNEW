@@ -1,4 +1,5 @@
 import type { Title } from "@/lib/content";
+import type { TitleCollections } from "@/lib/payload-content";
 
 export type PrototypeStyle = "style-1" | "style-2" | "style-3" | "style-4" | "style-5" | "style-8" | "style-9" | "style-10" | "style-11";
 
@@ -134,6 +135,29 @@ export function getEditorialSections(titles: Title[]): EditorialSection[] {
   if (international.length >= 2) sections.push({ id: "international", title: "International", titles: international.slice(0, 8) });
 
   return sections.filter((section) => section.titles.length);
+}
+
+export function withoutDiscontinuedPrototypeContent(collections: TitleCollections): TitleCollections {
+  const available = (title: Title) => !title.isDiscontinued;
+
+  return {
+    ...collections,
+    continuePrograms: collections.continuePrograms.filter(available),
+    continueWatching: collections.continueWatching.filter(available),
+    discontinuedPrograms: [],
+    heroes: collections.heroes.filter(available),
+    internationalPrograms: collections.internationalPrograms.filter(available),
+    posterMockups: collections.posterMockups.filter(available),
+    recommended: collections.recommended.filter(available),
+    thaiPrograms: collections.thaiPrograms.filter(available),
+    typeRows: collections.typeRows
+      .map((row) => ({ ...row, titles: row.titles.filter(available) }))
+      .filter((row) => row.titles.length > 0),
+    watchlist: collections.watchlist.filter(available),
+    yearRows: collections.yearRows
+      .map((row) => ({ ...row, titles: row.titles.filter(available) }))
+      .filter((row) => row.titles.length > 0),
+  };
 }
 
 function uniqueTitles(titles: Title[]) {

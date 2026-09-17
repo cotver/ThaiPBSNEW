@@ -379,7 +379,7 @@ async function getPayloadTitles(): Promise<Title[]> {
   }
 }
 
-async function getHeroImageTitles(): Promise<Title[]> {
+export async function getHeroImageTitles(): Promise<Title[]> {
   try {
     const payload = await getPayloadClient();
     const result = await payload.find({

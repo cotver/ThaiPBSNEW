@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { BlogPrototypeHome } from "@/components/prototype/blog/BlogPrototype";
-import { parsePrototypeStyle, withPrototypeFallback } from "@/components/prototype/blog/blog-data";
+import { parsePrototypeStyle, withPrototypeFallback, withoutDiscontinuedPrototypeContent } from "@/components/prototype/blog/blog-data";
 import { getCatalogCollections, getCatalogTitles, getCategoryTiles } from "@/lib/payload-content";
 import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
 import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
@@ -20,6 +20,6 @@ export default async function StyleHomePage({ params }: { params: Promise<{ styl
     getCategoryTiles(),
     getCatalogCollections(continueWatchingSlugs, savedTitleSlugs),
   ]);
-  const titles = withPrototypeFallback(sourceTitles);
-  return <BlogPrototypeHome categoryTiles={categoryTiles} collections={collections} style={style} titles={titles} />;
+  const titles = withPrototypeFallback(sourceTitles).filter((title) => !title.isDiscontinued);
+  return <BlogPrototypeHome categoryTiles={categoryTiles} collections={withoutDiscontinuedPrototypeContent(collections)} style={style} titles={titles} />;
 }
