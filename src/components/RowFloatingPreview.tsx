@@ -501,6 +501,7 @@ function HoverTrailerMedia({
           onLoad={markReady}
           sizes={`${Math.ceil(width)}px`}
           src={trailerUrl}
+          unoptimized
         />
       ) : trailerIsInternal && trailerUrl && !trailerFailed && !trailerEnded ? (
         <video

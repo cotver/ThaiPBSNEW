@@ -294,9 +294,11 @@ export function TitlePageExperience({ title }: { title: Title }) {
                 showInlineTrailer ? "opacity-100" : "opacity-0"
               } transition-opacity duration-700 ease-out`}
               fill
+              loading="eager"
               onLoad={() => markTrailerLoaded(trailerUrl)}
               sizes="100vw"
               src={trailerUrl}
+              unoptimized
             />
           ) : trailerIsInternal && trailerUrl && keepTrailerMounted ? (
             <video

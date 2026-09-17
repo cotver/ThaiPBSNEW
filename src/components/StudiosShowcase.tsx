@@ -100,7 +100,7 @@ function articleToNewsItem(article: ColumnArticle, useEventDate = false): Studio
 
 export function StudiosPressCard({ item }: { item: StudiosNewsItem }) {
   return (
-    <Link className={styles.pressCard} href={item.href}>
+    <Link className={styles.pressCard} data-studios-reveal-item href={item.href}>
       <span className={styles.pressImage}>{item.imageUrl ? <Image alt={item.imageAlt} fill sizes="(max-width: 720px) 38vw, 18vw" src={item.imageUrl} /> : null}</span>
       <span className={styles.pressCopy}><time>{item.date}</time><strong>{item.title}</strong>{item.description ? <small>{item.description}</small> : null}</span>
     </Link>
@@ -109,7 +109,7 @@ export function StudiosPressCard({ item }: { item: StudiosNewsItem }) {
 
 export function StudiosEventCard({ item }: { item: StudiosNewsItem }) {
   return (
-    <Link className={styles.eventCard} href={item.href}>
+    <Link className={styles.eventCard} data-studios-reveal-item href={item.href}>
       <span className={styles.eventImage}>
         {item.imageUrl ? <Image alt={item.imageAlt} fill sizes="(max-width: 700px) 95px, 130px" src={item.imageUrl} /> : <span className={styles.eventMark}>{item.mark}</span>}
       </span>
@@ -212,6 +212,7 @@ export function StudiosMarketCompanyCard({ company }: { company: MarketCompanySu
     <Link
       aria-label={`View programs purchased by ${company.name}`}
       data-market-logo-card
+      data-studios-reveal-item
       href={`/studios/market/${encodeURIComponent(company.slug)}`}
       title={company.name}
     >
@@ -399,13 +400,13 @@ export async function StudiosShowcase({ showCurtain = true }: StudiosShowcasePro
       {showCurtain ? <BeadedCurtainEntrance title={entranceTitle} /> : null}
       <StudiosContentReveal>
         {featuredArticles.length ? (
-          <div className={styles.revealSection} data-studios-reveal-section>
+          <div className={styles.revealSection}>
             <StudiosHero items={featuredArticles} />
           </div>
         ) : null}
 
         {categories.length ? (
-          <div className={styles.revealSection} data-studios-reveal-section>
+          <div className={styles.revealSection}>
             <div className={styles.catalog} id="catalog">
               <StudiosCatalog categories={categories} showArticleSections={false} />
             </div>
@@ -413,11 +414,11 @@ export async function StudiosShowcase({ showCurtain = true }: StudiosShowcasePro
         ) : null}
 
         {otherCategories.length ? (
-          <div className={styles.revealSection} data-studios-reveal-section>
+          <div className={styles.revealSection}>
             <section className={styles.otherCategories} aria-label="More Studios categories">
               <div className={styles.otherCategoryGrid}>
                 {otherCategories.map((category) => (
-                  <Link className={styles.otherCategoryCard} href={`/studios/${encodeURIComponent(category.slug)}`} key={category.id}>
+                  <Link className={styles.otherCategoryCard} data-studios-reveal-item href={`/studios/${encodeURIComponent(category.slug)}`} key={category.id}>
                     <span className={styles.otherCategoryImage}>
                       {category.coverImageUrl ? (
                         <Image alt={category.coverAlt} fill sizes="(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 25vw" src={category.coverImageUrl} />
@@ -435,11 +436,11 @@ export async function StudiosShowcase({ showCurtain = true }: StudiosShowcasePro
         ) : null}
 
         {hasNews ? (
-          <div className={styles.revealSection} data-studios-reveal-section>
+          <div className={styles.revealSection}>
             <section className={styles.lightSection} id="news" aria-label="Studios news and events">
               {pressReleases.length ? (
                 <>
-                  <div className={styles.newsHeading}>
+                  <div className={styles.newsHeading} data-studios-reveal-item>
                     <h2>Press Releases</h2>
                     <Link className={styles.newsViewAll} href="/studios/news/press-releases">View All <span aria-hidden="true">›</span></Link>
                   </div>
@@ -450,7 +451,7 @@ export async function StudiosShowcase({ showCurtain = true }: StudiosShowcasePro
               ) : null}
               {marketLogoCompanies.length ? (
                 <>
-                  <div className={`${styles.newsHeading} ${pressReleases.length ? styles.eventsTitle : ""}`}>
+                  <div className={`${styles.newsHeading} ${pressReleases.length ? styles.eventsTitle : ""}`} data-studios-reveal-item>
                     <h2>Markets and Events</h2>
                     <Link className={styles.newsViewAll} href="/studios/news/markets-and-events">View All <span aria-hidden="true">›</span></Link>
                   </div>

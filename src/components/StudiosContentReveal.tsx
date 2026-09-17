@@ -12,34 +12,54 @@ export function StudiosContentReveal({ children }: { children: ReactNode }) {
     if (!revealRoot) return;
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const sections = Array.from(
-      revealRoot.querySelectorAll<HTMLElement>("[data-studios-reveal-section]"),
-    );
-
-    sections.forEach((section) => {
-      section.dataset.revealReady = "true";
-    });
-
-    if (reducedMotion || !("IntersectionObserver" in window)) {
-      sections.forEach((section) => {
-        section.dataset.revealVisible = "true";
-      });
-      return;
-    }
-
-    const observer = new IntersectionObserver(
+    const selector = "[data-studios-reveal-item]";
+    const reveal = (item: HTMLElement) => {
+      item.dataset.revealVisible = "true";
+    };
+    const observer = reducedMotion || !("IntersectionObserver" in window)
+      ? null
+      : new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return;
-          (entry.target as HTMLElement).dataset.revealVisible = "true";
-          observer.unobserve(entry.target);
+          reveal(entry.target as HTMLElement);
+          observer?.unobserve(entry.target);
         });
       },
-      { rootMargin: "0px 0px -6%", threshold: 0.01 },
+      { threshold: 0.12 },
     );
 
-    sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
+    const prepare = (item: HTMLElement) => {
+      if (item.dataset.revealReady === "true") return;
+      item.dataset.revealReady = "true";
+
+      const bounds = item.getBoundingClientRect();
+      const isAlreadyVisible = bounds.bottom > 0 && bounds.top < window.innerHeight;
+      if (!observer || isAlreadyVisible) {
+        reveal(item);
+        return;
+      }
+
+      observer.observe(item);
+    };
+
+    revealRoot.querySelectorAll<HTMLElement>(selector).forEach(prepare);
+
+    const mutationObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (!(node instanceof HTMLElement)) return;
+          if (node.matches(selector)) prepare(node);
+          node.querySelectorAll<HTMLElement>(selector).forEach(prepare);
+        });
+      });
+    });
+    mutationObserver.observe(revealRoot, { childList: true, subtree: true });
+
+    return () => {
+      observer?.disconnect();
+      mutationObserver.disconnect();
+    };
   }, []);
 
   return (

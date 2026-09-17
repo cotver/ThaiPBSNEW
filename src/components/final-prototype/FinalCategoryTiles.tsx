@@ -60,6 +60,7 @@ export function FinalCategoryTiles({ categories }: { categories: CategoryTile[] 
                   onLoad={() => setLoadedVideos((current) => new Set(current).add(category.id))}
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
                   src={category.videoUrl}
+                  unoptimized
                 />
               )}
 

@@ -62,7 +62,7 @@ export function StudiosHero({ items }: { items: StudiosHeroItem[] }) {
 
   return (
     <>
-      <div className={styles.hero}>
+      <div className={styles.hero} data-studios-reveal-item>
         {items.map((item, index) => (
           <div
             aria-hidden={index !== active}
@@ -123,7 +123,7 @@ export function StudiosHero({ items }: { items: StudiosHeroItem[] }) {
       </div>
 
       {items.length > 1 ? (
-        <div className={styles.dots} aria-label={`Featured slide ${active + 1} of ${items.length}`}>
+        <div className={styles.dots} data-studios-reveal-item aria-label={`Featured slide ${active + 1} of ${items.length}`}>
           {items.map((item, index) => (
             <button
               aria-label={`Show ${item.title}`}

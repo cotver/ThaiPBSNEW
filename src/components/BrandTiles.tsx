@@ -75,6 +75,7 @@ export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
                   })
                 }
                 src={category.videoUrl}
+                unoptimized
               />
             )}
 

@@ -432,9 +432,11 @@ export function StyleOneHeroCarousel({ titles }: { titles: Title[] }) {
                   showInlineTrailer ? "opacity-100" : "opacity-0"
                 } transition-opacity duration-700 ease-out`}
                 fill
+                loading="eager"
                 onLoad={() => markTrailerLoaded(trailerUrl)}
                 sizes="100vw"
                 src={trailerUrl}
+                unoptimized
               />
             ) : keepTrailerMounted && trailerIsInternal ? (
               <video
@@ -506,8 +508,9 @@ export function StyleOneHeroCarousel({ titles }: { titles: Title[] }) {
                     <Image
                       alt=""
                       className={imageClassName}
+                      fetchPriority={index === 0 ? "high" : "auto"}
                       fill
-                      priority={index === 0}
+                      loading="eager"
                       sizes="100vw"
                       src={heroAsset}
                     />

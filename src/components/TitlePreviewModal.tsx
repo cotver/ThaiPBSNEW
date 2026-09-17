@@ -327,6 +327,7 @@ export function TitlePreviewModal({
                     showInlineTrailer ? "opacity-100" : "opacity-0"
                   } transition-opacity duration-700 ease-out`}
                   fill
+                  loading="eager"
                   onLoad={() => {
                     setTrailerPlayback((playback) => ({
                       ...playback,
@@ -336,6 +337,7 @@ export function TitlePreviewModal({
                   }}
                   sizes="min(100vw, 1024px)"
                   src={trailerUrl}
+                  unoptimized
                 />
             ) : trailerIsInternal && trailerUrl && keepTrailerMounted ? (
                 <video

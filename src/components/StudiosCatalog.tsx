@@ -37,7 +37,7 @@ const filters: { label: string; value: CatalogFilter }[] = [
 
 export function StudiosArticleCard({ article }: { article: StudiosCatalogArticle }) {
   return (
-    <article className={styles.programCard}>
+    <article className={styles.programCard} data-studios-reveal-item>
       <Link aria-label={`Read ${article.title}`} className={styles.programImage} href={article.href}>
         {article.imageUrl ? <Image alt={article.imageAlt} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 20vw" src={article.imageUrl} /> : null}
         {article.badge ? <span className={styles.newBadge}>{article.badge}</span> : null}
@@ -113,7 +113,7 @@ function CategorySection({ category }: { category: StudiosCatalogCategory }) {
 
   return (
     <section className={styles.programSection} id={`studio-${category.slug}`} aria-labelledby={`studio-${category.slug}-heading`}>
-      <div className={styles.sectionHeading}>
+      <div className={styles.sectionHeading} data-studios-reveal-item>
         <div>
           <h3 id={`studio-${category.slug}-heading`}>{category.name}</h3>
           <Link className={styles.viewAll} href={`/studios/${encodeURIComponent(category.slug)}?filter=${visibleFilter}`}>
@@ -179,6 +179,7 @@ export function StudiosCatalog({ categories, showArticleSections = false }: { ca
         {categories.map((category) => (
           <Link
             className={styles.selectionCard}
+            data-studios-reveal-item
             href={`/studios/${encodeURIComponent(category.slug)}`}
             key={category.id}
           >

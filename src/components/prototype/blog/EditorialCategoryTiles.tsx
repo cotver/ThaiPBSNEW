@@ -49,7 +49,7 @@ export function EditorialCategoryTiles({ categories, style }: { categories: Cate
             >
               {category.imageUrl ? <Image alt="" className="bp-cover bp-brand-tile__image" fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw" src={category.imageUrl} /> : null}
               {hasRequestedVideo && category.videoUrl && isGif ? (
-                <Image alt="" className={`bp-brand-tile__motion ${showVideo ? "is-visible" : ""}`} fill onLoad={() => setLoadedVideos((current) => new Set(current).add(category.id))} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw" src={category.videoUrl} />
+                <Image alt="" className={`bp-brand-tile__motion ${showVideo ? "is-visible" : ""}`} fill onLoad={() => setLoadedVideos((current) => new Set(current).add(category.id))} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw" src={category.videoUrl} unoptimized />
               ) : null}
               {hasRequestedVideo && category.videoUrl && !isGif ? (
                 <video aria-hidden="true" autoPlay className={`bp-brand-tile__motion ${showVideo ? "is-visible" : ""}`} loop muted onCanPlay={() => setLoadedVideos((current) => new Set(current).add(category.id))} playsInline poster={category.imageUrl} preload="auto" src={category.videoUrl} />
