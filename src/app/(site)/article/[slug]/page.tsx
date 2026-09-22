@@ -4,7 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArticlePdfPagesLoader } from "@/components/final-prototype/ArticlePdfPagesLoader";
 import { FinalArticleRichText } from "@/components/final-prototype/FinalArticleRichText";
-import { getColumnArticleBySlug } from "@/lib/column-articles";
+import { getColumnArticleBySlug, getRelatedColumnArticles } from "@/lib/column-articles";
+import { columnArticleHref } from "@/lib/content";
 import styles from "./ColumnArticlePage.module.css";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +40,7 @@ export default async function ColumnArticlePage({ params }: PageProps) {
   const { slug } = await params;
   const article = await getColumnArticleBySlug(slug);
   if (!article) notFound();
+  const related = await getRelatedColumnArticles(article);
 
   return (
     <main className={styles.page}>
@@ -87,7 +89,24 @@ export default async function ColumnArticlePage({ params }: PageProps) {
           {!article.pdfUrl ? <FinalArticleRichText content={article.content} /> : null}
         </article>
 
-        <div aria-hidden="true" className={styles.emptyRail} />
+        <aside aria-label="Story recommendations" className={styles.relatedRail}>
+          <h2>{related.hasMatches ? "Related Stories" : "More Stories"}</h2>
+          {related.items.length ? (
+            <div className={styles.relatedList}>
+              {related.items.map((item) => (
+                <Link className={styles.relatedCard} href={columnArticleHref(item.slug)} key={item.id}>
+                  <span className={styles.relatedImage}>
+                    {item.heroUrl ? <Image alt="" fill sizes="(max-width: 560px) 110px, 120px" src={item.heroUrl} /> : null}
+                  </span>
+                  <span className={styles.relatedCopy}>
+                    <strong>{item.title}</strong>
+                    <time dateTime={item.date}>{formatDate(item.date)}</time>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          ) : <p className={styles.relatedEmpty}>More stories are coming soon.</p>}
+        </aside>
       </div>
     </main>
   );

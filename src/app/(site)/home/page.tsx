@@ -22,11 +22,10 @@ export default async function HomePage() {
 
   return (
     <>
-
-
       <HeroCarousel titles={collections.heroes} />
+      <StudiosShowcase showCurtain={false} />
 
-      <section className="relative z-10 space-y-8 px-5 pb-16 sm:px-8 lg:px-10">
+      <section className="relative z-10 space-y-8 px-5 pb-16 sm:px-8 lg:px-10" data-home-content>
         <BrandTiles categories={categories} />
         <ContentRow layout="poster" matchSourceTitles={collections.continueWatching} title="Recommended For You" titles={collections.recommended} viewAllHref="/browse?section=recommended&label=Recommended%20For%20You" />
         {collections.typeRows.map((row) => (
@@ -59,7 +58,6 @@ export default async function HomePage() {
           </>
         ) : null}
       </section>
-      <StudiosShowcase showCurtain={false} />
     </>
   );
 }

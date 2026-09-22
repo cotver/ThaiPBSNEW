@@ -206,3 +206,13 @@ a {
     transform-origin: var(--preview-origin-x, 50%) 0%;
   }
 }
+
+[data-studios-showcase] + [data-home-content] {
+  padding-top: 3rem;
+}
+
+@media (min-width: 640px) {
+  [data-studios-showcase] + [data-home-content] {
+    padding-top: 4rem;
+  }
+}
