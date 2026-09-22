@@ -7,7 +7,11 @@
   height: 100%;
   overflow: hidden;
   perspective: max(1200px, 80vw);
+  opacity: 0;
+  transition: opacity 350ms ease;
 }
+
+.ready { opacity: 1; }
 
 .plane {
   --pointer-x: 0deg;
@@ -36,12 +40,13 @@
   transform-style: preserve-3d;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
-  animation-play-state: running;
+  animation-play-state: paused;
   animation-fill-mode: both;
   will-change: transform;
 }
 .up { animation-name: drift-up; }
 .down { animation-name: drift-down; }
+.ready .track { animation-play-state: running; }
 .wall .column:hover .track { animation-play-state: paused; }
 
 .sequence { display: flex; flex: none; flex-direction: column; }
@@ -104,5 +109,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .track { animation: none; }
-  .plane, .inner, .tint { transition: none; will-change: auto; }
+  .wall, .plane, .inner, .tint { transition: none; will-change: auto; }
 }
