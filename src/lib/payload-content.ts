@@ -198,7 +198,7 @@ export async function getCatalogTitle(slug: string): Promise<Title | undefined> 
   }
 }
 
-export async function getLandingImageUrls(): Promise<string[]> {
+export async function getLandingGalleryItems(): Promise<{ image: string; label: string }[]> {
   try {
     const payload = await getPayloadClient();
     const result = await payload.find({
@@ -209,9 +209,10 @@ export async function getLandingImageUrls(): Promise<string[]> {
       sort: "createdAt",
     });
 
-    return result.docs
-      .map((item) => mediaUrl(item.heroImage))
-      .filter((url): url is string => Boolean(url));
+    return result.docs.flatMap((item) => {
+      const image = mediaUrl(item.heroImage);
+      return image ? [{ image, label: item.title }] : [];
+    });
   } catch (error) {
     console.warn("Unable to load Payload landing images", error);
     return [];

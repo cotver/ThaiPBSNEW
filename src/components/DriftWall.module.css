@@ -1,0 +1,108 @@
+.wall {
+  --columns: 10;
+  --tile-width: calc(125vw / var(--columns));
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  perspective: max(1200px, 80vw);
+}
+
+.plane {
+  --pointer-x: 0deg;
+  --pointer-y: 0deg;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  height: 100%;
+  align-items: flex-start;
+  transform: translate(-50%, -50%) scale(1.12) rotateX(calc(16deg + var(--pointer-y))) rotateY(calc(-14deg + var(--pointer-x))) translateZ(-120px);
+  transform-style: preserve-3d;
+  transition: transform 180ms ease-out;
+  will-change: transform;
+}
+
+.column {
+  width: var(--tile-width);
+  flex: none;
+  transform-style: preserve-3d;
+}
+
+.track {
+  display: flex;
+  flex-direction: column;
+  transform-style: preserve-3d;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-play-state: running;
+  animation-fill-mode: both;
+  will-change: transform;
+}
+.up { animation-name: drift-up; }
+.down { animation-name: drift-down; }
+.wall .column:hover .track { animation-play-state: paused; }
+
+.sequence { display: flex; flex: none; flex-direction: column; }
+.tile {
+  position: relative;
+  flex: none;
+  width: 100%;
+  padding: 9px;
+  transform-style: preserve-3d;
+}
+.inner {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #000;
+  opacity: .55;
+  transform: translateZ(0);
+  transition: transform 420ms cubic-bezier(.22, 1, .36, 1), opacity 420ms ease, box-shadow 420ms ease;
+}
+.inner img { object-fit: cover; filter: saturate(.92); }
+.tint { position: absolute; inset: 0; background: #060010; opacity: .42; transition: opacity 420ms ease; }
+.tile:hover .inner {
+  opacity: 1;
+  transform: translateZ(64px);
+  box-shadow: 0 24px 60px -18px rgba(0, 0, 0, .7);
+}
+.tile:hover .tint { opacity: 0; }
+
+/* Three identical sequences leave a full buffer above and below the viewport. */
+@keyframes drift-up { from { transform: translateY(-33.3333333333%); } to { transform: translateY(-66.6666666667%); } }
+@keyframes drift-down { from { transform: translateY(-66.6666666667%); } to { transform: translateY(-33.3333333333%); } }
+
+@media (min-width: 3000px) {
+  .plane { transform: translate(-50%, -50%) scale(1.12) rotateX(calc(8deg + var(--pointer-y))) rotateY(calc(-6deg + var(--pointer-x))) translateZ(-80px); }
+}
+
+@media (max-width: 2999px) {
+  .wall { --columns: 7; }
+  .column:nth-child(n + 8) { display: none; }
+}
+
+@media (max-width: 1919px) {
+  .wall { --columns: 5; }
+  .column:nth-child(n + 6) { display: none; }
+}
+
+@media (max-width: 1023px) {
+  .wall { --columns: 3; }
+  .column:nth-child(n + 4) { display: none; }
+}
+
+@media (max-width: 639px) {
+  .wall { --columns: 2; }
+  .column:nth-child(n + 3) { display: none; }
+  .plane { transform: translate(-50%, -50%) scale(1.05) rotateX(calc(12deg + var(--pointer-y))) rotateY(calc(-8deg + var(--pointer-x))) translateZ(-80px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track { animation: none; }
+  .plane, .inner, .tint { transition: none; will-change: auto; }
+}

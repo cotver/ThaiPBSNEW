@@ -10,6 +10,7 @@ import { StudiosCatalog, type StudiosCatalogArticle, type StudiosCatalogCategory
 import { StudiosHero, type StudiosHeroItem } from "./StudiosHero";
 import { BeadedCurtainEntrance } from "./BeadedCurtainEntrance";
 import { StudiosContentReveal } from "./StudiosContentReveal";
+import { StudiosCategoryAccordion } from "./StudiosCategoryAccordion";
 import styles from "./StudiosShowcase.module.css";
 
 export type StudiosNewsItem = {
@@ -416,21 +417,9 @@ export async function StudiosShowcase({ showCurtain = true }: StudiosShowcasePro
         {otherCategories.length ? (
           <div className={styles.revealSection}>
             <section className={styles.otherCategories} aria-label="More Studios categories">
-              <div className={styles.otherCategoryGrid}>
-                {otherCategories.map((category) => (
-                  <Link className={styles.otherCategoryCard} data-studios-reveal-item href={`/studios/${encodeURIComponent(category.slug)}`} key={category.id}>
-                    <span className={styles.otherCategoryImage}>
-                      {category.coverImageUrl ? (
-                        <Image alt={category.coverAlt} fill sizes="(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 25vw" src={category.coverImageUrl} />
-                      ) : null}
-                    </span>
-                    <span className={styles.otherCategoryCopy}>
-                      <strong>{category.name}</strong>
-                      {category.description ? <p>{category.description}</p> : null}
-                    </span>
-                  </Link>
-                ))}
-              </div>
+              <StudiosCategoryAccordion categories={otherCategories.map(({ id, name, slug, coverAlt, coverImageUrl }) => ({
+                id, name, slug, coverAlt, coverImageUrl,
+              }))} />
             </section>
           </div>
         ) : null}

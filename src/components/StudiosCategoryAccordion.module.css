@@ -1,0 +1,144 @@
+.rows {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.gallery {
+  display: flex;
+  gap: 10px;
+  height: clamp(320px, 35vw, 460px);
+  min-width: 0;
+  perspective: 1400px;
+  width: 100%;
+}
+
+.panel {
+  background: #0a0713;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px -18px rgb(0 0 0 / 80%);
+  color: #fff;
+  display: block;
+  flex-basis: 0;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+  text-decoration: none;
+  transform: rotateY(5deg);
+  transition: flex-grow .6s cubic-bezier(.22, 1, .36, 1), transform .6s cubic-bezier(.22, 1, .36, 1);
+}
+
+.panel.active {
+  transform: rotateY(0);
+}
+
+.panel:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.media {
+  display: block;
+  filter: grayscale(1);
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  transform: scale(1.06);
+  transition: filter .6s cubic-bezier(.22, 1, .36, 1), transform .6s cubic-bezier(.22, 1, .36, 1);
+}
+
+.media img {
+  object-fit: cover;
+}
+
+.active .media {
+  filter: grayscale(0);
+  transform: scale(1);
+}
+
+.shade {
+  background: linear-gradient(180deg, transparent 38%, rgb(6 0 16 / 78%) 100%), rgb(6 0 16 / 35%);
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  transition: background-color .6s ease;
+}
+
+.active .shade {
+  background-color: transparent;
+}
+
+.label {
+  align-items: center;
+  bottom: 20px;
+  display: flex;
+  gap: 12px;
+  left: 20px;
+  min-width: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 20px;
+}
+
+.bar {
+  background: #fff;
+  border-radius: 3px;
+  flex: 0 0 3px;
+  height: 26px;
+  opacity: 0;
+  transform: translateX(-14px);
+  transition: opacity .4s ease, transform .4s ease;
+}
+
+.name {
+  font-size: clamp(1rem, 1.4vw, 1.4rem);
+  font-weight: 600;
+  letter-spacing: .01em;
+  min-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 2px 14px rgb(0 0 0 / 55%);
+  transform: translateX(-14px);
+  transition: opacity .4s ease .06s, transform .4s ease .06s;
+  white-space: nowrap;
+}
+
+.active .bar,
+.active .name {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media (max-width: 520px) {
+  .gallery {
+    flex-direction: column;
+    height: min(80vh, 640px);
+    perspective: none;
+  }
+
+  .panel {
+    flex-basis: 0;
+    transform: none;
+  }
+
+  .label {
+    bottom: 12px;
+    left: 16px;
+    right: 16px;
+  }
+
+  .name {
+    font-size: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .media,
+  .shade,
+  .bar,
+  .name {
+    transition: none;
+  }
+}

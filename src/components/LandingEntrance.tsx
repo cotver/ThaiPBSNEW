@@ -2,112 +2,27 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { DriftWall } from "./DriftWall";
 
-const PIXELS_PER_SECOND = 60;
-const PANEL_CLASS = "relative h-full min-w-[100vw] flex-shrink-0 bg-black";
+type LandingItem = { image: string; label: string };
 
-export function LandingEntrance({ imageUrls }: { imageUrls: string[] }) {
-  const [animationReady, setAnimationReady] = useState(imageUrls.length === 0);
-  const stripRef = useRef<HTMLDivElement>(null);
-  const firstHalfRef = useRef<HTMLDivElement>(null);
-  const offsetRef = useRef(0);
-  const cycleWidthRef = useRef(0);
-
-  useEffect(() => {
-    const strip = stripRef.current;
-    const firstHalf = firstHalfRef.current;
-
-    if (!strip || !firstHalf || imageUrls.length === 0) {
-      return;
-    }
-
-    const updateCycleWidth = () => {
-      const width = firstHalf.offsetWidth;
-
-      if (width > 0) {
-        cycleWidthRef.current = width;
-      }
-    };
-    const observer = new ResizeObserver(updateCycleWidth);
-    let frameId = 0;
-    let lastTime = performance.now();
-
-    observer.observe(firstHalf);
-    updateCycleWidth();
-
-    const tick = (now: number) => {
-      const deltaSeconds = (now - lastTime) / 1000;
-      const cycleWidth = cycleWidthRef.current;
-
-      lastTime = now;
-
-      if (animationReady && cycleWidth > 0) {
-        offsetRef.current += PIXELS_PER_SECOND * deltaSeconds;
-
-        if (offsetRef.current >= cycleWidth) {
-          offsetRef.current -= cycleWidth;
-        }
-      }
-
-      strip.style.transform = `translateX(-${offsetRef.current}px)`;
-      frameId = requestAnimationFrame(tick);
-    };
-
-    frameId = requestAnimationFrame(tick);
-
-    return () => {
-      cancelAnimationFrame(frameId);
-      observer.disconnect();
-    };
-  }, [animationReady, imageUrls.length]);
-
-  const firstHalfUrls = imageUrls;
-  const secondHalfUrls = imageUrls.length === 1 ? [imageUrls[0]] : [...imageUrls];
-
+export function LandingEntrance({ items }: { items: LandingItem[] }) {
   return (
     <main className="fixed inset-0 overflow-hidden bg-black">
-      <div aria-hidden className="absolute inset-0 flex will-change-transform" ref={stripRef}>
-        {imageUrls.length === 0 ? (
-          <>
-            <div className={PANEL_CLASS} />
-            <div className={PANEL_CLASS} />
-          </>
-        ) : (
-          <>
-            <div className="flex h-full flex-shrink-0" ref={firstHalfRef}>
-              {firstHalfUrls.map((url, index) => (
-                <LandingImage
-                  key={`first-${index}-${url}`}
-                  onFirstLoad={index === 0 ? () => setAnimationReady(true) : undefined}
-                  priority={index === 0}
-                  url={url}
-                />
-              ))}
-            </div>
-            <div className="flex h-full flex-shrink-0">
-              {secondHalfUrls.map((url, index) => (
-                <LandingImage key={`second-${index}-${url}`} priority={false} url={url} />
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-
-      <div aria-hidden className="absolute inset-0 bg-black/70" />
+      <DriftWall items={items} />
       <div
         aria-hidden
-        className="absolute inset-x-0 bottom-0 h-1/2 bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.42)_42%,rgba(0,0,0,0.94)_100%)]"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.42)_42%,rgba(0,0,0,0.94)_100%)]"
       />
 
-      <div className="absolute inset-x-0 bottom-0 top-[40%] z-10 flex items-center justify-center px-5">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[40%] z-10 flex items-center justify-center px-5">
         <div className="flex flex-col items-center">
           <span className="relative mb-3 block aspect-[1641/691] w-[min(72vw,430px)]">
 
           </span>
           <Link
             aria-label="Enter website"
-            className="group relative grid size-[min(44vw,168px)] -translate-y-1 place-items-center rounded-[30px] outline-none transition duration-300 hover:-translate-y-3 focus-visible:ring-2 focus-visible:ring-orange-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black sm:size-[min(28vw,196px)] sm:-translate-y-2 sm:hover:-translate-y-4"
+            className="pointer-events-auto group relative grid size-[min(44vw,168px)] -translate-y-1 place-items-center rounded-[30px] outline-none transition duration-300 hover:-translate-y-3 focus-visible:ring-2 focus-visible:ring-orange-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black sm:size-[min(28vw,196px)] sm:-translate-y-2 sm:hover:-translate-y-4"
             href="/home"
           >
             <span
@@ -157,7 +72,7 @@ export function LandingEntrance({ imageUrls }: { imageUrls: string[] }) {
 
       <Image
         alt=""
-        className="absolute top-0 left-0 z-10 h-auto w-[min(24vw,312px)] opacity-90 drop-shadow-[0_8px_22px_rgba(0,0,0,0.72)] sm:top-0 sm:left-0 sm:w-[min(20vw,342px)]"
+        className="pointer-events-none absolute top-0 left-0 z-10 h-auto w-[min(24vw,312px)] opacity-90 drop-shadow-[0_8px_22px_rgba(0,0,0,0.72)] sm:top-0 sm:left-0 sm:w-[min(20vw,342px)]"
         height={1772}
         priority
         src="/LOGO/Logo with Tagline 2.png"
@@ -166,35 +81,5 @@ export function LandingEntrance({ imageUrls }: { imageUrls: string[] }) {
 
      
     </main>
-  );
-}
-
-function LandingImage({
-  onFirstLoad,
-  priority,
-  url,
-}: {
-  onFirstLoad?: () => void;
-  priority: boolean;
-  url: string;
-}) {
-  const [loaded, setLoaded] = useState(false);
-
-  return (
-    <div className={PANEL_CLASS}>
-      <Image
-        alt=""
-        className={`object-cover transition-opacity duration-1000 ease-out ${loaded ? "opacity-100" : "opacity-0"}`}
-        draggable={false}
-        fill
-        onLoad={() => {
-          setLoaded(true);
-          onFirstLoad?.();
-        }}
-        priority={priority}
-        sizes="100vw"
-        src={url}
-      />
-    </div>
   );
 }
