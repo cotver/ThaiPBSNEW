@@ -7,10 +7,14 @@ import type {
   ColumnSubcategory,
   ColumnTag,
   ColumnVideo,
+  ColumnRelatedStory,
 } from "../../payload-types";
+import { cache } from "react";
 import { getPayloadClient } from "@/lib/payload-client";
 import { visiblePageTaxonomy } from "@/lib/column-page-taxonomy";
 import { buildSlugLookupKeys } from "@/lib/slug-lookup";
+import { columnArticleHref } from "@/lib/content";
+import { relatedTextTerms, richTextPlainText, scoreRelatedText } from "@/lib/related-relevance";
 
 export type ColumnArticleDetail = {
   id: number;
@@ -30,7 +34,60 @@ export type ColumnArticleDetail = {
   tags: string[];
   title: string;
   video?: { alt: string; mimeType?: string; url: string };
+  relatedStories: RelatedStory[];
+  searchTitle: string;
+  searchBody: string;
 };
+
+export type RelatedStory = {
+  id?: number;
+  href: string;
+  title: string;
+  heroUrl?: string;
+  date?: string;
+};
+
+function safeStoryUrl(value: string | null | undefined): string | undefined {
+  const url = value?.trim();
+  if (!url) return undefined;
+  if (url.startsWith('/') && !url.startsWith('//')) return url;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? url : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function mapPinnedStories(rows: ColumnArticle['relatedStories'] | ColumnRelatedStory['relatedStories']): RelatedStory[] {
+  return (rows || []).flatMap<RelatedStory>((row) => {
+    if (row.kind === 'article') {
+      const story = typeof row.article === 'object' ? row.article as ColumnArticle : undefined;
+      if (!story || story._status !== 'published' || !story.slug) return [];
+      const imageValue = story.heroImages?.horizontal?.[0]?.image;
+      const image = imageValue && typeof imageValue === 'object' ? imageValue as ColumnMedia : undefined;
+      return [{ id: story.id, href: columnArticleHref(story.slug), title: story.titleEn || story.titleTh, heroUrl: image?.url || undefined, date: story.publishedDate || story.createdAt }];
+    }
+    if (row.kind === 'custom') {
+      const href = safeStoryUrl(row.url);
+      const image = row.image && typeof row.image === 'object' ? row.image as ColumnMedia : undefined;
+      if (!href || !row.title || !image?.url) return [];
+      return [{ href, title: row.title, heroUrl: image.url }];
+    }
+    return [];
+  });
+}
+
+export async function getGlobalRelatedStories(): Promise<RelatedStory[]> {
+  try {
+    const payload = await getPayloadClient();
+    const global = await payload.findGlobal({ slug: 'column-related-stories', depth: 3, overrideAccess: true });
+    return mapPinnedStories(global.relatedStories);
+  } catch (error) {
+    console.warn('Unable to load global related stories', error);
+    return [];
+  }
+}
 
 function label(value: ColumnCategory | ColumnSubcategory | ColumnTag): string {
   return value.nameEn || value.nameTh;
@@ -77,6 +134,10 @@ function mapArticle(article: ColumnArticle): ColumnArticleDetail {
     tags: [...new Set(tags)],
     title,
     video: video?.url ? { alt: video.alt || title, mimeType: video.mimeType || undefined, url: video.url } : undefined,
+    relatedStories: mapPinnedStories(article.relatedStories),
+    searchTitle: [article.titleEn, article.titleTh].filter(Boolean).join(' '),
+    searchBody: [article.descriptionEn, article.descriptionTh, article.excerptEn, article.excerptTh,
+      richTextPlainText(article.contentEn), richTextPlainText(article.contentTh)].filter(Boolean).join(' '),
   };
 }
 
@@ -90,7 +151,8 @@ export type RelatedColumnArticle = {
 
 export async function getRelatedColumnArticles(
   article: ColumnArticleDetail,
-  limit = 4,
+  limit = 10,
+  excludeIds: number[] = [],
 ): Promise<{ items: RelatedColumnArticle[]; hasMatches: boolean }> {
   try {
     const payload = await getPayloadClient();
@@ -108,13 +170,19 @@ export async function getRelatedColumnArticles(
         categories: true,
         subcategories: true,
         tags: true,
+        descriptionTh: true,
+        descriptionEn: true,
+        excerptTh: true,
+        excerptEn: true,
+        contentTh: true,
+        contentEn: true,
         publishedDate: true,
         createdAt: true,
       },
       where: {
         and: [
           { _status: { equals: "published" } },
-          { id: { not_equals: article.id } },
+          { id: { not_in: [article.id, ...excludeIds] } },
         ],
       },
     });
@@ -122,10 +190,23 @@ export async function getRelatedColumnArticles(
     const categories = new Set(article.categoryIds);
     const subcategories = new Set(article.subcategoryIds);
     const tags = new Set(article.tagIds);
+    const sourceText = relatedTextTerms(article.searchTitle, article.searchBody);
+    const textById = new Map(result.docs.map((candidate) => [candidate.id, relatedTextTerms(
+      [candidate.titleEn, candidate.titleTh].filter(Boolean).join(' '),
+      [candidate.descriptionEn, candidate.descriptionTh, candidate.excerptEn, candidate.excerptTh,
+        richTextPlainText(candidate.contentEn), richTextPlainText(candidate.contentTh)].filter(Boolean).join(' '),
+    )]));
+    const documentFrequency = new Map<string, number>();
+    for (const text of textById.values()) {
+      for (const word of new Set([...text.title, ...text.body])) {
+        documentFrequency.set(word, (documentFrequency.get(word) || 0) + 1);
+      }
+    }
     const candidates = result.docs.map((candidate) => {
       const score = relationIds(candidate.categories).filter((id) => categories.has(id)).length * 8
         + relationIds(candidate.subcategories).filter((id) => subcategories.has(id)).length * 3
-        + relationIds(candidate.tags).filter((id) => tags.has(id)).length;
+        + relationIds(candidate.tags).filter((id) => tags.has(id)).length
+        + scoreRelatedText(sourceText, textById.get(candidate.id)!, documentFrequency, result.docs.length);
       return { candidate, score };
     });
     const matches = candidates.filter(({ score }) => score > 0);
@@ -156,7 +237,7 @@ export async function getRelatedColumnArticles(
   }
 }
 
-export async function getColumnArticleBySlug(slug: string): Promise<ColumnArticleDetail | undefined> {
+export const getColumnArticleBySlug = cache(async (slug: string): Promise<ColumnArticleDetail | undefined> => {
   try {
     const slugLookupKeys = buildSlugLookupKeys(slug);
     const payload = await getPayloadClient();
@@ -181,4 +262,4 @@ export async function getColumnArticleBySlug(slug: string): Promise<ColumnArticl
     console.warn(`Unable to load Column Article: ${slug}`, error);
     return undefined;
   }
-}
+});

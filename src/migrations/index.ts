@@ -34,6 +34,7 @@ import * as migration_20260914_093000_add_column_taxonomy_show_in_page from './2
 import * as migration_20260914_101500_add_column_taxonomy_page_sort_order from './20260914_101500_add_column_taxonomy_page_sort_order';
 import * as migration_20260915_064013_add_article_pdf from './20260915_064013_add_article_pdf';
 import * as migration_20260916_000000_cascade_column_article_stats_delete from './20260916_000000_cascade_column_article_stats_delete';
+import * as migration_20260925_063759 from './20260925_063759';
 
 export const migrations = [
   {
@@ -174,7 +175,7 @@ export const migrations = [
   {
     up: migration_20260910_073652_add_bilingual_column_content.up,
     down: migration_20260910_073652_add_bilingual_column_content.down,
-    name: '20260910_073652_add_bilingual_column_content'
+    name: '20260910_073652_add_bilingual_column_content',
   },
   {
     up: migration_20260910_152421_add_column_article_feature_fields.up,
@@ -215,5 +216,10 @@ export const migrations = [
     up: migration_20260916_000000_cascade_column_article_stats_delete.up,
     down: migration_20260916_000000_cascade_column_article_stats_delete.down,
     name: '20260916_000000_cascade_column_article_stats_delete',
+  },
+  {
+    up: migration_20260925_063759.up,
+    down: migration_20260925_063759.down,
+    name: '20260925_063759'
   },
 ];

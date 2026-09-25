@@ -1,5 +1,6 @@
 import { BlocksFeature, EXPERIMENTAL_TableFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import type { Access, Block, CollectionBeforeDeleteHook, CollectionConfig } from 'payload'
+import { relatedStoriesField } from './RelatedStoryFields.ts'
 
 const COLUMN_GROUP = 'Column'
 
@@ -441,6 +442,7 @@ export const ColumnArticles: CollectionConfig = {
     { name: 'categories', type: 'relationship', relationTo: 'column-categories', hasMany: true },
     { name: 'subcategories', type: 'relationship', relationTo: 'column-subcategories', hasMany: true },
     { name: 'tags', type: 'relationship', relationTo: 'column-tags', hasMany: true },
+    relatedStoriesField,
     { name: 'author', type: 'relationship', relationTo: 'column-authors', required: true },
     {
       type: 'row',

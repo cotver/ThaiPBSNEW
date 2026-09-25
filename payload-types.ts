@@ -172,8 +172,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'column-related-stories': ColumnRelatedStory;
+  };
+  globalsSelect: {
+    'column-related-stories': ColumnRelatedStoriesSelect<false> | ColumnRelatedStoriesSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -3272,6 +3276,19 @@ export interface ColumnArticle {
   categories?: (number | ColumnCategory)[] | null;
   subcategories?: (number | ColumnSubcategory)[] | null;
   tags?: (number | ColumnTag)[] | null;
+  /**
+   * Shown before automatic recommendations. Drag rows to set their order.
+   */
+  relatedStories?:
+    | {
+        kind: 'article' | 'custom';
+        article?: (number | null) | ColumnArticle;
+        title?: string | null;
+        url?: string | null;
+        image?: (number | null) | ColumnMedia;
+        id?: string | null;
+      }[]
+    | null;
   author: number | ColumnAuthor;
   /**
    * Mark this article as featured.
@@ -4495,6 +4512,16 @@ export interface ColumnArticlesSelect<T extends boolean = true> {
   categories?: T;
   subcategories?: T;
   tags?: T;
+  relatedStories?:
+    | T
+    | {
+        kind?: T;
+        article?: T;
+        title?: T;
+        url?: T;
+        image?: T;
+        id?: T;
+      };
   author?: T;
   isFeature?: T;
   featureUntil?: T;
@@ -4722,6 +4749,49 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * These stories appear first on every article page.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-related-stories".
+ */
+export interface ColumnRelatedStory {
+  id: number;
+  /**
+   * Shown before automatic recommendations. Drag rows to set their order.
+   */
+  relatedStories?:
+    | {
+        kind: 'article' | 'custom';
+        article?: (number | null) | ColumnArticle;
+        title?: string | null;
+        url?: string | null;
+        image?: (number | null) | ColumnMedia;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-related-stories_select".
+ */
+export interface ColumnRelatedStoriesSelect<T extends boolean = true> {
+  relatedStories?:
+    | T
+    | {
+        kind?: T;
+        article?: T;
+        title?: T;
+        url?: T;
+        image?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
