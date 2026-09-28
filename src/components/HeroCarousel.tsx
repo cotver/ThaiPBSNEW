@@ -395,7 +395,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   const currentMeta = [current.year, current.rating, current.duration, titleSeasonEpisodeLabel(current)].filter(Boolean);
 
   return (
-    <section data-responsive-hero="home" ref={heroRef} className="relative h-[clamp(620px,min(56.25vw,100vh),2160px)] overflow-hidden px-5 pb-24 sm:px-8 lg:px-10">
+    <section data-responsive-hero="home" data-hero-has-details={current.showHeroDetails !== false || undefined} ref={heroRef} className="relative h-[clamp(620px,min(56.25vw,100vh),2160px)] overflow-hidden px-5 pb-24 sm:px-8 lg:px-10">
       {titles.map((title, index) => {
         const heroAsset = title.heroImage || title.posterImage;
         const mediaClassName = title.isDiscontinued ? "absolute inset-0 h-full w-full object-cover object-center grayscale" : "absolute inset-0 h-full w-full object-cover object-center";
@@ -431,6 +431,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
           >
             {trailerEmbedUrl && keepTrailerMounted ? (
               <iframe
+                data-hero-trailer
                 key={trailerEmbedUrl}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -450,6 +451,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
             ) : keepTrailerMounted && isGifTrailer ? (
               <Image
                 alt=""
+                data-hero-trailer
                 className={`${mediaClassName} ${
                   showInlineTrailer ? "opacity-100" : "opacity-0"
                 } transition-opacity duration-700 ease-out`}
@@ -463,6 +465,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
             ) : keepTrailerMounted && trailerIsInternal ? (
               <video
                 key={trailerUrl}
+                data-hero-trailer
                 aria-hidden="true"
                 autoPlay
                 className={`${mediaClassName} ${
@@ -529,6 +532,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                   <div className={useFullImage ? "absolute inset-0" : "relative aspect-video w-[min(100%,calc(100vh*16/9))] max-h-full"}>
                     <Image
                       alt=""
+                      data-hero-art={useFullImage ? "full" : "framed"}
                       className={imageClassName}
                       fetchPriority={index === 0 ? "high" : "auto"}
                       fill
@@ -552,6 +556,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
               )}
               {hasExternalTrailerFallback ? (
                 <button
+                  data-trailer-fallback
                   className="absolute inset-0 z-10 flex items-center justify-center bg-black/35 text-white"
                   onClick={() => window.open(trailerUrl, "_blank", "noopener,noreferrer")}
                   type="button"
@@ -703,17 +708,20 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
               />
               </div>
             )}
-            <div className="pointer-events-auto mt-8 flex items-center gap-2 lg:hidden">
+            <div className="no-scrollbar pointer-events-auto mt-8 flex max-w-full items-center gap-2 overflow-x-auto lg:hidden">
               {titles.map((title, index) => (
                 <button
                   aria-label={`Show ${title.title}`}
-                  className={`h-1.5 rounded-full transition-all ${
-                    index === active ? "w-9 bg-white" : "w-4 bg-white/34 hover:bg-white/70"
-                  }`}
+                  aria-pressed={index === active}
+                  className="group grid size-11 shrink-0 place-items-center rounded-full"
                   key={title.slug}
                   onClick={() => selectHero(index)}
                   type="button"
-                />
+                >
+                  <span className={`block h-1.5 rounded-full transition-all ${
+                    index === active ? "w-9 bg-white" : "w-4 bg-white/34 group-hover:bg-white/70"
+                  }`} />
+                </button>
               ))}
             </div>
           </div>
@@ -721,17 +729,20 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
       )}
 
       {current.showHeroDetails === false && (
-        <div className="absolute bottom-20 left-5 z-20 flex items-center gap-2 sm:left-8 lg:hidden">
+        <div data-hero-indicators className="no-scrollbar absolute bottom-20 left-5 right-5 z-20 flex items-center gap-2 overflow-x-auto sm:left-8 sm:right-8 lg:hidden">
           {titles.map((title, index) => (
             <button
               aria-label={`Show ${title.title}`}
-              className={`h-1.5 rounded-full transition-all ${
-                index === active ? "w-9 bg-white" : "w-4 bg-white/34 hover:bg-white/70"
-              }`}
+              aria-pressed={index === active}
+              className="group grid size-11 shrink-0 place-items-center rounded-full"
               key={title.slug}
               onClick={() => selectHero(index)}
               type="button"
-            />
+            >
+              <span className={`block h-1.5 rounded-full transition-all ${
+                index === active ? "w-9 bg-white" : "w-4 bg-white/34 group-hover:bg-white/70"
+              }`} />
+            </button>
           ))}
         </div>
       )}

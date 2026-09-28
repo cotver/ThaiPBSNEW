@@ -264,10 +264,11 @@ export function TitlePageExperience({ title }: { title: Title }) {
 
   return (
     <>
-      <section data-responsive-hero="title" ref={heroRef} className="relative h-[clamp(390px,56.25vw,100vh)] overflow-hidden bg-black text-white">
+      <section data-responsive-hero="title" data-hero-has-details={title.showHeroDetails !== false || undefined} ref={heroRef} className="relative h-[clamp(390px,56.25vw,100vh)] overflow-hidden bg-black text-white">
         <div className="absolute inset-0 bg-[#030714]">
           {trailerEmbedUrl && keepTrailerMounted ? (
             <iframe
+              data-hero-trailer
               key={trailerEmbedUrl}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -290,6 +291,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
           ) : keepTrailerMounted && isGifTrailer ? (
             <Image
               alt=""
+              data-hero-trailer
               className={`absolute inset-0 h-full w-full object-cover object-center ${
                 showInlineTrailer ? "opacity-100" : "opacity-0"
               } transition-opacity duration-700 ease-out`}
@@ -303,6 +305,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
           ) : trailerIsInternal && trailerUrl && keepTrailerMounted ? (
             <video
               key={trailerUrl}
+              data-hero-trailer
               aria-hidden="true"
               autoPlay
               className={`absolute inset-0 h-full w-full object-cover object-center ${
@@ -370,6 +373,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
                 <div className={useFullImage ? "absolute inset-0" : "relative aspect-video w-[min(100%,calc(100vh*16/9))] max-h-full"}>
                   <Image
                     alt=""
+                    data-hero-art={useFullImage ? "full" : "framed"}
                     className={imageClassName}
                     fill
                     priority
@@ -392,6 +396,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
             )}
             {hasExternalTrailerFallback ? (
               <button
+                data-trailer-fallback
                 className="absolute inset-0 z-10 flex items-center justify-center bg-black/35 text-white"
                 onClick={() => window.open(trailerUrl, "_blank", "noopener,noreferrer")}
                 type="button"

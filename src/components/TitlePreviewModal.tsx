@@ -297,10 +297,11 @@ export function TitlePreviewModal({
           <CloseIcon />
         </button>
 
-        <div data-responsive-hero="preview" ref={heroRef} className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-black">
+        <div data-responsive-hero="preview" data-hero-has-details={title.showHeroDetails !== false || undefined} ref={heroRef} className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-black">
           <div className="absolute inset-0 bg-[#030714]">
             {trailerEmbedUrl && keepTrailerMounted ? (
                 <iframe
+                  data-hero-trailer
                   key={trailerEmbedUrl}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
@@ -323,6 +324,7 @@ export function TitlePreviewModal({
             ) : isGifTrailer && trailerUrl && keepTrailerMounted ? (
                 <Image
                   alt=""
+                  data-hero-trailer
                   className={`${mediaClassName} ${
                     showInlineTrailer ? "opacity-100" : "opacity-0"
                   } transition-opacity duration-700 ease-out`}
@@ -342,6 +344,7 @@ export function TitlePreviewModal({
             ) : trailerIsInternal && trailerUrl && keepTrailerMounted ? (
                 <video
                   key={trailerUrl}
+                  data-hero-trailer
                   aria-hidden="true"
                   autoPlay
                   className={`${mediaClassName} ${
@@ -443,6 +446,7 @@ export function TitlePreviewModal({
               )}
               {hasExternalTrailerFallback ? (
                 <button
+                data-trailer-fallback
                   className="absolute inset-0 z-10 flex items-center justify-center bg-black/35 text-white"
                   onClick={() => window.open(trailerUrl, "_blank", "noopener,noreferrer")}
                   type="button"
