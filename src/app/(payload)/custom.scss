@@ -16,3 +16,23 @@ body:has([data-view="programs-manager-edit"]) {
   background: var(--theme-bg);
   color: var(--theme-text);
 }
+
+/* Keep custom manager screens usable alongside Payload's responsive shell. */
+.template-default__wrap:has([data-view^="programs-manager"]) {
+  min-width: 0;
+  max-width: 1920px;
+  margin-inline: auto;
+}
+[data-view^="programs-manager"] {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+[data-view^="programs-manager"] :is(input, select, textarea) { max-width: 100%; }
+@media (max-width: 639px) {
+  [data-view^="programs-manager"] :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    min-width: 0;
+    font-size: 16px;
+  }
+  [data-view^="programs-manager"] :is(button, a) { min-height: 44px; }
+  [data-view^="programs-manager"] .grid > * { min-width: 0; }
+}

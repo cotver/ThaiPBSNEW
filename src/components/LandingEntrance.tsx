@@ -15,7 +15,7 @@ export function LandingEntrance({ items }: { items: LandingItem[] }) {
         className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.42)_42%,rgba(0,0,0,0.94)_100%)]"
       />
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[40%] z-10 flex items-center justify-center px-5">
+      <div data-entrance-action className="pointer-events-none absolute inset-x-0 bottom-0 top-[40%] z-10 flex items-center justify-center px-5">
         <div className="flex flex-col items-center">
           <span className="relative mb-3 block aspect-[1641/691] w-[min(72vw,430px)]">
 

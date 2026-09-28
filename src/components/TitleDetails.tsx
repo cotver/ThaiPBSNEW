@@ -120,7 +120,7 @@ export function TitleDetails({
   return (
     <>
       <div className={compact ? "space-y-7 px-5 py-6 sm:px-9" : "space-y-8 px-5 py-7 sm:px-9 lg:px-10"}>
-        <div className="flex gap-7 border-b border-white/10 text-sm font-black uppercase tracking-[0.16em] text-white/42">
+        <div data-detail-tabs className="flex gap-7 border-b border-white/10 text-sm font-black uppercase tracking-[0.16em] text-white/42">
           {ENABLE_TITLE_PLAYBACK ? (
             <TabButton active={activeTab === "episodes"} onClick={() => setActiveTabState({ slug: title.slug, tab: "episodes" })}>
               Episodes
@@ -319,7 +319,7 @@ function EpisodesPanel({
                   role={hasVideo ? "button" : undefined}
                   tabIndex={hasVideo ? 0 : undefined}
                 >
-              <div className="relative h-[8em] w-44 min-w-44 shrink-0 overflow-hidden bg-white/10">
+              <div data-episode-thumbnail className="relative h-[8em] w-44 min-w-44 shrink-0 overflow-hidden bg-white/10">
                 {episode.image ? (
                   <Image
                     alt=""
@@ -700,7 +700,7 @@ function EpisodeVideoPlayer({
               type="range"
               value={Math.min(currentTime, duration || currentTime || 0)}
             />
-            <div className="flex items-center gap-3">
+            <div data-player-controls className="flex items-center gap-3">
               <button
                 aria-label={isPlaying ? "Pause" : "Play"}
                 className="grid size-10 shrink-0 place-items-center rounded-full text-white transition hover:bg-white/15"

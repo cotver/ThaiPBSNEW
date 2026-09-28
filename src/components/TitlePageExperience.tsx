@@ -264,7 +264,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
 
   return (
     <>
-      <section ref={heroRef} className="relative h-[clamp(390px,56.25vw,100vh)] overflow-hidden bg-black text-white">
+      <section data-responsive-hero="title" ref={heroRef} className="relative h-[clamp(390px,56.25vw,100vh)] overflow-hidden bg-black text-white">
         <div className="absolute inset-0 bg-[#030714]">
           {trailerEmbedUrl && keepTrailerMounted ? (
             <iframe
@@ -468,7 +468,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
                 </span>
               </button>
             ) : null}
-            <div className="absolute bottom-8 left-5 z-20 max-w-2xl sm:bottom-10 sm:left-9">
+            <div data-hero-copy className="absolute bottom-8 left-5 z-20 max-w-2xl sm:bottom-10 sm:left-9">
               <div
                 className={`transform-gpu will-change-transform transition-transform duration-700 ease-in-out ${
                   showInlineTrailer && !heroDetailsRevealed

@@ -18,6 +18,7 @@ export function AppShell({
   typeNavItems?: NavItem[];
 }) {
   const pathname = usePathname();
+  const isPrototype = pathname.startsWith("/prototype");
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [studiosNavState, setStudiosNavState] = useState({ path: "", fullWidth: false, topNav: false });
   const sidebarRef = useRef<HTMLElement>(null);
@@ -31,6 +32,7 @@ export function AppShell({
     ...navItems.filter((item) => showWatchlist || item.href !== "/watchlist"),
     ...typeNavItems,
   ];
+  const mobileNavItems = isPrototype ? appNavItems : [...appNavItems, ...columnNavItems];
 
   useEffect(() => {
     const activeElement = document.activeElement;
@@ -121,7 +123,7 @@ export function AppShell({
   }
 
   return (
-    <main className="min-h-screen overflow-x-clip bg-[#030714] text-white">
+    <main data-site-shell={!isPrototype || undefined} data-top-navigation={studiosRelatedPage || undefined} className="min-h-screen overflow-x-clip bg-[#030714] text-white">
       <nav
         aria-hidden={!studiosTopNav}
         aria-label="Primary navigation"
@@ -259,10 +261,12 @@ export function AppShell({
       <div className={`app-shell-content relative pb-20 transition-[padding-left] duration-700 ease-in-out ${studiosFullWidth ? "lg:pl-0" : "lg:pl-[92px]"}`}>{children}</div>
 
       <nav
+        aria-label="Mobile navigation"
+        data-mobile-navigation={!isPrototype || undefined}
         className="fixed inset-x-0 bottom-0 z-40 grid h-16 border-t border-white/10 bg-[#030714]/95 px-1 backdrop-blur-xl lg:hidden"
-        style={{ gridTemplateColumns: `repeat(${appNavItems.length}, minmax(0, 1fr))` }}
+        style={{ gridTemplateColumns: `repeat(${mobileNavItems.length}, minmax(0, 1fr))` }}
       >
-        {appNavItems.map((item) => {
+        {mobileNavItems.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
 
           return (

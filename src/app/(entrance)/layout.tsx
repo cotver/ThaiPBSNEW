@@ -1,5 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "../globals.css";
+import "../(site)/responsive.css";
+
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export const metadata: Metadata = {
   title: "ThaiPBS Parvilions",
@@ -9,7 +12,7 @@ export const metadata: Metadata = {
 export default function EntranceLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="th">
-      <body>{children}</body>
+      <body data-responsive-entrance>{children}</body>
     </html>
   );
 }

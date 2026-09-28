@@ -297,7 +297,7 @@ export function TitlePreviewModal({
           <CloseIcon />
         </button>
 
-        <div ref={heroRef} className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-black">
+        <div data-responsive-hero="preview" ref={heroRef} className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-black">
           <div className="absolute inset-0 bg-[#030714]">
             {trailerEmbedUrl && keepTrailerMounted ? (
                 <iframe
@@ -515,7 +515,7 @@ export function TitlePreviewModal({
                   </span>
                 </button>
               ) : null}
-              <div className="absolute bottom-8 left-5 z-20 max-w-2xl sm:bottom-10 sm:left-9">
+              <div data-hero-copy className="absolute bottom-8 left-5 z-20 max-w-2xl sm:bottom-10 sm:left-9">
                 <div
                   className={`transform-gpu will-change-transform transition-transform duration-700 ease-in-out ${
                     showInlineTrailer && !heroDetailsRevealed

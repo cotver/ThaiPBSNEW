@@ -55,3 +55,20 @@
 @media(max-width:560px){.relatedList{grid-template-columns:1fr}.relatedCard:nth-child(2){border-top:1px solid rgba(255,255,255,.14);padding-top:16px}}
 @media(max-width:560px){.skeletonList{grid-template-columns:1fr}.skeletonCard:nth-child(2){border-top:1px solid rgba(255,255,255,.14);padding-top:16px}}
 @media(prefers-reduced-motion:reduce){.relatedImage img{transition:none}.relatedSkeleton{animation:none}}
+
+/* Preserve a reading measure even on a 4K display. */
+.articleShell { max-width: 1440px; margin-inline: auto; }
+.body { overflow-wrap: anywhere; }
+.body :global(iframe), .body :global(img) { max-width: 100%; }
+.body :global(table), .body :global(pre) { display: block; max-width: 100%; overflow-x: auto; }
+.hero h1 { font-size: clamp(36px, 6vw, 96px); line-height: 1.1; overflow-wrap: anywhere; }
+.hero { max-height: none; min-height: 480px; }
+@media (max-width: 1023px) and (min-width: 851px) {
+  .articleShell { grid-template-columns: 150px minmax(0, 1fr); }
+  .relatedRail { grid-column: 2; position: static; }
+}
+@media (max-width: 560px) {
+  .hero { aspect-ratio: auto; }
+  .heroContent { padding-block: 32px 40px; }
+  .backLink { margin-bottom: 32px; }
+}

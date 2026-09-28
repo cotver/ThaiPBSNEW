@@ -110,7 +110,7 @@ export function BrowseTitleGrid({ titles }: { titles: Title[] }) {
 
   return (
     <div className="relative overflow-visible" ref={rootRef}>
-      <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+      <div data-catalog-grid className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
         {visibleTitles.map((title) => (
           <PosterCard
             key={title.slug}

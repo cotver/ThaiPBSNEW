@@ -395,7 +395,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   const currentMeta = [current.year, current.rating, current.duration, titleSeasonEpisodeLabel(current)].filter(Boolean);
 
   return (
-    <section ref={heroRef} className="relative h-[clamp(620px,min(56.25vw,100vh),2160px)] overflow-hidden px-5 pb-24 sm:px-8 lg:px-10">
+    <section data-responsive-hero="home" ref={heroRef} className="relative h-[clamp(620px,min(56.25vw,100vh),2160px)] overflow-hidden px-5 pb-24 sm:px-8 lg:px-10">
       {titles.map((title, index) => {
         const heroAsset = title.heroImage || title.posterImage;
         const mediaClassName = title.isDiscontinued ? "absolute inset-0 h-full w-full object-cover object-center grayscale" : "absolute inset-0 h-full w-full object-cover object-center";
@@ -625,7 +625,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
               </span>
             </button>
           ) : null}
-          <div className="absolute bottom-20 left-5 z-20 max-w-3xl sm:left-8 lg:bottom-24 lg:left-10">
+          <div data-hero-copy className="absolute bottom-20 left-5 z-20 max-w-3xl sm:left-8 lg:bottom-24 lg:left-10">
             <div
               className={`transform-gpu will-change-transform transition-transform duration-700 ease-in-out ${
                 activeHasInlineTrailer && !trailerEnded && trailerPlaybackMatches && trailerPlayback.loaded && !heroDetailsRevealed

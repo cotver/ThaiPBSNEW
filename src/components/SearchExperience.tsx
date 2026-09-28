@@ -147,11 +147,11 @@ export function SearchExperience({ initialQuery = "", titles }: { initialQuery?:
         <div className="relative mt-8">
           <input
             aria-activedescendant={activeSuggestionIndex >= 0 ? `search-suggestion-${activeSuggestionIndex}` : undefined}
+            aria-label="Search titles"
             aria-autocomplete="list"
             aria-controls="search-suggestions"
             aria-expanded={showSuggestions && suggestions.length > 0}
             autoComplete="off"
-            autoFocus
             className="h-14 w-full rounded-[8px] border border-white/12 bg-white/10 px-5 text-lg font-semibold text-white outline-none transition placeholder:text-white/36 focus:border-cyan-200 focus:bg-white/14"
             onBlur={() => {
               setShowSuggestions(false);
@@ -209,7 +209,7 @@ export function SearchExperience({ initialQuery = "", titles }: { initialQuery?:
       </div>
 
       <div className="relative mt-10 overflow-visible" ref={rootRef}>
-        <div className="flex flex-wrap gap-4">
+        <div data-catalog-grid className="flex flex-wrap gap-4">
           {visibleResults.map((title) => (
             <PosterCard
               key={title.slug}

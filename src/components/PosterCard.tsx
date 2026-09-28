@@ -38,7 +38,7 @@ export function PosterCard({
 
   return (
     <>
-      <article
+      <article data-poster-orientation={orientation} data-poster-rail={rail || undefined}
         className={`group relative snap-start rounded-[6px] ${
           rail
             ? orientation === "portrait"
