@@ -15,8 +15,10 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({
   children,
+  marketEventModal,
 }: Readonly<{
   children: React.ReactNode;
+  marketEventModal: React.ReactNode;
 }>) {
   const [typeNavItems, columnNavItems] = await Promise.all([getTypeNavItems(), getColumnNavItems()]);
 
@@ -25,6 +27,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col" data-responsive-site>
         <AppShell columnNavItems={columnNavItems} showWatchlist={watchlistNavigationEnabled()} typeNavItems={typeNavItems}>
           {children}
+          {marketEventModal}
         </AppShell>
       </body>
     </html>

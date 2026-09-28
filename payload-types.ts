@@ -92,6 +92,8 @@ export interface Config {
     seasons: Season;
     episodes: Episode;
     articles: Article;
+    'market-event-groups': MarketEventGroup;
+    'market-event-content': MarketEventContent;
     'column-articles': ColumnArticle;
     'column-analytics-events': ColumnAnalyticsEvent;
     'column-article-stats': ColumnArticleStat;
@@ -153,6 +155,8 @@ export interface Config {
     seasons: SeasonsSelect<false> | SeasonsSelect<true>;
     episodes: EpisodesSelect<false> | EpisodesSelect<true>;
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
+    'market-event-groups': MarketEventGroupsSelect<false> | MarketEventGroupsSelect<true>;
+    'market-event-content': MarketEventContentSelect<false> | MarketEventContentSelect<true>;
     'column-articles': ColumnArticlesSelect<false> | ColumnArticlesSelect<true>;
     'column-analytics-events': ColumnAnalyticsEventsSelect<false> | ColumnAnalyticsEventsSelect<true>;
     'column-article-stats': ColumnArticleStatsSelect<false> | ColumnArticleStatsSelect<true>;
@@ -3244,6 +3248,79 @@ export interface HeroImage {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "market-event-groups".
+ */
+export interface MarketEventGroup {
+  id: number;
+  _order?: string | null;
+  name: string;
+  slug: string;
+  coverImage: number | ColumnMedia;
+  order: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "column-media".
+ */
+export interface ColumnMedia {
+  id: number;
+  alt?: string | null;
+  caption?: string | null;
+  credit?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "market-event-content".
+ */
+export interface MarketEventContent {
+  id: number;
+  name: string;
+  slug: string;
+  marketEventGroup: number | MarketEventGroup;
+  programs?: (number | Program)[] | null;
+  dateTime?: string | null;
+  location?: string | null;
+  coverImage?: (number | null) | ColumnMedia;
+  images?:
+    | {
+        image: number | ColumnMedia;
+        caption?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "column-articles".
  */
 export interface ColumnArticle {
@@ -3361,27 +3438,6 @@ export interface ColumnArticle {
  */
 export interface ArticlePDF {
   id: number;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "column-media".
- */
-export interface ColumnMedia {
-  id: number;
-  alt?: string | null;
-  caption?: string | null;
-  credit?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -3682,6 +3738,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'articles';
         value: number | Article;
+      } | null)
+    | ({
+        relationTo: 'market-event-groups';
+        value: number | MarketEventGroup;
+      } | null)
+    | ({
+        relationTo: 'market-event-content';
+        value: number | MarketEventContent;
       } | null)
     | ({
         relationTo: 'column-articles';
@@ -4478,6 +4542,42 @@ export interface ArticlesSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "market-event-groups_select".
+ */
+export interface MarketEventGroupsSelect<T extends boolean = true> {
+  _order?: T;
+  name?: T;
+  slug?: T;
+  coverImage?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "market-event-content_select".
+ */
+export interface MarketEventContentSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  marketEventGroup?: T;
+  programs?: T;
+  dateTime?: T;
+  location?: T;
+  coverImage?: T;
+  images?:
+    | T
+    | {
+        image?: T;
+        caption?: T;
+        id?: T;
+      };
+  content?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

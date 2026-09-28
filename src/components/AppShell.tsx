@@ -6,6 +6,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { navItems, type NavItem } from "@/lib/content";
 
+// Keep the Studios top navigation ready for a later switch back.
+const ENABLE_STUDIOS_TOP_NAVIGATION = false;
+
 export function AppShell({
   children,
   columnNavItems = [],
@@ -26,8 +29,8 @@ export function AppShell({
   const studiosRelatedPage = pathname.startsWith("/studios") || pathname.startsWith("/article");
   const homeStudiosFullWidth = pathname === "/home" && studiosNavState.path === pathname && studiosNavState.fullWidth;
   const homeStudiosTopNav = pathname === "/home" && studiosNavState.path === pathname && studiosNavState.topNav;
-  const studiosFullWidth = studiosRelatedPage || homeStudiosFullWidth;
-  const studiosTopNav = studiosRelatedPage || homeStudiosTopNav;
+  const studiosFullWidth = ENABLE_STUDIOS_TOP_NAVIGATION && (studiosRelatedPage || homeStudiosFullWidth);
+  const studiosTopNav = ENABLE_STUDIOS_TOP_NAVIGATION && (studiosRelatedPage || homeStudiosTopNav);
   const appNavItems = [
     ...navItems.filter((item) => showWatchlist || item.href !== "/watchlist"),
     ...typeNavItems,
@@ -67,7 +70,7 @@ export function AppShell({
   }, []);
 
   useEffect(() => {
-    if (pathname !== "/home") return;
+    if (!ENABLE_STUDIOS_TOP_NAVIGATION || pathname !== "/home") return;
 
     let entrance: HTMLElement | null = null;
     let sectionDocumentTop = 0;
@@ -123,7 +126,7 @@ export function AppShell({
   }
 
   return (
-    <main data-site-shell={!isPrototype || undefined} data-top-navigation={studiosRelatedPage || undefined} className="min-h-screen overflow-x-clip bg-[#030714] text-white">
+    <main data-site-shell={!isPrototype || undefined} data-top-navigation={(ENABLE_STUDIOS_TOP_NAVIGATION && studiosRelatedPage) || undefined} className="min-h-screen overflow-x-clip bg-[#030714] text-white">
       <nav
         aria-hidden={!studiosTopNav}
         aria-label="Primary navigation"
@@ -225,7 +228,7 @@ export function AppShell({
               />
             </span>
           </Link>
-          <nav className="absolute left-5 top-1/2 flex -translate-y-1/2 flex-col gap-6 text-[12px] font-black uppercase text-white/46">
+          <nav className="absolute left-5 top-1/2 flex -translate-y-1/2 flex-col gap-6 overflow-x-hidden text-[12px] font-black uppercase text-white/46">
             {appNavItems.map((item) => {
               const active =
                 item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);

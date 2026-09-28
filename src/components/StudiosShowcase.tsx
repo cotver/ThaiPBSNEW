@@ -6,6 +6,9 @@ import { columnArticleHref } from "@/lib/content";
 import { visiblePageTaxonomy } from "@/lib/column-page-taxonomy";
 import { getMarketCompanies, type MarketCompanySummary } from "@/lib/d1-market";
 import { buildSlugLookupKeys } from "@/lib/slug-lookup";
+import { getMarketEventGroups } from "@/lib/market-events";
+import { MarketEventGroupGrid } from "./MarketEvents";
+import eventStyles from "./MarketEvents.module.css";
 import { StudiosCatalog, type StudiosCatalogArticle, type StudiosCatalogCategory } from "./StudiosCatalog";
 import { StudiosHero, type StudiosHeroItem } from "./StudiosHero";
 import { BeadedCurtainEntrance } from "./BeadedCurtainEntrance";
@@ -386,11 +389,11 @@ export type StudiosShowcaseProps = {
 
 export async function StudiosShowcase({ showCurtain = true }: StudiosShowcaseProps = {}) {
   const entranceTitle = "ThaiPBS Journal";
-  const [studioContent, marketCompanies] = await Promise.all([getStudioContent(20), getMarketCompanies()]);
+  const [studioContent, marketCompanies, marketEventGroups] = await Promise.all([getStudioContent(20), getMarketCompanies(), getMarketEventGroups()]);
   const { categories, otherCategories, featuredArticles, pressReleases } = studioContent;
   const marketLogoCompanies = marketCompanies;
   const hasNews = pressReleases.length > 0 || marketLogoCompanies.length > 0;
-  if (!featuredArticles.length && !categories.length && !otherCategories.length && !hasNews) return null;
+  if (!featuredArticles.length && !categories.length && !otherCategories.length && !hasNews && !marketEventGroups.length) return null;
   return (
     <section
       className={styles.showcase}
@@ -441,14 +444,25 @@ export async function StudiosShowcase({ showCurtain = true }: StudiosShowcasePro
               {marketLogoCompanies.length ? (
                 <>
                   <div className={`${styles.newsHeading} ${pressReleases.length ? styles.eventsTitle : ""}`} data-studios-reveal-item>
-                    <h2>Markets and Events</h2>
-                    <Link className={styles.newsViewAll} href="/studios/news/markets-and-events">View All <span aria-hidden="true">›</span></Link>
+                    <h2>Content Distribution</h2>
+                    <Link className={styles.newsViewAll} href="/studios/news/content-distribution">View All <span aria-hidden="true">›</span></Link>
                   </div>
                   <div data-market-logo-grid>
                     {marketLogoCompanies.slice(0, 10).map((company) => <StudiosMarketCompanyCard company={company} key={company.slug} />)}
                   </div>
                 </>
               ) : null}
+            </section>
+          </div>
+        ) : null}
+        {marketEventGroups.length ? (
+          <div className={styles.revealSection}>
+            <section className={eventStyles.showcaseSection} id="market-events" aria-label="Market and Events">
+              <div className={eventStyles.headingRow} data-studios-reveal-item>
+                <h2 className={eventStyles.heading}>Market &amp; Events</h2>
+                <Link className={eventStyles.viewAll} href="/studios/events">View All <span aria-hidden="true">›</span></Link>
+              </div>
+              <MarketEventGroupGrid groups={marketEventGroups.slice(0, 6)} />
             </section>
           </div>
         ) : null}

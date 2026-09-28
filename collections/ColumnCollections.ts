@@ -32,6 +32,16 @@ const slugify = (value: unknown): string => {
     .replace(/^-|-$/g, '')
 }
 
+const marketEventSlugify = (value: unknown): string =>
+  String(value || '')
+    .trim()
+    .normalize('NFC')
+    .toLowerCase()
+    .replace(/[\s_]+/g, '-')
+    .replace(/[^\p{L}\p{M}\p{N}-]+/gu, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+
 const editableAccess = {
   read: publicRead,
   create: columnManager,
@@ -577,6 +587,66 @@ export const ColumnArticles: CollectionConfig = {
   ],
 }
 
+export const MarketEventGroups: CollectionConfig = {
+  slug: 'market-event-groups',
+  labels: { singular: 'Market & Event Group', plural: 'Market & Event Groups' },
+  orderable: true,
+  admin: columnAdmin({
+    useAsTitle: 'name',
+    defaultColumns: ['name', 'slug', 'coverImage', 'updatedAt'],
+    listSearchableFields: ['name'],
+    pagination: { defaultLimit: 1000, limits: [10, 25, 50, 100, 250, 500, 1000] },
+    components: { beforeList: ['@/components/admin/CategoriesOrderSort#CategoriesOrderSort'] },
+  }),
+  defaultSort: '_order',
+  access: editableAccess,
+  fields: [
+    { name: 'name', type: 'text', required: true },
+    {
+      name: 'slug', type: 'text', required: true, unique: true, index: true,
+      hooks: { beforeValidate: [({ value, data }) => value || marketEventSlugify(data?.name)] },
+    },
+    { name: 'coverImage', label: 'Cover image', type: 'upload', relationTo: 'column-media', required: true },
+    { name: 'order', type: 'number', required: true, defaultValue: 0, admin: { hidden: true } },
+  ],
+}
+
+export const MarketEventContent: CollectionConfig = {
+  slug: 'market-event-content',
+  labels: { singular: 'Market & Event', plural: 'Market & Events' },
+  admin: columnAdmin({ useAsTitle: 'name', defaultColumns: ['name', 'marketEventGroup', 'dateTime', 'location', 'updatedAt'] }),
+  defaultSort: '-dateTime',
+  access: editableAccess,
+  fields: [
+    { name: 'name', type: 'text', required: true },
+    {
+      name: 'slug', type: 'text', required: true, unique: true, index: true,
+      hooks: { beforeValidate: [({ value, data }) => value || marketEventSlugify(data?.name)] },
+    },
+    { name: 'marketEventGroup', label: 'Market & Event group', type: 'relationship', relationTo: 'market-event-groups', required: true, index: true },
+    { name: 'programs', type: 'relationship', relationTo: 'programs', hasMany: true },
+    { name: 'dateTime', label: 'Date & time', type: 'date', admin: { date: { pickerAppearance: 'dayAndTime' } } },
+    { name: 'location', type: 'text' },
+    { name: 'coverImage', label: 'Cover image', type: 'upload', relationTo: 'column-media' },
+    {
+      name: 'images', label: 'Event images', type: 'array',
+      fields: [
+        { name: 'image', type: 'upload', relationTo: 'column-media', required: true },
+        { name: 'caption', type: 'text' },
+      ],
+    },
+    {
+      name: 'content', label: 'Event content', type: 'richText',
+      editor: lexicalEditor({
+        features: ({ defaultFeatures }) => [
+          ...defaultFeatures,
+          BlocksFeature({ blocks: [ColumnArticleEmbedBlock, ColumnArticleImageGroupBlock] }),
+        ],
+      }),
+    },
+  ],
+}
+
 export const ColumnAnalyticsEvents: CollectionConfig = {
   slug: 'column-analytics-events',
   labels: { singular: 'Analytics Event', plural: 'Analytics Events' },
@@ -640,6 +710,8 @@ export const ColumnArticleStats: CollectionConfig = {
 }
 
 export const columnCollections: CollectionConfig[] = [
+  MarketEventGroups,
+  MarketEventContent,
   ColumnArticles,
   ColumnAnalyticsEvents,
   ColumnArticleStats,

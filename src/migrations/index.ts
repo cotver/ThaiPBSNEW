@@ -35,6 +35,9 @@ import * as migration_20260914_101500_add_column_taxonomy_page_sort_order from '
 import * as migration_20260915_064013_add_article_pdf from './20260915_064013_add_article_pdf';
 import * as migration_20260916_000000_cascade_column_article_stats_delete from './20260916_000000_cascade_column_article_stats_delete';
 import * as migration_20260925_063759 from './20260925_063759';
+import * as migration_20260928_075949_add_market_event_content from './20260928_075949_add_market_event_content';
+import * as migration_20260928_081450_reorder_market_event_groups from './20260928_081450_reorder_market_event_groups';
+import * as migration_20260928_082233_optional_market_event_details from './20260928_082233_optional_market_event_details';
 
 export const migrations = [
   {
@@ -220,6 +223,21 @@ export const migrations = [
   {
     up: migration_20260925_063759.up,
     down: migration_20260925_063759.down,
-    name: '20260925_063759'
+    name: '20260925_063759',
+  },
+  {
+    up: migration_20260928_075949_add_market_event_content.up,
+    down: migration_20260928_075949_add_market_event_content.down,
+    name: '20260928_075949_add_market_event_content',
+  },
+  {
+    up: migration_20260928_081450_reorder_market_event_groups.up,
+    down: migration_20260928_081450_reorder_market_event_groups.down,
+    name: '20260928_081450_reorder_market_event_groups',
+  },
+  {
+    up: migration_20260928_082233_optional_market_event_details.up,
+    down: migration_20260928_082233_optional_market_event_details.down,
+    name: '20260928_082233_optional_market_event_details'
   },
 ];

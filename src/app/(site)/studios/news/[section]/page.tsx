@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function StudiosNewsPage({ params }: { params: Promise<{ section: string }> }) {
   const { section } = await params;
-  if (section !== "press-releases" && section !== "markets-and-events") notFound();
+  if (section !== "press-releases" && section !== "content-distribution" && section !== "markets-and-events") notFound();
 
   const isPress = section === "press-releases";
   const [items, companies] = await Promise.all([
@@ -16,7 +16,7 @@ export default async function StudiosNewsPage({ params }: { params: Promise<{ se
     isPress ? Promise.resolve([]) : getMarketCompanies(),
   ]);
   const marketLogoCompanies = companies;
-  const title = isPress ? "Press Releases" : "Markets and Events";
+  const title = isPress ? "Press Releases" : "Content Distribution";
   const itemCount = isPress ? items.length : marketLogoCompanies.length;
 
   return (
