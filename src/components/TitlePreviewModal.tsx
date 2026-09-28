@@ -297,7 +297,7 @@ export function TitlePreviewModal({
           <CloseIcon />
         </button>
 
-        <div data-responsive-hero="preview" data-hero-has-details={title.showHeroDetails !== false || undefined} ref={heroRef} className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-black">
+        <div data-responsive-hero="preview" ref={heroRef} className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-black">
           <div className="absolute inset-0 bg-[#030714]">
             {trailerEmbedUrl && keepTrailerMounted ? (
                 <iframe
@@ -496,6 +496,7 @@ export function TitlePreviewModal({
 
           {title.showHeroDetails !== false ? (
             <div
+              data-hero-details-layer
               className="pointer-events-none absolute inset-0 z-10"
             >
               {showInlineTrailer ? (

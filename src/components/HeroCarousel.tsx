@@ -395,7 +395,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   const currentMeta = [current.year, current.rating, current.duration, titleSeasonEpisodeLabel(current)].filter(Boolean);
 
   return (
-    <section data-responsive-hero="home" data-hero-has-details={current.showHeroDetails !== false || undefined} ref={heroRef} className="relative h-[clamp(620px,min(56.25vw,100vh),2160px)] overflow-hidden px-5 pb-24 sm:px-8 lg:px-10">
+    <section data-responsive-hero="home" ref={heroRef} className="relative h-[clamp(620px,min(56.25vw,100vh),2160px)] overflow-hidden px-5 pb-24 sm:px-8 lg:px-10">
       {titles.map((title, index) => {
         const heroAsset = title.heroImage || title.posterImage;
         const mediaClassName = title.isDiscontinued ? "absolute inset-0 h-full w-full object-cover object-center grayscale" : "absolute inset-0 h-full w-full object-cover object-center";
@@ -607,6 +607,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
 
       {current.showHeroDetails !== false && (
         <div
+          data-hero-details-layer
           className="pointer-events-none absolute inset-0 z-10"
         >
           {activeHasInlineTrailer && !trailerEnded && trailerPlaybackMatches && trailerPlayback.loaded ? (
