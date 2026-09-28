@@ -222,9 +222,9 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
       (entries) => {
         const entry = entries[0];
         if (!entry) return;
-        setHeroInView(entry.isIntersecting && entry.intersectionRatio >= 0.5);
+        setHeroInView(entry.isIntersecting);
       },
-      { threshold: [0, 0.25, 0.5, 0.75, 1] },
+      { rootMargin: "200px 0px", threshold: 0 },
     );
 
     observer.observe(hero);
