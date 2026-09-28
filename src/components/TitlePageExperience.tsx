@@ -264,7 +264,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
 
   return (
     <>
-      <section data-responsive-hero="title" ref={heroRef} className="relative h-[clamp(390px,56.25vw,100vh)] overflow-hidden bg-black text-white">
+      <section data-responsive-hero="title" data-hero-compact={(showInlineTrailer && !heroDetailsRevealed) || title.showHeroDetails === false || undefined} ref={heroRef} className="relative h-[clamp(390px,56.25vw,100vh)] overflow-hidden bg-black text-white">
         <div className="absolute inset-0 bg-[#030714]">
           {trailerEmbedUrl && keepTrailerMounted ? (
             <iframe
@@ -417,9 +417,10 @@ export function TitlePageExperience({ title }: { title: Title }) {
                 onContextMenu={(event) => event.preventDefault()}
                 onDragStart={(event) => event.preventDefault()}
               />
+              <div data-hero-media-controls className="pointer-events-none absolute inset-0 z-20">
               <button
                 aria-label={trailerMuted ? "Unmute trailer" : "Mute trailer"}
-                className="absolute bottom-4 right-4 z-20 grid size-10 place-items-center rounded-full bg-black/55 text-white ring-1 ring-white/16 transition hover:bg-black/72"
+                className="pointer-events-auto absolute bottom-4 right-4 grid size-10 place-items-center rounded-full bg-black/55 text-white ring-1 ring-white/16 transition hover:bg-black/72"
                 onClick={() => {
                   setTrailerPlayback((playback) => ({
                     ...playback,
@@ -433,6 +434,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
               >
                 {trailerMuted ? <MutedIcon /> : <VolumeIcon />}
               </button>
+              </div>
             </>
           ) : null}
 
@@ -446,11 +448,12 @@ export function TitlePageExperience({ title }: { title: Title }) {
             />
           ) : null}
         </div>
-        <div className="absolute inset-x-0 bottom-0 h-50 bg-gradient-to-t from-[#030714] via-[#030714]/40 to-transparent" />
+        <div data-hero-bottom-gradient className="absolute inset-x-0 bottom-0 h-50 bg-gradient-to-t from-[#030714] via-[#030714]/40 to-transparent" />
 
         {title.showHeroDetails !== false ? (
           <div
             data-hero-details-layer
+            data-hero-details-hidden={(showInlineTrailer && !heroDetailsRevealed) || undefined}
             className="pointer-events-none absolute inset-0 z-10"
           >
             {showInlineTrailer ? (

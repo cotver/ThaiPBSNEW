@@ -117,6 +117,7 @@
     aspect-ratio: auto;
   }
   [data-responsive-site] [data-responsive-hero="home"] { padding: 0 0 16px; }
+  [data-responsive-site] [data-responsive-hero="home"][data-hero-compact] { padding-bottom: 0; }
   [data-responsive-site] [data-responsive-hero]::before {
     content: "";
     display: block;
@@ -127,6 +128,21 @@
     position: relative;
     inset: auto;
     background: linear-gradient(180deg, rgba(3, 7, 20, .96), #030714);
+  }
+  [data-responsive-site] [data-hero-details-layer][data-hero-details-hidden] {
+    position: absolute;
+    inset: 0;
+    background: transparent;
+  }
+  [data-responsive-site] [data-hero-details-hidden] [data-hero-copy],
+  [data-responsive-site] [data-hero-compact] [data-hero-bottom-gradient] {
+    display: none;
+  }
+  [data-responsive-site] [data-hero-media-controls] {
+    inset: 0 auto auto 0;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
   }
   [data-responsive-site] [data-hero-copy] {
     position: relative;
@@ -139,6 +155,12 @@
     position: relative;
     inset: auto;
     margin: 4px clamp(16px, 3vw, 32px) 0;
+  }
+  [data-responsive-site] [data-hero-compact] [data-hero-indicators] {
+    position: absolute;
+    inset: auto auto 12px clamp(16px, 3vw, 32px);
+    width: calc(100% - 88px);
+    margin: 0;
   }
   /* Preserve the entire trailer inside the media area. */
   [data-responsive-site] [data-hero-trailer] {

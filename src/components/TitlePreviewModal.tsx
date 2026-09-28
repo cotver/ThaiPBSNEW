@@ -297,7 +297,7 @@ export function TitlePreviewModal({
           <CloseIcon />
         </button>
 
-        <div data-responsive-hero="preview" ref={heroRef} className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-black">
+        <div data-responsive-hero="preview" data-hero-compact={(showInlineTrailer && !heroDetailsRevealed) || title.showHeroDetails === false || undefined} ref={heroRef} className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-black">
           <div className="absolute inset-0 bg-[#030714]">
             {trailerEmbedUrl && keepTrailerMounted ? (
                 <iframe
@@ -466,9 +466,10 @@ export function TitlePreviewModal({
                   onContextMenu={(event) => event.preventDefault()}
                   onDragStart={(event) => event.preventDefault()}
                 />
+                <div data-hero-media-controls className="pointer-events-none absolute inset-0 z-20">
                 <button
                   aria-label={trailerMuted ? "Unmute trailer" : "Mute trailer"}
-                  className="absolute bottom-4 right-4 z-20 grid size-10 place-items-center rounded-full bg-black/55 text-white ring-1 ring-white/16 transition hover:bg-black/72"
+                  className="pointer-events-auto absolute bottom-4 right-4 grid size-10 place-items-center rounded-full bg-black/55 text-white ring-1 ring-white/16 transition hover:bg-black/72"
                   onClick={() => {
                     setTrailerPlayback((playback) => ({
                       ...playback,
@@ -482,6 +483,7 @@ export function TitlePreviewModal({
                 >
                   {trailerMuted ? <MutedIcon /> : <VolumeIcon />}
                 </button>
+                </div>
               </>
             ) : null}
             {title.showHeroDetails !== false ? (
@@ -492,11 +494,12 @@ export function TitlePreviewModal({
               />
             ) : null}
           </div>
-          <div className="absolute inset-x-0 bottom-0 h-50 bg-gradient-to-t from-[#111827] via-[#111827]/40 to-transparent" />
+          <div data-hero-bottom-gradient className="absolute inset-x-0 bottom-0 h-50 bg-gradient-to-t from-[#111827] via-[#111827]/40 to-transparent" />
 
           {title.showHeroDetails !== false ? (
             <div
               data-hero-details-layer
+              data-hero-details-hidden={(showInlineTrailer && !heroDetailsRevealed) || undefined}
               className="pointer-events-none absolute inset-0 z-10"
             >
               {showInlineTrailer ? (

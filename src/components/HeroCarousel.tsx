@@ -393,9 +393,10 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
 
   const currentIsDisabled = current.isDiscontinued;
   const currentMeta = [current.year, current.rating, current.duration, titleSeasonEpisodeLabel(current)].filter(Boolean);
+  const hideHeroDetails = activeHasInlineTrailer && !trailerEnded && trailerPlaybackMatches && trailerPlayback.loaded && !heroDetailsRevealed;
 
   return (
-    <section data-responsive-hero="home" ref={heroRef} className="relative h-[clamp(620px,min(56.25vw,100vh),2160px)] overflow-hidden px-5 pb-24 sm:px-8 lg:px-10">
+    <section data-responsive-hero="home" data-hero-compact={current.showHeroDetails === false || hideHeroDetails || undefined} ref={heroRef} className="relative h-[clamp(620px,min(56.25vw,100vh),2160px)] overflow-hidden px-5 pb-24 sm:px-8 lg:px-10">
       {titles.map((title, index) => {
         const heroAsset = title.heroImage || title.posterImage;
         const mediaClassName = title.isDiscontinued ? "absolute inset-0 h-full w-full object-cover object-center grayscale" : "absolute inset-0 h-full w-full object-cover object-center";
@@ -575,9 +576,10 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                   onContextMenu={(event) => event.preventDefault()}
                   onDragStart={(event) => event.preventDefault()}
                 />
+                <div data-hero-media-controls className="pointer-events-none absolute inset-0 z-20">
                 <button
                   aria-label={trailerMuted ? "Unmute trailer" : "Mute trailer"}
-                  className="absolute bottom-4 right-4 z-20 grid size-10 place-items-center rounded-full bg-black/55 text-white ring-1 ring-white/16 transition hover:bg-black/72"
+                  className="pointer-events-auto absolute bottom-4 right-4 grid size-10 place-items-center rounded-full bg-black/55 text-white ring-1 ring-white/16 transition hover:bg-black/72"
                   onClick={() => {
                     setTrailerPlayback((playback) => ({
                       ...playback,
@@ -591,6 +593,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                 >
                   {trailerMuted ? <MutedIcon /> : <VolumeIcon />}
                 </button>
+                </div>
               </>
             ) : null}
             {title.showHeroDetails !== false && (
@@ -603,11 +606,12 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
           </div>
         );
       })}
-      <div className="absolute inset-x-0 bottom-0 h-50 bg-gradient-to-t from-[#030714] via-[#030714]/40 to-transparent" />
+      <div data-hero-bottom-gradient className="absolute inset-x-0 bottom-0 h-50 bg-gradient-to-t from-[#030714] via-[#030714]/40 to-transparent" />
 
       {current.showHeroDetails !== false && (
         <div
           data-hero-details-layer
+          data-hero-details-hidden={hideHeroDetails || undefined}
           className="pointer-events-none absolute inset-0 z-10"
         >
           {activeHasInlineTrailer && !trailerEnded && trailerPlaybackMatches && trailerPlayback.loaded ? (
@@ -729,7 +733,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         </div>
       )}
 
-      {current.showHeroDetails === false && (
+      {(current.showHeroDetails === false || hideHeroDetails) && (
         <div data-hero-indicators className="no-scrollbar absolute bottom-20 left-5 right-5 z-20 flex items-center gap-2 overflow-x-auto sm:left-8 sm:right-8 lg:hidden">
           {titles.map((title, index) => (
             <button
