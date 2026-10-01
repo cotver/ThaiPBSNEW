@@ -12,14 +12,11 @@ export const Media: CollectionConfig = {
       upload: {
         staticDir: process.env.PAYLOAD_MEDIA_DIR || '../payload-uploads/media',
         mimeTypes: ['image/*'],
-        // Enable server-side paste URL so pasting external URLs works when client fetch
-        // fails (e.g. CORS). Empty hostname lets any host for that protocol.
-        pasteURL: {
-          allowList: [
-            { protocol: 'https', hostname: '' },
-            { protocol: 'http', hostname: '' },
-          ],
-        },
+        // pasteURL is left at Payload's default (browser-side fetch). Do not add a
+        // wildcard allowList: Payload skips its SSRF filter for allow-listed URLs
+        // and the paste-url endpoint returns the fetched body, which would let CMS
+        // users read internal services. If a CORS-blocked host must be supported,
+        // allow-list that exact public hostname only.
       },
       fields: [
         {

@@ -3,6 +3,9 @@ export const AIRFLOW_BASE =
 
 const AIRFLOW_HOST = "airflow.thaipbs.or.th";
 
+// Fail fast when Airflow is unreachable instead of holding requests open.
+const LOGIN_TIMEOUT_MS = 15_000;
+
 declare global {
   // eslint-disable-next-line no-var
   var __airflowSid: { cookie: string; expiresAt: number } | null | undefined;
@@ -37,6 +40,7 @@ export async function loginAndGetCookie(): Promise<string> {
 
   const pre = await fetch(new URL("/login", AIRFLOW_BASE).toString(), {
     method: "GET",
+    signal: AbortSignal.timeout(LOGIN_TIMEOUT_MS),
   });
   const preCookies = getSetCookieList(pre.headers)
     .map((c) => c.split(";")[0])
@@ -58,11 +62,13 @@ export async function loginAndGetCookie(): Promise<string> {
     },
     body: form.toString(),
     redirect: "manual",
+    signal: AbortSignal.timeout(LOGIN_TIMEOUT_MS),
   });
 
   if (!(res.status === 201 || res.status === 200)) {
     const txt = await res.text().catch(() => "");
-    throw new Error(`Login failed: ${res.status}\n${txt}`.slice(0, 1200));
+    console.error(`Airflow login failed: ${res.status}`, txt.slice(0, 1200));
+    throw new Error(`Airflow login failed: ${res.status}`);
   }
 
   const sid = pickGatewaySid(getSetCookieList(res.headers));
@@ -89,6 +95,63 @@ export function clearCookieCache(): void {
 
 export function getAirflowHost(): string {
   return AIRFLOW_HOST;
+}
+
+/**
+ * Resolve a proxied Airflow file to an absolute URL, but only when it stays on
+ * the Airflow origin under /static/. The Airflow session cookie is attached to
+ * the upstream request, so any other target would leak it (SSRF).
+ */
+export function resolveAirflowStaticUrl(input: string): URL | null {
+  const base = new URL(AIRFLOW_BASE);
+  let url: URL;
+  try {
+    url = /^https?:\/\//i.test(input)
+      ? new URL(input)
+      : new URL(`/static/${input.replace(/^\/+/, "").replace(/^static\/+/, "")}`, base);
+  } catch {
+    return null;
+  }
+
+  // URL parsing already collapsed "../" and "%2e%2e" segments, so checking the
+  // normalized pathname rejects traversal out of /static/. Encoded slashes and
+  // backslashes are rejected too, since upstream servers may decode them later.
+  if (url.origin !== base.origin) return null;
+  if (!url.pathname.startsWith("/static/")) return null;
+  if (/%2f|%5c|\\/i.test(url.pathname)) return null;
+  if (url.username || url.password) return null;
+  url.hash = "";
+  return url;
+}
+
+/**
+ * fetch() that aborts if Airflow has not sent response headers in time. The
+ * timer is cleared once headers arrive so long video bodies can keep streaming.
+ */
+export async function fetchAirflow(
+  url: string,
+  init: RequestInit = {},
+  headerTimeoutMs = 20_000
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), headerTimeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Require a signed-in Payload CMS user (cookie or Authorization header). */
+export async function hasCmsUser(req: Request): Promise<boolean> {
+  try {
+    const { getPayloadClient } = await import("@/lib/payload-client");
+    const payload = await getPayloadClient();
+    const { user } = await payload.auth({ headers: req.headers });
+    return Boolean(user);
+  } catch {
+    return false;
+  }
 }
 
 /**

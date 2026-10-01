@@ -38,6 +38,11 @@ import { ColumnRelatedStories } from './globals/ColumnRelatedStories.ts'
 
 const payloadDatabaseUrl = process.env.PAYLOAD_DATABASE_URL || process.env.DATABASE_URL || ''
 const payloadDbSchema = process.env.PAYLOAD_DB_SCHEMA || 'payload'
+const payloadSecret = process.env.PAYLOAD_SECRET || ''
+if (process.env.NODE_ENV === 'production' && payloadSecret.length < 32) {
+  // The secret signs auth tokens; a known fallback would let anyone forge admin sessions.
+  throw new Error('PAYLOAD_SECRET must be set (at least 32 characters) in production')
+}
 const groupProgramCollections = (collections: CollectionConfig[]): CollectionConfig[] =>
   collections.map((collection) =>
     isProgramsGroupCollection(collection.slug)
@@ -144,7 +149,7 @@ export default buildConfig({
     uploadTimeout: 0,
   },
 
-  secret: process.env.PAYLOAD_SECRET || 'dev-secret-min-32-chars-long-change-me',
+  secret: payloadSecret || 'dev-secret-min-32-chars-long-change-me',
   db: postgresAdapter({
     pool: {
       connectionString: payloadDatabaseUrl,

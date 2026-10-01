@@ -1,6 +1,6 @@
 export const runtime = "nodejs";
 
-import { getCookieCached, isSameOrigin } from "@/lib/airflow-auth";
+import { fetchAirflow, getCookieCached, isSameOrigin, resolveAirflowStaticUrl } from "@/lib/airflow-auth";
 
 function isDirectNavigation(req: Request): boolean {
   const fetchDest = req.headers.get("sec-fetch-dest")?.toLowerCase();
@@ -22,37 +22,51 @@ export async function GET(req: Request) {
   const url = searchParams.get("url");
   if (!url) return new Response("Missing ?url=", { status: 400 });
 
-  let upstreamUrl: string;
-  try {
-    upstreamUrl = decodeURIComponent(url);
-  } catch {
-    return new Response("Invalid url", { status: 400 });
+  // searchParams.get() already decoded the value once. Only decode again for
+  // legacy links that were double-encoded (e.g. "https%3A%2F%2F...").
+  let rawUrl = url;
+  if (!/^https?:\/\//i.test(rawUrl)) {
+    try {
+      rawUrl = decodeURIComponent(rawUrl);
+    } catch {
+      return new Response("Invalid url", { status: 400 });
+    }
   }
 
-  const range = req.headers.get("range");
-  const requestHeaders: HeadersInit = {
-    cookie: await getCookieCached(),
-    "accept-encoding": "identity",
-  };
-  if (range) requestHeaders["range"] = range;
+  const resolved = resolveAirflowStaticUrl(rawUrl);
+  if (!resolved) return new Response("Invalid url", { status: 400 });
+  const upstreamUrl = resolved.toString();
 
-  const upstream = await fetch(upstreamUrl, { headers: requestHeaders });
+  const range = req.headers.get("range");
+
+  let upstream: Response;
+  try {
+    const requestHeaders: Record<string, string> = {
+      cookie: await getCookieCached(),
+      "accept-encoding": "identity",
+    };
+    if (range) requestHeaders["range"] = range;
+    upstream = await fetchAirflow(upstreamUrl, { headers: requestHeaders, redirect: "manual" });
+  } catch (e) {
+    console.error("Airflow video proxy failed", e);
+    return new Response("Upstream unavailable", { status: 502 });
+  }
 
   if (!upstream.ok) {
-    const txt = await upstream.text().catch(() => "");
-    return new Response(
-      `Upstream ${upstream.status}\n\n${txt}`.slice(0, 1000),
-      {
-        status: upstream.status,
-        headers: { "content-type": "text/plain; charset=utf-8" },
-      }
-    );
+    await upstream.body?.cancel().catch(() => {});
+    return new Response(`Upstream ${upstream.status}`, {
+      status: upstream.status >= 400 ? upstream.status : 502,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
   }
 
   const outHeaders = new Headers();
   const ct = upstream.headers.get("content-type");
   if (ct) outHeaders.set("content-type", ct);
   outHeaders.set("cache-control", "private, max-age=60");
+  // Served from our origin: never let proxied content run as a document.
+  outHeaders.set("x-content-type-options", "nosniff");
+  outHeaders.set("content-security-policy", "default-src 'none'; sandbox");
 
   const status = upstream.status;
   const contentRange = upstream.headers.get("content-range");
