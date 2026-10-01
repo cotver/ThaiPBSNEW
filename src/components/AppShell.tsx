@@ -121,7 +121,8 @@ export function AppShell({
     };
   }, [pathname]);
 
-  if (pathname === "/" || pathname === "/prototype") {
+  // The Studio Lot prototype brings its own full-screen chrome.
+  if (pathname === "/" || pathname === "/prototype" || pathname.startsWith("/prototype/studio-lot")) {
     return <main className="min-h-screen bg-black text-white">{children}</main>;
   }
 

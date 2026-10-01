@@ -22,7 +22,7 @@ export default function PrototypeComparisonPage() {
           );
         })}
       </section>
-      <footer className="prototype-hub__footer"><span>Homepage · Category · Article</span><Link href="/prototype/programs">View original prototype</Link></footer>
+      <footer className="prototype-hub__footer"><span>Homepage · Category · Article</span><Link href="/prototype/studio-lot">Walk the 3D Studio Lot ↗</Link><Link href="/prototype/programs">View original prototype</Link></footer>
     </main>
   );
 }

@@ -383,14 +383,24 @@ export async function getStudioNewsBySection(section: StudiosNewsSection): Promi
   }
 }
 
+export type StudiosShowcaseData = Awaited<ReturnType<typeof getStudioContent>> & {
+  marketCompanies: MarketCompanySummary[];
+  marketEventGroups: Awaited<ReturnType<typeof getMarketEventGroups>>;
+};
+
+/** Everything the showcase renders, so other views (e.g. the gallery prototype) apply the same rules. */
+export async function getStudiosShowcaseData(): Promise<StudiosShowcaseData> {
+  const [studioContent, marketCompanies, marketEventGroups] = await Promise.all([getStudioContent(20), getMarketCompanies(), getMarketEventGroups()]);
+  return { ...studioContent, marketCompanies, marketEventGroups };
+}
+
 export type StudiosShowcaseProps = {
   showCurtain?: boolean;
 };
 
 export async function StudiosShowcase({ showCurtain = true }: StudiosShowcaseProps = {}) {
   const entranceTitle = "ThaiPBS Journal";
-  const [studioContent, marketCompanies, marketEventGroups] = await Promise.all([getStudioContent(20), getMarketCompanies(), getMarketEventGroups()]);
-  const { categories, otherCategories, featuredArticles, pressReleases } = studioContent;
+  const { categories, otherCategories, featuredArticles, pressReleases, marketCompanies, marketEventGroups } = await getStudiosShowcaseData();
   const marketLogoCompanies = marketCompanies;
   const hasNews = pressReleases.length > 0 || marketLogoCompanies.length > 0;
   if (!featuredArticles.length && !categories.length && !otherCategories.length && !hasNews && !marketEventGroups.length) return null;
