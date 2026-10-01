@@ -2,12 +2,15 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import type { LotEngine, LotQuality } from "../_engine/LotEngine";
-import { roomNumber, type LotData, type LotSectionId } from "../_lib/data";
+import type { LotData, LotSectionId } from "../_lib/data";
 import { cue } from "../_lib/sound";
 import styles from "../experience.module.css";
 import { CallSheet } from "./CallSheet";
+import { DragScroller } from "./DragScroller";
 import { setCursorLabel } from "./LotCursor";
+import { walkSlotId } from "./LotHeader";
 import { LotLoader, RouteLeader } from "./LotLoader";
 import { LotPanel } from "./LotPanel";
 
@@ -41,6 +44,9 @@ const readCapabilities = () => (cachedCapabilities ??= detectCapabilities());
 const noCapabilities = () => null;
 const noSubscription = () => () => {};
 
+const noWalkSlot = () => null;
+const readWalkSlot = () => document.getElementById(walkSlotId);
+
 function timecode(progress: number) {
   const total = progress * REEL_SECONDS;
   const pad = (value: number) => String(Math.floor(value)).padStart(2, "0");
@@ -54,6 +60,8 @@ export function LotExperience({ data, fontFamily }: { data: LotData; fontFamily:
   const wantsList = searchParams.get("view") === "list";
 
   const capabilities = useSyncExternalStore(noSubscription, readCapabilities, noCapabilities);
+  // The header (from the layout) owns the slot; the gallery fills it with the walk controls.
+  const walkSlot = useSyncExternalStore(noSubscription, readWalkSlot, noWalkSlot);
   const [override, setOverride] = useState<"lot" | "sheet" | null>(null);
   const [phase, setPhase] = useState<Phase>("loading");
   const [loadProgress, setLoadProgress] = useState(0);
@@ -112,13 +120,15 @@ export function LotExperience({ data, fontFamily }: { data: LotData; fontFamily:
         ]);
         if (cancelled) return;
         setLoadProgress(0.22);
-        engine = new Engine({
+        const building = new Engine({
           canvas,
           data,
           font: fontFamily,
           quality: capabilities.quality,
           reducedMotion: capabilities.reducedMotion,
-          onLoadProgress: (ratio) => setLoadProgress((value) => Math.max(value, 0.22 + ratio * 0.78)),
+          // Countdown: code + fonts 0–22%, building the scene 22–50%, artwork 50–100%.
+          onBuildProgress: (ratio) => setLoadProgress((value) => Math.max(value, 0.22 + ratio * 0.28)),
+          onLoadProgress: (ratio) => setLoadProgress((value) => Math.max(value, 0.5 + ratio * 0.5)),
           onReady: () => setPhase((value) => (value === "loading" ? "reveal" : value)),
           onHover: (section) => {
             setHovered(section);
@@ -143,12 +153,16 @@ export function LotExperience({ data, fontFamily }: { data: LotData; fontFamily:
             if (timecodeRef.current) timecodeRef.current.textContent = timecode(progress);
           },
         });
-        engineRef.current = engine;
+        // Keep the handles before awaiting: leaving mid-build can still dispose it, and "ready" (which can
+        // arrive right as init finishes) always finds the engine. Nothing interacts with it until the reveal.
+        engine = building;
+        engineRef.current = building;
+        await building.init();
       } catch (error) {
+        if (cancelled) return; // disposed on purpose while building
+        engineRef.current = null;
         console.warn("Studio Lot: falling back to the call sheet", error);
-        if (!cancelled) {
-          setFailed(true);
-        }
+        setFailed(true);
       }
     })();
 
@@ -247,6 +261,46 @@ export function LotExperience({ data, fontFamily }: { data: LotData; fontFamily:
   const hoveredRoom = data.rooms[hoveredIndex];
   const highlight = selected ?? hovered;
 
+  const walk = (
+    <div className={styles.reel} data-in-header>
+      <div className={styles.reelMeta}>
+        <span>Your walk</span>
+        <span ref={timecodeRef}>00:00:00:00</span>
+      </div>
+      <div className={styles.reelTrack}>
+        <span className={styles.reelFill} ref={reelFillRef} />
+      </div>
+      <DragScroller ariaLabel="Rooms in the gallery" className={styles.markers} followKey={highlight ?? nearest} followSelector="[data-follow]">
+        {data.rooms.map((section) => (
+          <button
+            aria-current={selected === section.id ? "true" : undefined}
+            className={styles.marker}
+            data-active={highlight === section.id || undefined}
+            data-cursor={`Step into ${section.title}`}
+            data-follow={(highlight ?? nearest) === section.id || undefined}
+            data-near={nearest === section.id || undefined}
+            key={section.id}
+            onBlur={() => engineRef.current?.setForcedHover(null)}
+            onClick={() => select(section.id)}
+            onFocus={() => {
+              engineRef.current?.setForcedHover(section.id);
+              if (!selectedRef.current) engineRef.current?.travelTo(section.id);
+            }}
+            onMouseEnter={() => engineRef.current?.setForcedHover(section.id)}
+            onMouseLeave={() => engineRef.current?.setForcedHover(null)}
+            ref={(element) => {
+              if (element) markerRefs.current.set(section.id, element);
+              else markerRefs.current.delete(section.id);
+            }}
+            type="button"
+          >
+            <span className={styles.markerName}>{section.title}</span>
+          </button>
+        ))}
+      </DragScroller>
+    </div>
+  );
+
   return (
     <section aria-label="Thai PBS Studio Lot" className={styles.stage} data-phase={phase} data-focused={selected ? "" : undefined}>
       <h1 className={styles.srOnly}>Thai PBS gallery — every section of the home page, hung room by room</h1>
@@ -257,7 +311,7 @@ export function LotExperience({ data, fontFamily }: { data: LotData; fontFamily:
 
       <div aria-hidden={selected ? true : undefined} className={styles.caption}>
         <p className={styles.captionKicker}>
-          <span className={styles.rec} /> Now viewing · {hoveredIndex >= 0 ? roomNumber(hoveredIndex) : ""}
+          <span className={styles.rec} /> Now viewing
         </p>
         <p className={styles.captionTitle}>{hoveredRoom?.title}</p>
         <p className={styles.captionThai}>{hoveredRoom?.thai}</p>
@@ -265,44 +319,6 @@ export function LotExperience({ data, fontFamily }: { data: LotData; fontFamily:
       </div>
 
       <div className={styles.hud}>
-        <div className={styles.reel}>
-          <div className={styles.reelMeta}>
-            <span>Reel 01</span>
-            <span ref={timecodeRef}>00:00:00:00</span>
-          </div>
-          <div className={styles.reelTrack}>
-            <span className={styles.reelFill} ref={reelFillRef} />
-          </div>
-          <nav aria-label="Rooms in the gallery" className={styles.markers}>
-            {data.rooms.map((section, index) => (
-              <button
-                aria-current={selected === section.id ? "true" : undefined}
-                className={styles.marker}
-                data-active={highlight === section.id || undefined}
-                data-cursor={`Step into ${section.title}`}
-                data-near={nearest === section.id || undefined}
-                key={section.id}
-                onBlur={() => engineRef.current?.setForcedHover(null)}
-                onClick={() => select(section.id)}
-                onFocus={() => {
-                  engineRef.current?.setForcedHover(section.id);
-                  if (!selectedRef.current) engineRef.current?.travelTo(section.id);
-                }}
-                onMouseEnter={() => engineRef.current?.setForcedHover(section.id)}
-                onMouseLeave={() => engineRef.current?.setForcedHover(null)}
-                ref={(element) => {
-                  if (element) markerRefs.current.set(section.id, element);
-                  else markerRefs.current.delete(section.id);
-                }}
-                type="button"
-              >
-                <span className={styles.markerIndex}>{String(index + 1).padStart(2, "0")}</span>
-                <span className={styles.markerName}>{section.title}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
-
         <div className={styles.hint} aria-hidden={selected ? true : undefined}>
           <span>Scroll to walk</span>
           <span>Click a room to step in</span>
@@ -314,6 +330,8 @@ export function LotExperience({ data, fontFamily }: { data: LotData; fontFamily:
         </button>
       </div>
 
+      {/* Shown once the gallery is open — not over the loading countdown. */}
+      {walkSlot && phase !== "loading" ? createPortal(walk, walkSlot) : null}
       {panel ? <LotPanel data={data} onClose={close} onSelect={select} section={panel} /> : null}
       {selected && !panel ? <div aria-live="polite" className={styles.srOnly}>Moving to {data.rooms.find((room) => room.id === selected)?.title}</div> : null}
 

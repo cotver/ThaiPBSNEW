@@ -17,7 +17,7 @@ export default async function LotNewsPage() {
   return (
     <main className={pages.page}>
       <header className={pages.pageHero}>
-        <p className={pages.kicker}>Reading Room 03 · ห้องข่าว</p>
+        <p className={pages.kicker}>ห้องข่าว</p>
         <h1 className={pages.pageTitle}>
           The <em>Newsroom</em>
         </h1>
@@ -42,7 +42,7 @@ export default async function LotNewsPage() {
         </div>
       )}
 
-      {rest.length ? <StoryList articles={rest} startAt={2} /> : null}
+      {rest.length ? <StoryList articles={rest} /> : null}
       <LotFooter />
     </main>
   );

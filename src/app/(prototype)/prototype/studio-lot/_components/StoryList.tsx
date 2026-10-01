@@ -4,13 +4,12 @@ import type { FinalArticleCard } from "@/lib/payload-articles";
 import { formatLotDate, lotArticleHref } from "../_lib/data";
 import pages from "../pages.module.css";
 
-export function StoryList({ articles, startAt = 1 }: { articles: FinalArticleCard[]; startAt?: number }) {
+export function StoryList({ articles }: { articles: FinalArticleCard[] }) {
   return (
     <ol className={pages.storyList}>
-      {articles.map((article, index) => (
+      {articles.map((article) => (
         <li key={article.slug}>
           <Link data-cursor="Read story" href={lotArticleHref(article.slug)}>
-            <span className={pages.storyTake}>Take {String(index + startAt).padStart(2, "0")}</span>
             <span className={pages.storyThumb}>{article.imageUrl ? <Image alt="" className={pages.cover} fill sizes="200px" src={article.imageUrl} /> : null}</span>
             <span className={pages.storyCopy}>
               <strong>{article.title}</strong>

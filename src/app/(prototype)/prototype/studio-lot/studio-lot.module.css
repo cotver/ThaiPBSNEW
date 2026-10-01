@@ -107,36 +107,33 @@
   text-transform: uppercase;
 }
 
-.nav {
+/* Centre of the header: the gallery's walk controls, or a way back to the gallery on other pages. */
+.walkSlot {
   display: flex;
-  gap: 4px;
-  padding: 4px;
+  justify-content: center;
+  min-width: 0;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: rgb(14 16 22 / 70%);
-  backdrop-filter: blur(14px);
-}
-
-.navLink {
-  position: relative;
-  padding: 8px 16px;
-  border-radius: 999px;
   color: var(--paper-2);
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  transition: color 240ms var(--ease), background 240ms var(--ease);
+  backdrop-filter: blur(14px);
+  transition: color 240ms var(--ease), border-color 240ms var(--ease);
 }
 
-.navLink:hover {
+.backLink:hover {
+  border-color: var(--line-strong);
   color: var(--paper);
-  background: rgb(242 237 228 / 6%);
-}
-
-.navLink[aria-current="page"] {
-  color: var(--ink);
-  background: var(--paper);
 }
 
 .headerTools {
@@ -209,17 +206,10 @@
     background: linear-gradient(180deg, rgb(8 9 13 / 96%) 70%, rgb(8 9 13 / 0%));
   }
 
-  .nav {
+  .walkSlot {
     grid-column: 1 / -1;
     grid-row: 2;
     justify-self: stretch;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .navLink {
-    flex: 1 0 auto;
-    text-align: center;
   }
 
   .soundLabel {
@@ -646,7 +636,7 @@
 
 .runningOrder a {
   display: grid;
-  grid-template-columns: 28px 72px 1fr;
+  grid-template-columns: 72px 1fr;
   align-items: center;
   gap: 14px;
   padding: 12px 0;
@@ -914,8 +904,19 @@
 .tileArt[data-logo] {
   display: grid;
   place-items: center;
-  padding: 12px;
-  background: linear-gradient(140deg, #1b1d24, #0b0c10);
+  background: #0a0a0a;
+  container-type: inline-size;
+}
+
+/* Wordmark sizes on /home are viewport-based; inside a small card, scale them to the card instead. */
+.logoFrame {
+  position: relative;
+  display: block;
+  font-size: 12cqi;
+}
+
+.logoFrame [role="img"] {
+  font-size: inherit !important;
 }
 
 .logoName {
@@ -1078,7 +1079,7 @@
 
 .sheetSectionHeader {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 1fr;
   align-items: end;
   gap: clamp(16px, 3vw, 40px);
 }

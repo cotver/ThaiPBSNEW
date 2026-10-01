@@ -7,12 +7,8 @@ import { lotBase } from "../_lib/data";
 import { cue, onSoundChange, setSoundEnabled, soundEnabled } from "../_lib/sound";
 import styles from "../studio-lot.module.css";
 
-const links = [
-  { href: lotBase, label: "Gallery", exact: true },
-  { href: `${lotBase}/programs`, label: "Programs" },
-  { href: `${lotBase}/news`, label: "Newsroom" },
-  { href: `${lotBase}/shortlist`, label: "Shortlist" },
-];
+/** The gallery renders its walk controls (progress + rooms) into this header slot. */
+export const walkSlotId = "lot-walk-slot";
 
 export function LotHeader() {
   const pathname = usePathname();
@@ -28,16 +24,13 @@ export function LotHeader() {
         </span>
       </Link>
 
-      <nav aria-label="Studio Lot" className={styles.nav}>
-        {links.map((link) => {
-          const active = link.exact ? pathname === link.href : pathname.startsWith(link.href);
-          return (
-            <Link aria-current={active ? "page" : undefined} className={styles.navLink} data-cursor={link.label} href={link.href} key={link.href} onMouseEnter={() => cue("tick")}>
-              {link.label}
-            </Link>
-          );
-        })}
-      </nav>
+      <div className={styles.walkSlot} id={walkSlotId}>
+        {pathname === lotBase ? null : (
+          <Link className={styles.backLink} data-cursor="Back to the gallery" href={lotBase} onMouseEnter={() => cue("tick")}>
+            <span aria-hidden="true">←</span> Back to the gallery
+          </Link>
+        )}
+      </div>
 
       <div className={styles.headerTools}>
         <button

@@ -4,6 +4,7 @@ import { getStudiosShowcaseData } from "@/components/StudiosShowcase";
 import type { Title } from "@/lib/content";
 import { hiddenCatalogSectionsEnabled } from "@/lib/feature-flags";
 import { marketEventGroupHref, marketEventImage } from "@/lib/market-events";
+import { marketCompanyLogo, marketLogoFrame } from "@/lib/market-logos";
 import { getCatalogCollections, getCategoryTiles } from "@/lib/payload-content";
 import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
 import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
@@ -86,7 +87,13 @@ async function StudioLot() {
       studios.pressReleases.slice(0, 10).map((item) => ({ id: `press-${item.id}`, title: item.title, href: item.href, image: item.imageUrl, meta: item.date })),
       { viewAllHref: "/studios/news/press-releases", itemShape: "press" }),
     links("content-distribution", "Content Distribution", "การจัดจำหน่ายคอนเทนต์", "Partners carrying Thai PBS programs.",
-      studios.marketCompanies.slice(0, 10).map((company) => ({ id: `company-${company.slug}`, title: company.name, href: `/studios/market/${encodeURIComponent(company.slug)}`, meta: `${company.programCount} programs` })),
+      studios.marketCompanies.slice(0, 10).map((company) => ({
+        id: `company-${company.slug}`,
+        title: company.name,
+        href: `/studios/market/${encodeURIComponent(company.slug)}`,
+        meta: `${company.programCount} programs`,
+        logo: { ...marketCompanyLogo(company.name, company.slug), frame: marketLogoFrame(company.slug) },
+      })),
       { viewAllHref: "/studios/news/content-distribution", itemShape: "logo" }),
     links("market-events", "Market & Events", "ตลาดและกิจกรรม", "Markets, festivals and screenings.",
       studios.marketEventGroups.slice(0, 6).map((group) => ({ id: `event-${group.id}`, title: group.name, href: marketEventGroupHref(group.slug), image: marketEventImage(group.coverImage)?.url ?? undefined })),

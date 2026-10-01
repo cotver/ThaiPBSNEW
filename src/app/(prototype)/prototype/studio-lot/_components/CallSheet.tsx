@@ -1,6 +1,6 @@
 "use client";
 
-import { roomNumber, type LotData } from "../_lib/data";
+import type { LotData } from "../_lib/data";
 import styles from "../studio-lot.module.css";
 import { LotFooter, RoomContent } from "./LotSections";
 
@@ -34,25 +34,19 @@ export function CallSheet({ data, notice, onEnterLot }: { data: LotData; notice?
           ) : null}
         </div>
         <ol className={styles.sheetIndex}>
-          {data.rooms.map((room, index) => (
+          {data.rooms.map((room) => (
             <li key={room.id}>
-              <a href={`#${room.id}`}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                {room.title}
-              </a>
+              <a href={`#${room.id}`}>{room.title}</a>
             </li>
           ))}
         </ol>
       </header>
 
-      {data.rooms.map((room, index) => (
+      {data.rooms.map((room) => (
         <section aria-labelledby={`${room.id}-title`} className={styles.sheetSection} id={room.id} key={room.id}>
           <header className={styles.sheetSectionHeader}>
-            <span className={styles.sheetNumeral}>{String(index + 1).padStart(2, "0")}</span>
             <div>
-              <p className={styles.kicker}>
-                {roomNumber(index)} · {room.thai}
-              </p>
+              <p className={styles.kicker}>{room.thai}</p>
               <h2 id={`${room.id}-title`}>{room.title}</h2>
               <p className={styles.sectionBlurb}>{room.blurb}</p>
             </div>

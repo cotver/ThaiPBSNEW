@@ -22,7 +22,7 @@ export default async function LotProgramsPage({ searchParams }: { searchParams: 
   return (
     <main className={pages.page}>
       <header className={pages.pageHero}>
-        <p className={pages.kicker}>Gallery 02 · คลังรายการ</p>
+        <p className={pages.kicker}>คลังรายการ</p>
         <h1 className={pages.pageTitle}>
           Archive <em>Vault</em>
         </h1>

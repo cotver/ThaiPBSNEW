@@ -5,6 +5,7 @@ import { getPayloadClient } from "@/lib/payload-client";
 import { columnArticleHref } from "@/lib/content";
 import { visiblePageTaxonomy } from "@/lib/column-page-taxonomy";
 import { getMarketCompanies, type MarketCompanySummary } from "@/lib/d1-market";
+import { marketCompanyLogo } from "@/lib/market-logos";
 import { buildSlugLookupKeys } from "@/lib/slug-lookup";
 import { getMarketEventGroups } from "@/lib/market-events";
 import { MarketEventGroupGrid } from "./MarketEvents";
@@ -123,53 +124,6 @@ export function StudiosEventCard({ item }: { item: StudiosNewsItem }) {
   );
 }
 
-const officialMarketLogos: Record<string, { alt: string; src: string }> = {
-  netflix: {
-    alt: "Netflix",
-    src: "https://images.ctfassets.net/4cd45et68cgf/7LrExJ6PAj6MSIPkDyCO86/542b1dfabbf3959908f69be546879952/Netflix-Brand-Logo.png",
-  },
-  tvf: {
-    alt: "TVF International",
-    src: "https://tvfinternational.com/themes/international/images/tvf_logo4.png",
-  },
-  viu: {
-    alt: "Viu",
-    src: "https://www.viu.com/ott/hk/v1/images/Viu_logo.svg",
-  },
-};
-
-const marketWordmarks: Record<string, { label: string; className: string }> = {
-  disney: {
-    label: "Disney+",
-    className: "font-serif text-[clamp(28px,5vw,58px)] font-bold italic tracking-[-0.08em] text-[#8ed7ff]",
-  },
-  hbo: {
-    label: "HBO",
-    className: "text-[clamp(30px,5.4vw,64px)] font-black tracking-[-0.09em] text-white",
-  },
-  iqiyi: {
-    label: "iQIYI",
-    className: "rounded-[8px] border-[3px] border-[#00dc5a] px-[0.28em] py-[0.03em] text-[clamp(24px,4.5vw,52px)] font-black tracking-[-0.06em] text-[#00dc5a]",
-  },
-  true: {
-    label: "true",
-    className: "text-[clamp(30px,5.4vw,64px)] font-black italic tracking-[-0.09em] text-[#e51b23]",
-  },
-};
-
-function marketLogoBrand(companySlug: string): string | undefined {
-  const compactSlug = companySlug.toLocaleLowerCase().replace(/[^a-z0-9]+/g, "");
-
-  if (compactSlug.includes("netflix")) return "netflix";
-  if (compactSlug === "viu" || compactSlug.startsWith("viu")) return "viu";
-  if (compactSlug === "tvf" || compactSlug.includes("tvfinternational") || compactSlug.includes("tvfmedia")) return "tvf";
-  if (compactSlug.includes("disney")) return "disney";
-  if (compactSlug === "max" || compactSlug.includes("hbo")) return "hbo";
-  if (compactSlug.includes("iqiyi") || compactSlug.includes("iqyi")) return "iqiyi";
-  if (compactSlug.startsWith("true")) return "true";
-  return undefined;
-}
-
 export function MarketCompanyLogo({
   companyName,
   companySlug,
@@ -181,32 +135,30 @@ export function MarketCompanyLogo({
   priority?: boolean;
   sizes: string;
 }) {
-  const brand = marketLogoBrand(companySlug);
-  const officialLogo = brand ? officialMarketLogos[brand] : undefined;
-  if (officialLogo) {
+  const logo = marketCompanyLogo(companyName, companySlug);
+  if (logo.kind === "image") {
     return (
       <Image
-        alt={`${officialLogo.alt} official logo`}
+        alt={logo.alt}
         className="object-contain"
         data-market-logo-image
         fill
         priority={priority}
         sizes={sizes}
-        src={officialLogo.src}
+        src={logo.src}
         unoptimized
       />
     );
   }
 
-  const wordmark = brand ? marketWordmarks[brand] : undefined;
   return (
     <span
       aria-label={`${companyName} logo`}
-      className={`flex h-full w-full items-center justify-center overflow-hidden text-center ${wordmark?.className || "text-[clamp(20px,3.5vw,44px)] font-black uppercase tracking-[-0.04em] text-white/90"}`}
+      className={`flex h-full w-full items-center justify-center overflow-hidden text-center ${logo.className}`}
       data-market-logo-wordmark
       role="img"
     >
-      {wordmark?.label || companyName}
+      {logo.label}
     </span>
   );
 }

@@ -3,18 +3,21 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
-import { roomNumber, type LotData, type LotSectionId } from "../_lib/data";
+import type { LotData, LotSectionId } from "../_lib/data";
 import { Atmosphere } from "./Atmosphere";
+import { Exhibits } from "./Exhibits";
 import { CameraRig } from "./CameraRig";
 import { Hall } from "./Hall";
 import { LedWall } from "./LedWall";
 import { disposeTree } from "./math";
 import { Room, type RoomConfig } from "./Room";
-import { captionTexture, logoCardTexture, posterFallback, printTexture, testCardTexture } from "./signage";
+import { captionTexture, partnerLogoTexture, posterFallback, printTexture, testCardTexture } from "./signage";
 
 export type LotQuality = "high" | "low";
 
 export type LotEngineEvents = {
+  /** Building the scene (0..1), before artwork starts loading. */
+  onBuildProgress?: (ratio: number) => void;
   onLoadProgress: (ratio: number) => void;
   onReady: () => void;
   onHover: (section: LotSectionId | null) => void;
@@ -30,6 +33,12 @@ export type LotEngineOptions = LotEngineEvents & {
   quality: LotQuality;
   reducedMotion: boolean;
 };
+
+/** Let the browser paint (and run compositor work) before continuing a long task. */
+function yieldToBrowser() {
+  const scheduler = (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler;
+  return scheduler?.yield ? scheduler.yield() : new Promise<void>((resolve) => setTimeout(resolve, 0));
+}
 
 const ROOM_SPACING = 13;
 const ACCENTS = ["#c9a24a", "#2f6f86", "#b5462f", "#5d7a3a", "#7a4a8c", "#b07a3a"];
@@ -91,7 +100,7 @@ function roomShape(room: LotData["rooms"][number]): keyof typeof GRIDS | "screen
 function roomConfigs(data: LotData): RoomConfig[] {
   return data.rooms.map((room, index) => {
     const { x, z, facing } = roomLayout(index);
-    const base = { id: room.id, position: [x, z] as [number, number], facing, height: 5.6, kicker: roomNumber(index), title: room.title, sub: room.thai, accent: ACCENTS[index % ACCENTS.length] };
+    const base = { id: room.id, position: [x, z] as [number, number], facing, height: 5.6, kicker: "", title: room.title, sub: room.thai, accent: ACCENTS[index % ACCENTS.length] };
     const shape = roomShape(room);
     if (shape === "screen") {
       const lead = room.kind === "featured" ? room.programs[0] : undefined;
@@ -105,7 +114,7 @@ function roomConfigs(data: LotData): RoomConfig[] {
           ? { title: lead.title, meta: `${lead.type} · ${lead.year} · Featured`, note: lead.description }
           : item
             ? { title: item.title, meta: item.meta ?? room.title, note: room.blurb }
-            : { title: "Stand by", meta: base.kicker, note: room.blurb },
+            : { title: "Stand by", meta: room.title, note: room.blurb },
       };
     }
     const spec = GRIDS[shape];
@@ -133,20 +142,22 @@ export class LotEngine {
   private bloom?: UnrealBloomPass;
   private healthClock = 0;
   private readonly probe = new Uint8Array(4);
-  private readonly hall: Hall;
-  private readonly atmosphere: Atmosphere;
+  private hall!: Hall;
+  private atmosphere!: Atmosphere;
+  private exhibits!: Exhibits;
+  private built = false;
   private readonly rooms = new Map<LotSectionId, Room>();
   private readonly hitTargets: THREE.Object3D[] = [];
-  private readonly ledWall: LedWall;
+  private ledWall!: LedWall;
   /** Id of the room holding the screen (the HeroCarousel section), if there is one. */
-  private readonly featuredId?: LotSectionId;
+  private featuredId?: LotSectionId;
   /** Frames of the hero thumbnail rail; the one matching the screen lights up, like the /home rail. */
   private readonly thumbFrames: THREE.MeshStandardMaterial[] = [];
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2(9, 9);
   private readonly clock = new THREE.Timer();
-  private readonly resizeObserver: ResizeObserver;
-  private readonly loadingManager: THREE.LoadingManager;
+  private resizeObserver?: ResizeObserver;
+  private loadingManager!: THREE.LoadingManager;
   private readonly videoState: { element: HTMLVideoElement | null; texture: THREE.VideoTexture | null; timer: number } = { element: null, texture: null, timer: 0 };
   private hovered: LotSectionId | null = null;
   private forcedHover: LotSectionId | null = null;
@@ -171,7 +182,7 @@ export class LotEngine {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !high, powerPreference: "high-performance", stencil: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, high ? 1.75 : 1.25));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.3;
+    this.renderer.toneMappingExposure = 1.5;
 
     const { width, height } = this.size();
     this.renderer.setSize(width, height, false);
@@ -180,30 +191,61 @@ export class LotEngine {
     this.rig.onFocusSettled = (focused) => this.handleFocusSettled(focused);
 
     // After-hours gallery: warm dark air, the work lit by its own spots.
-    this.scene.background = new THREE.Color("#120f0d");
-    this.scene.fog = new THREE.FogExp2("#16130f", 0.02);
-    this.scene.add(new THREE.HemisphereLight("#fff1e0", "#2a2520", 0.95));
-    for (const z of [2, -22, -46]) {
-      const fill = new THREE.PointLight("#ffe9cf", 26, 30, 1.2);
+    // A lit gallery, warm and open — the haze only softens the far end of the hall.
+    this.scene.background = new THREE.Color("#2b2620");
+    this.scene.fog = new THREE.FogExp2("#2e2822", 0.011);
+    this.scene.add(new THREE.HemisphereLight("#fff3e4", "#5a5048", 1.5));
+    // Ceiling fill every 18m down the whole hall, however many rooms it holds.
+    for (let z = 6; z > hallEnd(options.data.rooms.length); z -= 18) {
+      const fill = new THREE.PointLight("#ffe9cf", 40, 30, 1.2);
       fill.position.set(0, 6.3, z);
       this.scene.add(fill);
     }
 
+  }
+
+  /**
+   * Builds the scene without freezing the page: assembled in steps, yielding to the browser between
+   * them so the loading countdown keeps animating. Call once after constructing; rejects if the
+   * engine is disposed meanwhile (the caller keeps the handle, so it can dispose mid-build).
+   */
+  async init() {
+    const { options } = this;
+    const high = options.quality === "high";
+    const { width, height } = this.size();
+    const configs = roomConfigs(options.data);
+    const steps = configs.length + 3;
+    let step = 0;
+    const advance = async () => {
+      step += 1;
+      options.onBuildProgress?.(step / steps);
+      await yieldToBrowser();
+      if (this.disposed) throw new Error("Gallery disposed while building");
+    };
+
     this.featuredId = options.data.rooms.find((room) => room.kind === "featured")?.id;
     const benches = options.data.rooms.map((_, index): [number, number] => [roomLayout(index).side * 3.4, roomLayout(index).z]);
-    this.hall = new Hall({ font: options.font, reflections: high, benches, back: hallEnd(options.data.rooms.length) });
+    this.hall = new Hall({ reflections: high, benches, back: hallEnd(options.data.rooms.length) });
     this.scene.add(this.hall.group);
     this.atmosphere = new Atmosphere({ particles: high ? 600 : 220 });
     this.scene.add(this.atmosphere.group);
+    this.exhibits = new Exhibits(options.font);
+    this.scene.add(this.exhibits.group);
+    await advance();
 
-    for (const config of roomConfigs(options.data)) {
+    // One room (and its furnishings) per step.
+    for (const [index, config] of configs.entries()) {
       const room = new Room(config, options.font);
       this.rooms.set(config.id, room);
       this.scene.add(room.group);
+      this.exhibits.addRoom(room, index);
+      await advance();
     }
 
     this.loadingManager = new THREE.LoadingManager();
     this.ledWall = new LedWall(8.6, 4.84);
+    await advance();
+    // From here on everything is synchronous, so the image loaders' callbacks always find a finished scene.
     this.hangWork();
 
     this.scene.updateMatrixWorld(true);
@@ -215,14 +257,16 @@ export class LotEngine {
       this.composer.setPixelRatio(this.renderer.getPixelRatio());
       this.composer.setSize(width, height);
       this.composer.addPass(new RenderPass(this.scene, this.rig.camera));
-      this.bloom = new UnrealBloomPass(new THREE.Vector2(width / 2, height / 2), 0.4, 0.5, 0.9);
+      this.bloom = new UnrealBloomPass(new THREE.Vector2(width / 2, height / 2), 0.4, 0.5, 1.0);
       this.composer.addPass(this.bloom);
       this.composer.addPass(new OutputPass());
     }
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
-    this.resizeObserver.observe(canvas.parentElement ?? canvas);
+    this.resizeObserver.observe(options.canvas.parentElement ?? options.canvas);
     this.bind();
+    this.built = true;
+    options.onBuildProgress?.(1);
   }
 
   // ————————————————————————————————————————— public API
@@ -284,10 +328,10 @@ export class LotEngine {
     if (this.disposed) return;
     this.disposed = true;
     this.stop();
-    this.unbind();
-    this.resizeObserver.disconnect();
-    this.stopVideo();
-    this.hall.dispose();
+    if (this.built) this.unbind();
+    this.resizeObserver?.disconnect();
+    if (this.ledWall) this.stopVideo();
+    this.hall?.dispose();
     disposeTree(this.scene);
     this.composer?.dispose();
     this.bloom?.dispose();
@@ -339,7 +383,8 @@ export class LotEngine {
         passe.position.set(x, y, depth + 0.002);
         room.wall.add(passe);
       }
-      const material = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.55, emissive: "#ffffff", emissiveIntensity: 0.32 });
+      // Unlit and outside tone mapping: the work shows its true colours whatever the room light does.
+      const material = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.93, 0.93, 0.93), toneMapped: false });
       material.userData.aspect = w / h;
       const work = new THREE.Mesh(new THREE.PlaneGeometry(w, h), material);
       work.position.set(x, y, depth + 0.004);
@@ -348,7 +393,7 @@ export class LotEngine {
       room.addHitTarget(frame);
       return material;
     };
-    const apply = (material: THREE.MeshStandardMaterial, texture: THREE.Texture) => {
+    const apply = (material: THREE.MeshBasicMaterial, texture: THREE.Texture) => {
       const frameAspect = material.userData.aspect as number | undefined;
       const image = texture.image as { width?: number; height?: number } | undefined;
       if (frameAspect && !(texture as THREE.CanvasTexture).isCanvasTexture && image?.width && image.height) {
@@ -363,7 +408,6 @@ export class LotEngine {
         }
       }
       material.map = texture;
-      material.emissiveMap = texture;
       material.needsUpdate = true;
     };
 
@@ -377,7 +421,7 @@ export class LotEngine {
         border.position.set(HANG.thumb.x, y, 0.025);
         room.wall.add(border);
         room.addHitTarget(border);
-        const material = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.55, emissive: "#ffffff", emissiveIntensity: 0.32 });
+        const material = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.93, 0.93, 0.93), toneMapped: false });
         material.userData.aspect = HANG.thumb.w / HANG.thumb.h;
         const work = new THREE.Mesh(new THREE.PlaneGeometry(HANG.thumb.w, HANG.thumb.h), material);
         work.position.set(HANG.thumb.x, y, 0.054);
@@ -475,7 +519,7 @@ export class LotEngine {
       gridPositions(section.items.length, spec, ax, ay).forEach(({ x, y }, index) => {
         const item = section.items[index];
         const material = hang(room, x, y, spec.w, spec.h);
-        if (shape === "logo") apply(material, logoCardTexture(item.title, font));
+        if (shape === "logo") apply(material, item.logo ? partnerLogoTexture(item.logo, font) : printTexture({ kicker: section.title, title: item.title, meta: item.meta ?? "", font }));
         else if (item.image) loadImage(item.image, item.title, index, (texture) => apply(material, texture), shape === "tile" ? 640 : 1080);
         else apply(material, printTexture({ kicker: section.title, title: item.title, meta: item.meta ?? "", font }));
       });
@@ -488,12 +532,20 @@ export class LotEngine {
     window.setTimeout(() => this.markReady(), 9000);
   }
 
-  private markReady() {
+  private async markReady() {
     if (this.ready || this.disposed) return;
     this.ready = true;
     this.options.onLoadProgress(1);
-    // Upload everything before the curtain lifts so the first frames do not stutter.
-    this.renderer.compile(this.scene, this.rig.camera);
+    // Compile every shader before the curtain lifts, without blocking the page (parallel compile
+    // where the GPU driver supports it), so the countdown keeps moving and the first frames don't stutter.
+    try {
+      await this.renderer.compileAsync(this.scene, this.rig.camera);
+    } catch {
+      this.renderer.compile(this.scene, this.rig.camera);
+    }
+    if (this.disposed) return;
+    await yieldToBrowser();
+    if (this.disposed) return;
     // Prime post-processing targets and shaders under the curtain, so the first visible frame is not empty.
     this.rig.update(1 / 60, this.options.reducedMotion);
     this.draw();
@@ -548,12 +600,14 @@ export class LotEngine {
     }
 
     const featuredHover = this.featuredId ? this.rooms.get(this.featuredId)!.hoverAmount : 0;
-    this.ledWall.setBoost(1 + featuredHover * 0.35);
+    // Stay at true colour; hover only nudges it, so the picture never washes out.
+    this.ledWall.setBoost(0.95 + featuredHover * 0.08);
     this.ledWall.update(dt, time, reducedMotion);
     this.thumbFrames.forEach((frame, index) => (frame.emissiveIntensity = index === this.ledWall.currentIndex ? 0.9 : 0));
     this.updateTrailer(dt, Boolean(this.featuredId) && highlight === this.featuredId);
 
     this.atmosphere.update(dt, time, this.rig.velocity, reducedMotion);
+    this.exhibits.update(dt, time, this.rig.velocity, reducedMotion);
 
     if (nearest !== this.lastNearest || Math.abs(progress - this.lastProgressReport) > 0.002) {
       this.lastNearest = nearest;
@@ -663,7 +717,7 @@ export class LotEngine {
     this.renderer.setSize(width, height, false);
     this.composer?.setSize(width, height);
     this.bloom?.resolution.set(width / 2, height / 2);
-    this.hall.resize(width, height);
+    this.hall?.resize(width, height);
     this.rig.resize(width / height);
     // setSize clears the drawing buffer; repaint now instead of showing a black frame.
     if (this.ready) this.draw();

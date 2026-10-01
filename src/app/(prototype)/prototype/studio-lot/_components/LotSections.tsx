@@ -58,7 +58,6 @@ export function PremiereContent({ programs }: { programs: LotProgram[] }) {
           {rest.slice(0, 5).map((program, index) => (
             <li key={program.slug}>
               <Link data-cursor="Screen it" href={lotProgramHref(program.slug)}>
-                <span className={styles.orderIndex}>{String(index + 2).padStart(2, "0")}</span>
                 <span className={styles.orderThumb}>
                   <Artwork alt="" sizes="96px" src={program.hero} tone={index} />
                 </span>
@@ -89,7 +88,7 @@ export function LinksContent({ items, shape = "landscape", viewAllHref }: { item
           <li key={item.id}>
             <Link className={styles.tile} data-cursor={`Open ${item.title}`} href={item.href}>
               <span className={styles.tileArt} data-logo={shape === "logo" || undefined}>
-                {shape === "logo" ? <span className={styles.logoName}>{item.title}</span> : <Artwork alt="" sizes={shape === "hero" && index === 0 ? "(max-width: 900px) 100vw, 560px" : "(max-width: 700px) 45vw, 220px"} src={item.image} tone={index} />}
+                {shape === "logo" ? <PartnerLogo item={item} /> : <Artwork alt="" sizes={shape === "hero" && index === 0 ? "(max-width: 900px) 100vw, 560px" : "(max-width: 700px) 45vw, 220px"} src={item.image} tone={index} />}
               </span>
               <span className={styles.tileCopy}>
                 {shape === "press" && item.meta ? <span className={styles.tileMeta}>{item.meta}</span> : null}
@@ -106,6 +105,23 @@ export function LinksContent({ items, shape = "landscape", viewAllHref }: { item
         </Link>
       ) : null}
     </div>
+  );
+}
+
+/** Content Distribution card contents, rendered exactly as the /home showcase does. */
+function PartnerLogo({ item }: { item: LotLinkItem }) {
+  const logo = item.logo;
+  if (!logo) return <span className={styles.logoName}>{item.title}</span>;
+  return (
+    <span className={styles.logoFrame} style={{ width: `${logo.frame.width * 100}%`, height: `${logo.frame.height * 100}%` }}>
+      {logo.kind === "image" ? (
+        <Image alt={logo.alt} className="object-contain" fill sizes="220px" src={logo.src} unoptimized />
+      ) : (
+        <span aria-label={`${item.title} logo`} className={`flex h-full w-full items-center justify-center overflow-hidden text-center ${logo.className}`} role="img">
+          {logo.label}
+        </span>
+      )}
+    </span>
   );
 }
 

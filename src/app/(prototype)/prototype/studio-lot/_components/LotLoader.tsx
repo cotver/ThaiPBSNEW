@@ -7,7 +7,8 @@ export function RouteLeader() {
   return (
     <div className={styles.routeLoader} role="status">
       <div className={styles.leader}>
-        <div aria-hidden="true" className={`${styles.leaderDial} ${styles.leaderSpin}`}>
+        <div aria-hidden="true" className={styles.leaderDial}>
+          <span className={styles.leaderHand} />
           <span className={styles.leaderCross} />
           <span className={styles.leaderRing} />
           <span className={styles.leaderCount}>3</span>
@@ -36,7 +37,8 @@ export function LotLoader({ phase, progress, reducedMotion }: { phase: "loading"
       <div aria-hidden="true" className={styles.gateTop} />
       <div aria-hidden="true" className={styles.gateBottom} />
       <div className={styles.leader}>
-        <div aria-hidden="true" className={styles.leaderDial} style={{ ["--sweep" as string]: `${progress * 360}deg` }}>
+        <div aria-hidden="true" className={styles.leaderDial}>
+          <span className={styles.leaderHand} />
           <span className={styles.leaderCross} />
           <span className={styles.leaderRing} />
           <span className={styles.leaderCount} key={count}>

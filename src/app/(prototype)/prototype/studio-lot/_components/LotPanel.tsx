@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { roomNumber, type LotData, type LotSectionId } from "../_lib/data";
+import type { LotData, LotSectionId } from "../_lib/data";
 import styles from "../experience.module.css";
 import { RoomContent } from "./LotSections";
 
@@ -23,9 +23,7 @@ export function LotPanel({ data, onClose, onSelect, section }: { data: LotData; 
       <div aria-hidden="true" className={styles.panelScan} />
       <header className={styles.panelHeader}>
         <div>
-          <p className={styles.panelKicker}>
-            {roomNumber(index)} <span aria-hidden="true">/</span> {room.thai}
-          </p>
+          <p className={styles.panelKicker}>{room.thai}</p>
           <h2 className={styles.panelTitle} id="lot-panel-title" ref={headingRef} tabIndex={-1}>
             {room.title}
           </h2>
@@ -45,7 +43,7 @@ export function LotPanel({ data, onClose, onSelect, section }: { data: LotData; 
           <button className={styles.panelNext} data-cursor={`Walk to ${next.title}`} onClick={() => onSelect(next.id)} type="button">
             <span>Next room</span>
             <strong>
-              {roomNumber(data.rooms.indexOf(next))} — {next.title} →
+              {next.title} →
             </strong>
           </button>
         </footer>

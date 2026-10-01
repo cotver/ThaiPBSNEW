@@ -24,7 +24,7 @@ export default async function LotShortlistPage() {
   return (
     <main className={pages.page}>
       <header className={pages.pageHero}>
-        <p className={pages.kicker}>Gallery 05 · รายการที่บันทึกไว้</p>
+        <p className={pages.kicker}>รายการที่บันทึกไว้</p>
         <h1 className={pages.pageTitle}>
           Your <em>Shortlist</em>
         </h1>

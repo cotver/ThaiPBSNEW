@@ -1,4 +1,5 @@
 import type { Title } from "@/lib/content";
+import type { MarketLogo } from "@/lib/market-logos";
 import type { FinalArticleCard } from "@/lib/payload-articles";
 
 export const lotBase = "/prototype/studio-lot";
@@ -51,6 +52,8 @@ export type LotLinkItem = {
   href: string;
   image?: string;
   meta?: string;
+  /** Content Distribution partners: the same logo treatment /home uses. */
+  logo?: MarketLogo & { frame: { width: number; height: number } };
 };
 
 export type LotRoom = {
@@ -76,11 +79,6 @@ export type LotRoom = {
 };
 
 export type LotData = { rooms: LotRoom[] };
-
-/** "Gallery 01", "Gallery 02"… */
-export function roomNumber(index: number) {
-  return `Gallery ${String(index + 1).padStart(2, "0")}`;
-}
 
 export function lotProgramHref(slug: string) {
   return `${lotBase}/programs/${encodeURIComponent(slug)}`;

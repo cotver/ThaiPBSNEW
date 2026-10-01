@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import type { MarketLogo } from "@/lib/market-logos";
 import { seeded } from "./math";
 
 /** Canvas-drawn textures: every letter in the gallery is real typography, not baked art. */
@@ -64,9 +65,11 @@ export function vinylTexture(options: { kicker: string; title: string; sub?: str
   context.fillStyle = ink;
   context.textBaseline = "alphabetic";
   context.font = `600 30px ${MONO}`;
-  context.globalAlpha = 0.7;
-  context.fillText(options.kicker.toUpperCase().split("").join(" "), 8, 52);
-  context.globalAlpha = 1;
+  if (options.kicker) {
+    context.globalAlpha = 0.7;
+    context.fillText(options.kicker.toUpperCase().split("").join(" "), 8, 52);
+    context.globalAlpha = 1;
+  }
   const size = fitFont(context, options.title, options.font, 700, 150, 1000);
   context.fillText(options.title, 2, 70 + size);
   if (options.sub) {
@@ -204,17 +207,68 @@ export function posterFallback(title: string, font: string, index: number) {
   return toTexture(element);
 }
 
-/** Content Distribution card: a partner name set large on black, like the /home logo grid. */
-export function logoCardTexture(name: string, font: string) {
-  const [element, context] = canvas(1280, 720);
-  context.fillStyle = "#0a0a0a";
-  context.fillRect(0, 0, 1280, 720);
-  context.fillStyle = "#f2f2f2";
+/**
+ * Content Distribution card, as the /home showcase draws it: black 16:9, the logo contained in a
+ * centred box (68% × 46% by default). Official logos are painted in once they load from the
+ * same-origin logo route; wordmarks use the brand colour, face, italics, tracking and border.
+ */
+export function partnerLogoTexture(logo: MarketLogo & { frame: { width: number; height: number } }, font: string) {
+  const W = 1280;
+  const H = 720;
+  const [element, context] = canvas(W, H);
+  const boxW = W * logo.frame.width;
+  const boxH = H * logo.frame.height;
+  const paintBackground = () => {
+    context.fillStyle = "#0a0a0a";
+    context.fillRect(0, 0, W, H);
+  };
+  paintBackground();
+  const texture = toTexture(element);
+
+  if (logo.kind === "image") {
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => {
+      const iw = image.naturalWidth || boxW;
+      const ih = image.naturalHeight || boxH;
+      const scale = Math.min(boxW / iw, boxH / ih);
+      paintBackground();
+      context.drawImage(image, (W - iw * scale) / 2, (H - ih * scale) / 2, iw * scale, ih * scale);
+      texture.needsUpdate = true;
+    };
+    image.src = `/prototype/studio-lot/logo/${encodeURIComponent(logo.brand)}`;
+    return texture;
+  }
+
+  const { style } = logo;
+  const label = style.uppercase ? logo.label.toUpperCase() : logo.label;
+  const family = style.family === "serif" ? "Georgia, \"Times New Roman\", serif" : font;
+  const weight = style.family === "serif" ? 700 : 900;
+  const italic = style.italic ? "italic " : "";
+  const padX = style.border ? 0.28 : 0;
+  // Largest size that fits the box, letter spacing included.
+  let size = boxH * 0.9;
+  const measure = () => {
+    context.font = `${italic}${weight} ${size}px ${family}`;
+    context.letterSpacing = `${style.tracking * size}px`;
+    return context.measureText(label).width + padX * 2 * size;
+  };
+  while (measure() > boxW && size > 16) size -= 4;
+  context.fillStyle = style.color;
   context.textAlign = "center";
   context.textBaseline = "middle";
-  fitFont(context, name.toUpperCase(), font, 700, 150, 1100);
-  context.fillText(name.toUpperCase(), 640, 370);
-  return toTexture(element);
+  context.fillText(label, W / 2, H / 2);
+  if (style.border) {
+    const textWidth = context.measureText(label).width;
+    const width = textWidth + padX * 2 * size;
+    const height = size * 1.06;
+    context.strokeStyle = style.border;
+    context.lineWidth = Math.max(6, size * 0.06);
+    context.beginPath();
+    context.roundRect(W / 2 - width / 2, H / 2 - height / 2, width, height, size * 0.15);
+    context.stroke();
+  }
+  return texture;
 }
 
 /** Centred wall caption under a piece (Market & Events group names). */
@@ -225,5 +279,89 @@ export function captionTexture(text: string, font: string) {
   context.textBaseline = "middle";
   fitFont(context, text, font, 700, 76, 980);
   context.fillText(text, 512, 84);
+  return toTexture(element);
+}
+
+/**
+ * Super-graphics for the nave walls facing each room. Only the name, "public media" and the year
+ * broadcasting began — no claims beyond that, and no imitation of the official logo.
+ */
+export function muralTexture(variant: number, font: string, accent: string) {
+  const [element, context] = canvas(2048, 820);
+  context.textBaseline = "alphabetic";
+  const kind = variant % 3;
+  if (kind === 0) {
+    // Outlined name across the wall.
+    context.strokeStyle = INK;
+    context.lineWidth = 6;
+    const size = fitFont(context, "THAI PBS", font, 700, 560, 1960);
+    context.font = `700 ${size}px ${font}`;
+    context.strokeText("THAI PBS", 30, 470 + size * 0.1);
+    context.fillStyle = accent;
+    context.font = `700 96px ${font}`;
+    context.fillText("ไทยพีบีเอส", 40, 760);
+  } else if (kind === 1) {
+    context.fillStyle = INK;
+    const size = fitFont(context, "สื่อสาธารณะ", font, 700, 380, 1960);
+    context.font = `700 ${size}px ${font}`;
+    context.fillText("สื่อสาธารณะ", 30, 470);
+    context.font = `600 64px ${MONO}`;
+    context.fillStyle = accent;
+    context.fillText("P U B L I C   M E D I A  ·  T H A I   P B S", 40, 680);
+  } else {
+    context.fillStyle = INK;
+    context.font = `600 64px ${MONO}`;
+    context.fillText("T H A I   P B S  ·  O N   A I R   S I N C E", 40, 150);
+    const size = fitFont(context, "2008", font, 700, 640, 1960);
+    context.font = `700 ${size}px ${font}`;
+    context.fillStyle = accent;
+    context.fillText("2008", 20, 760);
+  }
+  return toTexture(element);
+}
+
+/** Broadcast "ON AIR" light box face; brightness is driven by the material colour. */
+export function onAirTexture() {
+  const [element, context] = canvas(512, 160);
+  context.fillStyle = "#2a0705";
+  context.fillRect(0, 0, 512, 160);
+  context.strokeStyle = "#ff5a4a";
+  context.lineWidth = 6;
+  context.strokeRect(10, 10, 492, 140);
+  context.fillStyle = "#ff6a5a";
+  context.font = `700 92px ${MONO}`;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText("ON AIR", 256, 84);
+  return toTexture(element);
+}
+
+/** Hanging fabric banner: accent cloth with the name set vertically in both scripts. */
+export function bannerTexture(accent: string, font: string) {
+  const [element, context] = canvas(320, 900);
+  context.fillStyle = accent;
+  context.fillRect(0, 0, 320, 900);
+  context.fillStyle = "rgba(255,255,255,0.92)";
+  context.save();
+  context.translate(250, 860);
+  context.rotate(-Math.PI / 2);
+  context.font = `700 150px ${font}`;
+  context.fillText("Thai PBS", 0, 0);
+  context.restore();
+  context.font = `700 48px ${font}`;
+  context.fillText("ไทยพีบีเอส", 34, 150);
+  return toTexture(element);
+}
+
+/** Small printed brand plate (mic flag, desk front, tape spines). */
+export function brandPlateTexture(text: string, font: string, background = "#f2ede4", ink = INK) {
+  const [element, context] = canvas(512, 256);
+  context.fillStyle = background;
+  context.fillRect(0, 0, 512, 256);
+  context.fillStyle = ink;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  fitFont(context, text, font, 700, 120, 460);
+  context.fillText(text, 256, 132);
   return toTexture(element);
 }
