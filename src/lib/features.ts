@@ -1,3 +1,6 @@
+/** Set to true to show the home page hero carousel. */
+export const SHOW_HERO_CAROUSEL = false;
+
 /** Set to true to show title playback actions and episode browsing again. */
 export const ENABLE_TITLE_PLAYBACK = false;
 

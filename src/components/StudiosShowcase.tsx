@@ -283,6 +283,16 @@ async function getStudioContent(categoryArticleLimit?: number): Promise<{
       .filter((article) => article.isFeature && (!article.featureUntil || new Date(article.featureUntil).getTime() > now))
       .map(featuredArticleToHero)
       .filter((item): item is StudiosHeroItem => Boolean(item));
+    // Keep the hero visible when no active featured articles have an image.
+    if (!featuredArticles.length) {
+      for (const article of articleResult.docs) {
+        const hero = featuredArticleToHero(article);
+        if (hero) {
+          featuredArticles.push(hero);
+          break;
+        }
+      }
+    }
     const categories = visiblePageTaxonomy(categoryResult.docs)
       .map((category) => categoryToCatalog(category, articleResult.docs, now, categoryArticleLimit));
     const otherCategories = categoryResult.docs

@@ -10,6 +10,13 @@ import { SaveForLaterButton } from "./SaveForLaterButton";
 
 const AUTO_SLIDE_MS = 6500;
 
+export type HeroCarouselItem = Title & {
+  href?: string;
+  actionLabel?: string;
+  hideWatchlist?: boolean;
+  directVideo?: boolean;
+};
+
 function toYouTubeEmbedUrl(rawUrl: string): string | null {
   const input = rawUrl.trim();
   if (!input) return null;
@@ -48,7 +55,10 @@ function isInternalVideoUrl(rawUrl: string): boolean {
   }
 }
 
-function getHeroTrailerSource(title: Title | undefined): { mimeType?: string; url: string } {
+function getHeroTrailerSource(title: HeroCarouselItem | undefined): { mimeType?: string; url: string } {
+  if (title?.directVideo && title.trailerUrl) {
+    return { mimeType: title.trailerMimeType, url: title.trailerUrl };
+  }
   if (!title || title.source !== "program") {
     return { url: "" };
   }
@@ -74,7 +84,7 @@ function getHeroTrailerSource(title: Title | undefined): { mimeType?: string; ur
   return { mimeType: seasonTrailer?.trailerMimeType, url: seasonTrailer?.trailerUrl ?? "" };
 }
 
-export function HeroCarousel({ titles }: { titles: Title[] }) {
+export function HeroCarousel({ titles }: { titles: HeroCarouselItem[] }) {
   const [active, setActive] = useState(0);
   const current = titles[active];
   const activeThumbRef = useRef<HTMLButtonElement | null>(null);
@@ -99,7 +109,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
   const activeTrailerSource = getHeroTrailerSource(current);
   const activeTrailerUrl = activeTrailerSource.url;
   const activeTrailerEmbedUrl = activeTrailerUrl ? toYouTubeEmbedUrl(activeTrailerUrl) : null;
-  const activeTrailerIsInternal = activeTrailerUrl ? isInternalVideoUrl(activeTrailerUrl) : false;
+  const activeTrailerIsInternal = activeTrailerUrl ? Boolean(current?.directVideo) || isInternalVideoUrl(activeTrailerUrl) : false;
   const activeTrailerIsGif = isGifMedia(activeTrailerSource.mimeType, activeTrailerUrl);
   const trailerPlaybackMatches = trailerPlayback.url === activeTrailerUrl;
   const trailerEnded = trailerPlaybackMatches ? trailerPlayback.ended : false;
@@ -407,7 +417,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
         const trailerSource = getHeroTrailerSource(title);
         const trailerUrl = trailerSource.url;
         const trailerEmbedUrl = isActive && trailerUrl ? toYouTubeEmbedUrl(trailerUrl) : null;
-        const trailerIsInternal = isActive && trailerUrl ? isInternalVideoUrl(trailerUrl) : false;
+        const trailerIsInternal = isActive && trailerUrl ? Boolean(title.directVideo) || isInternalVideoUrl(trailerUrl) : false;
         const isGifTrailer = isGifMedia(trailerSource.mimeType, trailerUrl);
         const slidePlaybackMatches = isActive && trailerPlayback.url === trailerUrl;
         const slideTrailerLoaded = slidePlaybackMatches ? trailerPlayback.loaded : false;
@@ -673,7 +683,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
               <div className="pointer-events-auto mt-8 flex flex-wrap gap-3">
               {currentIsDisabled ? (
                 <>
-                  {ENABLE_TITLE_PLAYBACK ? (
+                  {ENABLE_TITLE_PLAYBACK && !current.href ? (
                     <span
                       aria-disabled="true"
                       className="cursor-not-allowed rounded-[6px] bg-white/45 px-9 py-3 text-sm font-black uppercase text-[#030714]/62"
@@ -690,7 +700,7 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                 </>
               ) : (
                 <>
-                  {ENABLE_TITLE_PLAYBACK ? (
+                  {ENABLE_TITLE_PLAYBACK && !current.href ? (
                     <Link
                       className="rounded-[6px] bg-white px-9 py-3 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
                       href={titleHref(current.slug)}
@@ -700,17 +710,17 @@ export function HeroCarousel({ titles }: { titles: Title[] }) {
                   ) : null}
                   <Link
                     className="rounded-[6px] border border-white/16 bg-white/12 px-8 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
-                    href={`${titleHref(current.slug)}#episodes`}
+                    href={current.href ?? `${titleHref(current.slug)}#episodes`}
                   >
-                    Details
+                    {current.actionLabel ?? "Details"}
                   </Link>
                 </>
               )}
-              <SaveForLaterButton
+              {!current.hideWatchlist && <SaveForLaterButton
                 className="grid size-12 place-items-center rounded-full border border-white/18 bg-black/35 text-2xl transition hover:bg-white/18"
                 savedClassName="grid size-12 place-items-center rounded-full border border-cyan-200/40 bg-cyan-200 text-lg font-black text-[#030714] transition hover:bg-white"
                 title={current}
-              />
+              />}
               </div>
             )}
             <div className="no-scrollbar pointer-events-auto mt-8 flex max-w-full items-center gap-2 overflow-x-auto lg:hidden">

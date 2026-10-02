@@ -2,6 +2,7 @@ import { BrandTiles } from "@/components/BrandTiles";
 import { ContentRow } from "@/components/ContentRow";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { StudiosShowcase } from "@/components/StudiosShowcase";
+import { SHOW_HERO_CAROUSEL } from "@/lib/features";
 import type { CategoryTile, TitleCollections } from "@/lib/payload-content";
 
 /**
@@ -19,8 +20,8 @@ export function HomeSections({
 }) {
   return (
     <>
-      <HeroCarousel titles={collections.heroes} />
       <StudiosShowcase showCurtain={false} />
+      {SHOW_HERO_CAROUSEL ? <HeroCarousel titles={collections.heroes} /> : null}
 
       <section className="relative z-10 space-y-8 px-5 pb-16 sm:px-8 lg:px-10" data-home-content>
         <BrandTiles categories={categories} />
