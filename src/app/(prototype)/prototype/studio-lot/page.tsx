@@ -80,7 +80,14 @@ async function StudioLot() {
   // StudiosShowcase — same sub-sections, same conditions, same limits, same links.
   const studioRooms: LotRoom[] = [
     links("studios-journal", "ThaiPBS Journal", "สตูดิโอ", "Featured stories from Thai PBS Studios.",
-      studios.featuredArticles.map((article) => ({ id: `journal-${article.id}`, title: article.title, href: article.href, image: article.imageUrl, meta: article.eyebrow })),
+      studios.featuredArticles.map((article) => ({
+        id: `journal-${article.id}`,
+        title: article.title,
+        href: article.href,
+        image: article.imageUrl,
+        meta: article.eyebrow,
+        video: article.videoUrl ? { url: article.videoUrl, mimeType: article.videoMimeType } : undefined,
+      })),
       { itemShape: "hero" }),
     links("studios-catalog", "Studios Catalog", "แคตตาล็อกสตูดิโอ", `${studios.categories.length} studio categories.`,
       studios.categories.map((category) => ({ id: `catalog-${category.id}`, title: category.name, href: `/studios/${encodeURIComponent(category.slug)}`, image: category.coverImageUrl, meta: category.description }))),

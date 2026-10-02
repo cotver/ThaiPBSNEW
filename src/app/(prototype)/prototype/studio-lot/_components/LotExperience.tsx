@@ -200,6 +200,7 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
       const engine = engineRef.current;
       if (!engine) return;
       if (event.key === "Escape") {
+        if (document.fullscreenElement) return;
         close();
         return;
       }
@@ -333,7 +334,7 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
 
       {/* Shown once the gallery is open — not over the loading countdown. */}
       {walkSlot && phase !== "loading" ? createPortal(walk, walkSlot) : null}
-      {panel ? <LotPanel data={data} onClose={close} onSelect={select} screen={{ active: screenSlides[panel] ?? 0, onActiveChange: (index) => showSlide(panel, index) }} section={panel} /> : null}
+      {panel ? <LotPanel data={data} onClose={close} onSelect={select} screen={{ active: screenSlides[panel] ?? 0, onActiveChange: (index) => showSlide(panel, index), onHold: (held) => engineRef.current?.holdScreen(panel, held), onVideo: (video) => engineRef.current?.shareVideo(panel, video) }} section={panel} /> : null}
       {selected && !panel ? <div aria-live="polite" className={styles.srOnly}>Moving to {data.rooms.find((room) => room.id === selected)?.title}</div> : null}
 
       <LotLoader phase={phase} progress={loadProgress} reducedMotion={Boolean(capabilities?.reducedMotion)} />

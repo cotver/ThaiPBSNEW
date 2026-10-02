@@ -657,6 +657,151 @@
   transform: scale(1.04);
 }
 
+/* The active slide's trailer over its art, with a mute toggle, as on /home's HeroCarousel. */
+.screenTrailer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 700ms var(--ease);
+}
+
+.screenTrailer[data-shown] {
+  opacity: 1;
+}
+
+.screenTrailerOut {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: rgb(0 0 0 / 35%);
+  color: #0b0c10;
+  cursor: pointer;
+}
+
+.screenTrailerOut span {
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: rgb(242 237 228 / 90%);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.screenControls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  display: flex;
+  gap: 8px;
+}
+
+.screenMute {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(8 9 13 / 60%);
+  box-shadow: 0 0 0 1px rgb(242 237 228 / 16%);
+  color: var(--paper);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 240ms var(--ease);
+}
+
+.screenMute:hover {
+  background: rgb(8 9 13 / 80%);
+}
+
+.screenMute:focus-visible {
+  outline: 2px solid var(--tungsten);
+  outline-offset: 2px;
+}
+
+/* Full screen: the panel's screen grows out to fill the display, then plays as a proper player. */
+.premiereArt:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  aspect-ratio: auto;
+  border-radius: 0;
+  background: #000;
+  box-shadow: none;
+  animation: screenFull 560ms var(--ease) both;
+}
+
+.premiereArt:fullscreen::backdrop {
+  background: #000;
+  animation: screenFullBackdrop 560ms var(--ease) both;
+}
+
+@keyframes screenFull {
+  from { clip-path: inset(22% 22% round 14px); transform: scale(0.94); opacity: 0.6; }
+  to { clip-path: inset(0 round 0); transform: none; opacity: 1; }
+}
+
+@keyframes screenFullBackdrop {
+  from { opacity: 0; }
+}
+
+/* The lot's own cursor can't reach the full-screen layer; use the real one there. */
+.premiereArt:fullscreen,
+.premiereArt:fullscreen * {
+  cursor: auto !important;
+}
+
+.premiereArt:fullscreen .art {
+  object-fit: contain;
+}
+
+.premiereArt:fullscreen .screenTrailer {
+  object-fit: contain;
+}
+
+.premiereArt:fullscreen .premiereBadge {
+  top: 20px;
+  bottom: auto;
+  left: 20px;
+}
+
+.premiereArt:fullscreen .screenControls {
+  top: 16px;
+  right: 16px;
+  bottom: auto;
+}
+
+.screenFullTitle {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  z-index: 2;
+  max-width: 60%;
+  overflow: hidden;
+  color: var(--paper);
+  font-size: 15px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 80%);
+  transform: translateX(-50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .premiereArt:fullscreen,
+  .premiereArt:fullscreen::backdrop {
+    animation: none;
+  }
+}
+
 /* Every featured programme, as /home's rail — pick one to put it on the screen. */
 .featureList {
   display: grid;

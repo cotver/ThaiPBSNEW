@@ -3,6 +3,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { trailerKind } from "@/lib/trailer-playback";
 import type { LotData, LotSectionId } from "../_lib/data";
 import { Atmosphere } from "./Atmosphere";
 import { Exhibits } from "./Exhibits";
@@ -161,8 +162,6 @@ export class LotEngine {
   private readonly hitTargets: THREE.Object3D[] = [];
   /** One LED screen per screen room (Featured, ThaiPBS Journal), and the slide each last reported. */
   private readonly screens = new Map<LotSectionId, { wall: LedWall; reported: number }>();
-  /** Id of the room holding the HeroCarousel screen (it alone rolls trailers), if there is one. */
-  private featuredId?: LotSectionId;
   private readonly raycaster = new THREE.Raycaster();
   private readonly gazePoint = new THREE.Vector3();
   private trackLength = 1;
@@ -170,7 +169,15 @@ export class LotEngine {
   private readonly clock = new THREE.Timer();
   private resizeObserver?: ResizeObserver;
   private loadingManager!: THREE.LoadingManager;
-  private readonly videoState: { element: HTMLVideoElement | null; texture: THREE.VideoTexture | null; timer: number } = { element: null, texture: null, timer: 0 };
+  /** The trailer rolling on a screen room's LED wall (muted; the panel plays it with sound). */
+  private readonly videoState: { element: HTMLVideoElement | null; texture: THREE.VideoTexture | null; timer: number; section: LotSectionId | null } = { element: null, texture: null, timer: 0, section: null };
+  /**
+   * The room panel's own trailer video, mirrored on that room's wall: one element, so the wall and the
+   * panel show the same frame at the same time (the panel carries the sound).
+   */
+  private sharedVideo: { section: LotSectionId; element: HTMLVideoElement; texture: THREE.VideoTexture } | null = null;
+  /** Trailers that would not play on the wall (no CORS, bad file): don't retry them every frame. */
+  private readonly failedTrailers = new Set<string>();
   private hovered: LotSectionId | null = null;
   private forcedHover: LotSectionId | null = null;
   private focused: LotSectionId | null = null;
@@ -237,8 +244,6 @@ export class LotEngine {
       await yieldToBrowser();
       if (this.disposed) throw new Error("Gallery disposed while building");
     };
-
-    this.featuredId = options.data.rooms.find((room) => room.kind === "featured")?.id;
     const benches = options.data.rooms.map((_, index): [number, number] => [roomLayout(index).side * 3.4, roomLayout(index).z]);
     this.hall = new Hall({ reflections: high, benches, back: hallEnd(options.data.rooms.length) });
     this.scene.add(this.hall.group);
@@ -319,13 +324,36 @@ export class LotEngine {
     const screen = this.screens.get(section);
     if (!screen) return;
     screen.wall.show(index);
-    if (section === this.featuredId && this.videoState.element) this.stopVideo();
+    if (section === this.videoState.section) this.stopVideo();
   }
 
-  /** The featured room's LED wall, which rolls trailers. */
-  private get featuredWall() {
-    return this.featuredId ? this.screens.get(this.featuredId)?.wall : undefined;
+  /** Hold a room's screen on its current slide while that slide's trailer plays in the panel. */
+  /**
+   * Mirror the panel's playing trailer on a room's wall, in place of the wall's own muted copy — or, with
+   * null, hand the wall back to its slides.
+   */
+  shareVideo(section: LotSectionId, video: HTMLVideoElement | null) {
+    const shared = this.sharedVideo;
+    if (shared?.element === video && shared?.section === section) return;
+    if (shared && (video || shared.section === section)) {
+      this.sharedVideo = null;
+      this.screens.get(shared.section)?.wall.setOverride(null);
+      // Let the wipe back to the art finish before freeing the frame it wipes away from.
+      window.setTimeout(() => shared.texture.dispose(), 1400);
+    }
+    const wall = this.screens.get(section)?.wall;
+    if (!video || !wall) return;
+    this.stopVideo();
+    const texture = new THREE.VideoTexture(video);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    this.sharedVideo = { section, element: video, texture };
+    wall.setOverride({ texture, aspect: (video.videoWidth || 16) / (video.videoHeight || 9) });
   }
+
+  holdScreen(section: LotSectionId, held: boolean) {
+    this.screens.get(section)?.wall.setHeld(held);
+  }
+
 
   /** Keyboard/HUD hover — highlights a room without a pointer. */
   setForcedHover(section: LotSectionId | null) {
@@ -397,7 +425,9 @@ export class LotEngine {
     this.stop();
     if (this.built) this.unbind();
     this.resizeObserver?.disconnect();
-    if (this.featuredWall) this.stopVideo();
+    this.stopVideo();
+    this.sharedVideo?.texture.dispose();
+    this.sharedVideo = null;
     this.hall?.dispose();
     disposeTree(this.scene);
     this.composer?.dispose();
@@ -682,7 +712,7 @@ export class LotEngine {
         this.options.onScreenChange?.(section, screen.reported);
       }
     }
-    this.updateTrailer(dt, Boolean(this.featuredId) && highlight === this.featuredId);
+    this.updateTrailer(dt, highlight && this.screens.has(highlight) ? highlight : null);
 
     this.atmosphere.update(dt, time, this.rig.velocity, reducedMotion);
     this.exhibits.update(dt, time, this.rig.velocity, reducedMotion);
@@ -704,25 +734,48 @@ export class LotEngine {
     }
   }
 
-  /** Lingering on the featured screen rolls its trailer, muted. */
-  private updateTrailer(dt: number, engaged: boolean) {
-    const { quality, reducedMotion, data } = this.options;
-    const wall = this.featuredWall;
-    if (quality !== "high" || reducedMotion || !wall) return;
+  /**
+   * The trailer on a screen room's current slide, if the LED wall can show it: video files only, as
+   * /home's HeroCarousel plays them. A YouTube embed or a GIF can't be drawn into the 3D scene, so those
+   * play in the room panel and the wall keeps the slide's art.
+   */
+  private screenTrailer(section: LotSectionId, index: number) {
+    const room = this.options.data.rooms.find((item) => item.id === section);
+    if (!room) return null;
+    if (room.kind === "featured") {
+      const program = room.programs[index];
+      return program?.trailerUrl && trailerKind(program.trailerUrl, program.trailerMimeType) === "video" ? program.trailerUrl : null;
+    }
+    // StudiosHero plays a story's video as a direct video, whatever its URL.
+    const video = room.items[index]?.video;
+    return video && trailerKind(video.url, video.mimeType, true) === "video" ? video.url : null;
+  }
+
+  /** Lingering on a screen room (Featured, ThaiPBS Journal) rolls its slide's trailer on the wall, muted. */
+  private updateTrailer(dt: number, engaged: LotSectionId | null) {
+    const { quality, reducedMotion } = this.options;
+    // The panel's trailer is already on the wall; don't start a second copy.
+    if (quality !== "high" || reducedMotion || this.sharedVideo) return;
+    // Looking at another screen: let the old one go first.
+    if (engaged && this.videoState.section && engaged !== this.videoState.section) this.stopVideo();
     this.hoverClock = engaged ? this.hoverClock + dt : 0;
-    if (engaged && this.hoverClock > 1.1 && !this.videoState.element) {
-      const featured = data.rooms.find((room) => room.id === this.featuredId)?.programs ?? [];
-      const program = featured[wall.currentIndex] ?? featured[0];
-      const playable = program?.trailerUrl && (!program.trailerMimeType || /mp4|webm|ogg/.test(program.trailerMimeType));
-      if (!playable) return;
+    const wall = engaged ? this.screens.get(engaged)?.wall : undefined;
+    if (engaged && wall && this.hoverClock > 1.1 && !this.videoState.element) {
+      const url = this.screenTrailer(engaged, wall.currentIndex);
+      if (!url || this.failedTrailers.has(url)) return;
       const video = document.createElement("video");
       video.crossOrigin = "anonymous";
       video.muted = true;
       video.loop = true;
       video.playsInline = true;
       video.preload = "auto";
-      video.src = program.trailerUrl!;
+      video.src = url;
       this.videoState.element = video;
+      this.videoState.section = engaged;
+      video.addEventListener("error", () => {
+        this.failedTrailers.add(url);
+        if (this.videoState.element === video) this.stopVideo();
+      });
       video.addEventListener(
         "playing",
         () => {
@@ -734,7 +787,10 @@ export class LotEngine {
         },
         { once: true },
       );
-      video.play().catch(() => this.stopVideo());
+      video.play().catch(() => {
+        this.failedTrailers.add(url);
+        if (this.videoState.element === video) this.stopVideo();
+      });
     }
     if (!engaged && this.videoState.element) {
       this.videoState.timer += dt;
@@ -745,8 +801,8 @@ export class LotEngine {
   }
 
   private stopVideo() {
-    const { element, texture } = this.videoState;
-    if (texture) this.featuredWall?.setOverride(null);
+    const { element, texture, section } = this.videoState;
+    if (texture && section) this.screens.get(section)?.wall.setOverride(null);
     if (element) {
       element.pause();
       element.removeAttribute("src");
@@ -757,6 +813,7 @@ export class LotEngine {
     this.videoState.element = null;
     this.videoState.texture = null;
     this.videoState.timer = 0;
+    this.videoState.section = null;
   }
 
   private pick() {

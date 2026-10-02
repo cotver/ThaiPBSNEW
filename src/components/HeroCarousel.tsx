@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { titleDisplayLines, titleEyebrow, titleHref, titleSeasonEpisodeLabel, type Title } from "@/lib/content";
 import { ENABLE_TITLE_PLAYBACK, PREFER_TRAILER_SOUND } from "@/lib/features";
-import { isGifMedia, playVideoWithSoundFallback } from "@/lib/trailer-playback";
+import { getHeroTrailerSource, isGifMedia, isInternalVideoUrl, playVideoWithSoundFallback, toYouTubeEmbedUrl } from "@/lib/trailer-playback";
 import { SaveForLaterButton } from "./SaveForLaterButton";
 
 const AUTO_SLIDE_MS = 6500;
@@ -16,73 +16,6 @@ export type HeroCarouselItem = Title & {
   hideWatchlist?: boolean;
   directVideo?: boolean;
 };
-
-function toYouTubeEmbedUrl(rawUrl: string): string | null {
-  const input = rawUrl.trim();
-  if (!input) return null;
-
-  try {
-    const url = new URL(input);
-    const host = url.hostname.replace(/^www\./, "").toLowerCase();
-    let id: string | null = null;
-
-    if (host === "youtu.be") {
-      id = url.pathname.replace(/^\/+/, "").split("/")[0] || null;
-    } else if (host === "youtube.com" || host === "m.youtube.com") {
-      if (url.pathname.startsWith("/watch")) id = url.searchParams.get("v");
-      else if (url.pathname.startsWith("/embed/")) id = url.pathname.split("/")[2] || null;
-      else if (url.pathname.startsWith("/shorts/")) id = url.pathname.split("/")[2] || null;
-    }
-
-    return id && /^[A-Za-z0-9_-]{6,}$/.test(id)
-      ? `https://www.youtube-nocookie.com/embed/${id}`
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function isInternalVideoUrl(rawUrl: string): boolean {
-  const input = rawUrl.trim();
-  if (!input) return false;
-  if (input.startsWith("/api/videos/file") || input.startsWith("/api/airflow/video")) return true;
-
-  try {
-    const url = new URL(input);
-    return url.pathname.startsWith("/api/videos/file") || url.pathname.startsWith("/api/airflow/video");
-  } catch {
-    return false;
-  }
-}
-
-function getHeroTrailerSource(title: HeroCarouselItem | undefined): { mimeType?: string; url: string } {
-  if (title?.directVideo && title.trailerUrl) {
-    return { mimeType: title.trailerMimeType, url: title.trailerUrl };
-  }
-  if (!title || title.source !== "program") {
-    return { url: "" };
-  }
-
-  if (title.trailerUrl) {
-    return { mimeType: title.trailerMimeType, url: title.trailerUrl };
-  }
-
-  const seasonsWithTrailer = title.seasons?.filter((season) => season.trailerUrl) ?? [];
-  const numberedSeasons = seasonsWithTrailer.filter((season) => typeof season.seasonNumber === "number");
-  const latestSeasonTrailer =
-    numberedSeasons.length > 0
-      ? numberedSeasons.reduce((latest, season) =>
-          (season.seasonNumber ?? Number.NEGATIVE_INFINITY) >
-          (latest.seasonNumber ?? Number.NEGATIVE_INFINITY)
-            ? season
-            : latest,
-        )
-      : seasonsWithTrailer[seasonsWithTrailer.length - 1];
-  const firstSeasonTrailer = seasonsWithTrailer[0];
-  const seasonTrailer = latestSeasonTrailer ?? firstSeasonTrailer;
-
-  return { mimeType: seasonTrailer?.trailerMimeType, url: seasonTrailer?.trailerUrl ?? "" };
-}
 
 export function HeroCarousel({ titles, showSelectors = true }: { titles: HeroCarouselItem[]; showSelectors?: boolean }) {
   const [active, setActive] = useState(0);

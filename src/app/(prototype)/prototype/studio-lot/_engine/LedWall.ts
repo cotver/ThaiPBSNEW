@@ -59,6 +59,8 @@ export class LedWall {
   private hold = 0;
   private boost = 1;
   private override: Slide | null = null;
+  /** Held on the current slide (its trailer is playing in the room panel); no auto-advance meanwhile. */
+  private held = false;
 
   constructor(width: number, height: number) {
     this.aspect = width / height;
@@ -119,6 +121,9 @@ export class LedWall {
   /** Temporarily put a live source (e.g. a trailer) on the wall. */
   setOverride(slide: Slide | null) {
     if (slide) {
+      // Wipe from this slide's own art — never from the previous one, if a slide change is still mid-wipe.
+      const current = this.slides[this.index];
+      if (current) this.assign("A", current);
       this.assign("B", slide);
       this.override = slide;
       this.transition = 0;
@@ -133,6 +138,12 @@ export class LedWall {
       this.assign("B", slide);
       this.transition = 0;
     }
+  }
+
+  setHeld(held: boolean) {
+    if (held === this.held) return;
+    this.held = held;
+    this.hold = 0; // a full hold once released, not a cut straight away
   }
 
   get currentIndex() {
@@ -175,7 +186,7 @@ export class LedWall {
       return;
     }
 
-    if (this.override || this.slides.length < 2) return;
+    if (this.override || this.held || this.slides.length < 2) return;
     this.hold += dt;
     if (this.hold > 6.5) {
       // Next slide that has loaded; one still loading is skipped this time round.

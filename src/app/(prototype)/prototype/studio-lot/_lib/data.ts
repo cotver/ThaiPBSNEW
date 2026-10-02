@@ -1,4 +1,5 @@
 import type { Title } from "@/lib/content";
+import { getHeroTrailerSource } from "@/lib/trailer-playback";
 import type { MarketLogo } from "@/lib/market-logos";
 import type { FinalArticleCard } from "@/lib/payload-articles";
 
@@ -57,6 +58,8 @@ export type LotLinkItem = {
   href: string;
   image?: string;
   meta?: string;
+  /** ThaiPBS Journal stories: the video /home's StudiosHero plays over the cover. */
+  video?: { url: string; mimeType?: string };
   /** Content Distribution partners: the same logo treatment /home uses. */
   logo?: MarketLogo & { frame: { width: number; height: number } };
 };
@@ -95,6 +98,7 @@ export function lotArticleHref(slug: string) {
 
 export function toLotProgram(title: Title): LotProgram {
   const seasons = title.seasons ?? [];
+  const trailer = getHeroTrailerSource(title);
   return {
     slug: title.slug,
     title: title.title.trim(),
@@ -106,8 +110,9 @@ export function toLotProgram(title: Title): LotProgram {
     description: title.description,
     poster: title.posterImage || title.heroImage,
     hero: title.heroImage || title.posterImage,
-    trailerUrl: title.trailerUrl || seasons.find((season) => season.trailerUrl)?.trailerUrl,
-    trailerMimeType: title.trailerMimeType || seasons.find((season) => season.trailerUrl)?.trailerMimeType,
+    // The trailer /home's HeroCarousel would play: programs only, own trailer else the latest season's.
+    trailerUrl: trailer.url || undefined,
+    trailerMimeType: trailer.mimeType,
     categories: (title.categoryNames ?? []).filter(readableName),
     typeSlugs: title.typeSlugs ?? [],
     isNew: Boolean(title.isNew),
