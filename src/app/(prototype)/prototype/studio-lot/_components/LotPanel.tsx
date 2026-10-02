@@ -3,10 +3,11 @@
 import { useEffect, useRef } from "react";
 import type { LotData, LotSectionId } from "../_lib/data";
 import styles from "../experience.module.css";
+import type { HallScreen } from "./FeaturedContent";
 import { RoomContent } from "./LotSections";
 
 /** Room panel that unfolds beside the wall once the camera has settled on it. */
-export function LotPanel({ data, onClose, onSelect, section }: { data: LotData; onClose: () => void; onSelect: (section: LotSectionId) => void; section: LotSectionId }) {
+export function LotPanel({ data, screen, onClose, onSelect, section }: { data: LotData; screen?: HallScreen; onClose: () => void; onSelect: (section: LotSectionId) => void; section: LotSectionId }) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const index = Math.max(0, data.rooms.findIndex((room) => room.id === section));
   const room = data.rooms[index];
@@ -35,7 +36,7 @@ export function LotPanel({ data, onClose, onSelect, section }: { data: LotData; 
       </header>
 
       <div className={styles.panelBody}>
-        <RoomContent room={room} />
+        <RoomContent room={room} screen={screen} />
       </div>
 
       {data.rooms.length > 1 ? (

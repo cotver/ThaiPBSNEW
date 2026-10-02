@@ -40,22 +40,25 @@ export class Exhibits {
   addRoom(room: Room, index: number) {
     const { font, onAir, brand } = this;
     {
-      const { position, width, height, accent } = room.config;
+      const { position, width, height, accent, onAir: onAirPlace } = room.config;
       const [x, z] = position;
       const side = Math.sign(x) || -1;
 
-      // ON AIR box, top-right of the feature wall: dim until someone looks at the room.
+      // ON AIR box, top-right of the feature wall (or under the title): dim until someone looks at the room.
+      // Under the title it lines up with the title's left edge, below the accent rule (see Room).
+      const titleWidth = Math.min(3.2, width * 0.25);
+      const [signX, signY] = onAirPlace === "underTitle" ? [-width / 2 + 0.55 + 0.49, height - 0.95 - titleWidth * 0.375] : [width / 2 - 0.85, height - 0.42];
       const housing = new THREE.Mesh(new THREE.BoxGeometry(0.98, 0.34, 0.08), GRAPHITE);
-      housing.position.set(width / 2 - 0.85, height - 0.42, 0.04);
+      housing.position.set(signX, signY, 0.04);
       room.wall.add(housing);
       const face = new THREE.MeshBasicMaterial({ map: onAir, toneMapped: false });
       const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.28), face);
-      sign.position.set(width / 2 - 0.85, height - 0.42, 0.082);
+      sign.position.set(signX, signY, 0.082);
       room.wall.add(sign);
       this.lamps.push({ color: face.color, tint: new THREE.Color(1, 1, 1), room, base: 0.4, boost: 1.5 });
 
       // A studio prop on the floor, under the room title, out of the way of the hang.
-      const propPosition = new THREE.Vector3(side * 5.6, 0, z - side * 4.8);
+      const propPosition = new THREE.Vector3(side * 5.6, 0, z - side * Math.max(4.8, width / 2 - 2.2));
       const artTarget = new THREE.Vector3(side * 7.3, 0, z + side * 1.0);
       const pathTarget = new THREE.Vector3(0, 0, propPosition.z + 2);
       const prop = this.buildProp(index % 4, accent, brand, room);
@@ -72,18 +75,19 @@ export class Exhibits {
       mural.rotation.y = side * (Math.PI / 2);
       this.group.add(mural);
 
-      // A cloth banner between this room and the next, hanging from the ceiling.
+      // A cloth banner between this room and the next, hanging from the ceiling — past the wall's end, never in front of it.
+      const bannerZ = z - Math.max(6.5, width / 2 + 0.6);
       const banner = new THREE.Mesh(
         new THREE.PlaneGeometry(1.1, 3.1),
         new THREE.MeshStandardMaterial({ map: bannerTexture(accent, font), side: THREE.DoubleSide, roughness: 0.95 }),
       );
       const bannerGeometry = banner.geometry as THREE.PlaneGeometry;
       bannerGeometry.translate(0, -1.55, 0); // pivot at the top, so it swings from the rod
-      banner.position.set(side * 3.1, 6.85, z - 6.5);
+      banner.position.set(side * 3.1, 6.85, bannerZ);
       banner.rotation.y = side * (Math.PI / 2);
       const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.3, 8), STEEL);
       rod.rotation.x = Math.PI / 2;
-      rod.position.set(side * 3.1, 6.87, z - 6.5);
+      rod.position.set(side * 3.1, 6.87, bannerZ);
       this.group.add(banner, rod);
       this.banners.push({ mesh: banner, phase: index * 1.7 });
     }

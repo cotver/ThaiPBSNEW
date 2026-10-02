@@ -23,6 +23,11 @@ export type LotEngineEvents = {
   onHover: (section: LotSectionId | null) => void;
   onSelect: (section: LotSectionId) => void;
   onFocusSettled: (section: LotSectionId | null) => void;
+  /**
+   * A room's screen (Featured, ThaiPBS Journal) moved to another slide — an index into that room's
+   * programs (featured) or items (journal).
+   */
+  onScreenChange?: (section: LotSectionId, index: number) => void;
   /** `atRoom`: you are within AT_ROOM_RANGE of the nearest room's approach point (not in the foyer or between rooms). */
   onTravel: (progress: number, nearest: LotSectionId, atRoom: boolean) => void;
 };
@@ -71,8 +76,12 @@ function hallEnd(roomCount: number) {
  * 16:9 cards and tiles, 2:3 posters, square event covers, press cards with a square image.
  */
 const HANG = {
-  screen: { w: 7.6, h: 4.275, x: 0.8, y: 2.95 },
-  thumb: { w: 1.2, h: 0.675, x: 5.55, gap: 0.82 },
+  /**
+   * HeroCarousel and StudiosHero: one 16:9 LED screen cycling every slide, as big as the standard
+   * 14 × 5.6m wall allows — no rail, no label. Its frame runs from just right of the cut-vinyl title to
+   * near the right edge, skirting to just under the top; the ON AIR box moves under the title (RoomConfig.onAir).
+   */
+  screen: { w: 8.8, h: 4.95, x: 1.9, y: 2.825 },
 } as const;
 
 type GridSpec = { perRow: number; rows: number; w: number; h: number; gapX: number; gapY: number };
@@ -116,19 +125,8 @@ function roomConfigs(data: LotData): RoomConfig[] {
     const base = { id: room.id, position: [x, z] as [number, number], facing, height: 5.6, kicker: "", title: room.title, sub: room.thai, accent: ACCENTS[index % ACCENTS.length] };
     const shape = roomShape(room);
     if (shape === "screen") {
-      const lead = room.kind === "featured" ? room.programs[0] : undefined;
-      const item = room.items[0];
-      return {
-        ...base,
-        width: 14,
-        art: [1.3, HANG.screen.y] as [number, number],
-        artWidth: 9,
-        label: lead
-          ? { title: lead.title, meta: `${lead.type} · ${lead.year} · Featured`, note: lead.description }
-          : item
-            ? { title: item.title, meta: item.meta ?? room.title, note: room.blurb }
-            : { title: "Stand by", meta: room.title, note: room.blurb },
-      };
+      const { screen } = HANG;
+      return { ...base, width: 14, art: [screen.x, screen.y] as [number, number], artWidth: screen.w, onAir: "underTitle" as const };
     }
     const spec = GRIDS[shape];
     const count = room.kind === "row" ? room.programs.length : room.items.length;
@@ -161,11 +159,10 @@ export class LotEngine {
   private built = false;
   private readonly rooms = new Map<LotSectionId, Room>();
   private readonly hitTargets: THREE.Object3D[] = [];
-  private ledWall!: LedWall;
-  /** Id of the room holding the screen (the HeroCarousel section), if there is one. */
+  /** One LED screen per screen room (Featured, ThaiPBS Journal), and the slide each last reported. */
+  private readonly screens = new Map<LotSectionId, { wall: LedWall; reported: number }>();
+  /** Id of the room holding the HeroCarousel screen (it alone rolls trailers), if there is one. */
   private featuredId?: LotSectionId;
-  /** Frames of the hero thumbnail rail; the one matching the screen lights up, like the /home rail. */
-  private readonly thumbFrames: THREE.MeshStandardMaterial[] = [];
   private readonly raycaster = new THREE.Raycaster();
   private readonly gazePoint = new THREE.Vector3();
   private trackLength = 1;
@@ -261,7 +258,6 @@ export class LotEngine {
     }
 
     this.loadingManager = new THREE.LoadingManager();
-    this.ledWall = new LedWall(8.6, 4.84);
     await advance();
     // From here on everything is synchronous, so the image loaders' callbacks always find a finished scene.
     this.hangWork();
@@ -316,6 +312,19 @@ export class LotEngine {
   travelTo(section: LotSectionId) {
     const room = this.rooms.get(section);
     if (room) this.rig.setProgress(room.trackT);
+  }
+
+  /** Put slide `index` on a room's screen (picked in the room panel). */
+  showSlide(section: LotSectionId, index: number) {
+    const screen = this.screens.get(section);
+    if (!screen) return;
+    screen.wall.show(index);
+    if (section === this.featuredId && this.videoState.element) this.stopVideo();
+  }
+
+  /** The featured room's LED wall, which rolls trailers. */
+  private get featuredWall() {
+    return this.featuredId ? this.screens.get(this.featuredId)?.wall : undefined;
   }
 
   /** Keyboard/HUD hover — highlights a room without a pointer. */
@@ -388,7 +397,7 @@ export class LotEngine {
     this.stop();
     if (this.built) this.unbind();
     this.resizeObserver?.disconnect();
-    if (this.ledWall) this.stopVideo();
+    if (this.featuredWall) this.stopVideo();
     this.hall?.dispose();
     disposeTree(this.scene);
     this.composer?.dispose();
@@ -469,60 +478,36 @@ export class LotEngine {
       material.needsUpdate = true;
     };
 
-    /** The HeroCarousel / StudiosHero composition: a 16:9 screen with a rail of 16:9 thumbnails. */
-    const hangThumbs = (room: Room, images: { image?: string; title: string }[], accent: string) => {
-      const thumbs = images.slice(0, 4);
-      thumbs.forEach((thumb, index) => {
-        const y = HANG.screen.y + ((thumbs.length - 1) / 2 - index) * HANG.thumb.gap;
-        const frame = new THREE.MeshStandardMaterial({ color: "#1d1915", roughness: 0.45, emissive: accent, emissiveIntensity: 0 });
-        const border = new THREE.Mesh(new THREE.BoxGeometry(HANG.thumb.w + 0.08, HANG.thumb.h + 0.08, 0.05), frame);
-        border.position.set(HANG.thumb.x, y, 0.025);
-        room.wall.add(border);
-        room.addHitTarget(border);
-        const material = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.93, 0.93, 0.93), toneMapped: false });
-        material.userData.aspect = HANG.thumb.w / HANG.thumb.h;
-        const work = new THREE.Mesh(new THREE.PlaneGeometry(HANG.thumb.w, HANG.thumb.h), material);
-        work.position.set(HANG.thumb.x, y, 0.054);
-        room.wall.add(work);
-        loadImage(thumb.image, thumb.title, index, (texture) => apply(material, texture));
-        if (room.config.id === this.featuredId) this.thumbFrames.push(frame);
-      });
+    /** HeroCarousel / StudiosHero: one framed LED screen on the wall, cycling `slides` in /home order. */
+    const hangScreen = (room: Room, slides: { image?: string; title: string }[]) => {
+      const { screen } = HANG;
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(screen.w + 0.3, screen.h + 0.3, 0.14), frameMaterial);
+      frame.position.set(screen.x, screen.y, 0.07);
+      room.wall.add(frame);
+      const wall = new LedWall(screen.w, screen.h);
+      wall.mesh.position.set(screen.x, screen.y, 0.145);
+      room.wall.add(wall.mesh);
+      room.addHitTarget(wall.mesh);
+      this.screens.set(room.config.id, { wall, reported: -1 });
+      if (!slides.length) return wall.setSlides([{ texture: testCardTexture(font), aspect: 16 / 9 }]);
+      wall.setSlides(new Array(slides.length));
+      slides.forEach((slide, index) => loadImage(slide.image, slide.title, index, (texture, aspect) => wall.setSlide(index, { texture, aspect }), 1920));
     };
 
     for (const section of data.rooms) {
       const room = this.rooms.get(section.id)!;
       const [ax, ay] = room.config.art;
       const shape = roomShape(section);
-      const { screen } = HANG;
 
       if (section.kind === "featured") {
-        // HeroCarousel — the 16:9 hero on a screen that cycles the heroes, with its thumbnail rail.
-        const screenFrame = new THREE.Mesh(new THREE.BoxGeometry(screen.w + 0.3, screen.h + 0.3, 0.14), frameMaterial);
-        screenFrame.position.set(screen.x, screen.y, 0.07);
-        room.wall.add(screenFrame);
-        this.ledWall.mesh.position.set(screen.x, screen.y, 0.145);
-        room.wall.add(this.ledWall.mesh);
-        room.addHitTarget(this.ledWall.mesh);
-        const featured = section.programs.slice(0, 6);
-        const slides: { texture: THREE.Texture; aspect: number }[] = [];
-        if (!featured.length) this.ledWall.setSlides([{ texture: testCardTexture(font), aspect: 16 / 9 }]);
-        featured.forEach((program, index) => {
-          loadImage(program.hero, program.title, index, (texture, aspect) => {
-            slides[index] = { texture, aspect };
-            const ready = slides.filter(Boolean);
-            if (ready.length === featured.length || ready.length === 1) this.ledWall.setSlides(ready);
-          }, 1920);
-        });
-        hangThumbs(room, featured.map((program) => ({ image: program.hero, title: program.title })), room.config.accent);
+        // HeroCarousel — every featured programme's hero, in /home order.
+        hangScreen(room, section.programs.map((program) => ({ image: program.hero, title: program.title })));
         continue;
       }
 
       if (shape === "screen") {
-        // StudiosHero — the lead story large at 16:9, the rest on the thumbnail rail.
-        const [lead, ...rest] = section.items;
-        const material = hang(room, screen.x, screen.y, screen.w, screen.h);
-        loadImage(lead?.image, lead?.title ?? section.title, 0, (texture) => apply(material, texture), 1920);
-        hangThumbs(room, rest, room.config.accent);
+        // StudiosHero (ThaiPBS Journal) — every story's cover, in /home order.
+        hangScreen(room, section.items);
         continue;
       }
 
@@ -688,11 +673,15 @@ export class LotEngine {
       room.update(dt);
     }
 
-    const featuredHover = this.featuredId ? this.rooms.get(this.featuredId)!.hoverAmount : 0;
-    // Stay at true colour; hover only nudges it, so the picture never washes out.
-    this.ledWall.setBoost(0.95 + featuredHover * 0.08);
-    this.ledWall.update(dt, time, reducedMotion);
-    this.thumbFrames.forEach((frame, index) => (frame.emissiveIntensity = index === this.ledWall.currentIndex ? 0.9 : 0));
+    for (const [section, screen] of this.screens) {
+      // Stay at true colour; hover only nudges it, so the picture never washes out.
+      screen.wall.setBoost(0.95 + (this.rooms.get(section)?.hoverAmount ?? 0) * 0.08);
+      screen.wall.update(dt, time, reducedMotion);
+      if (screen.wall.currentIndex !== screen.reported) {
+        screen.reported = screen.wall.currentIndex;
+        this.options.onScreenChange?.(section, screen.reported);
+      }
+    }
     this.updateTrailer(dt, Boolean(this.featuredId) && highlight === this.featuredId);
 
     this.atmosphere.update(dt, time, this.rig.velocity, reducedMotion);
@@ -718,11 +707,12 @@ export class LotEngine {
   /** Lingering on the featured screen rolls its trailer, muted. */
   private updateTrailer(dt: number, engaged: boolean) {
     const { quality, reducedMotion, data } = this.options;
-    if (quality !== "high" || reducedMotion) return;
+    const wall = this.featuredWall;
+    if (quality !== "high" || reducedMotion || !wall) return;
     this.hoverClock = engaged ? this.hoverClock + dt : 0;
     if (engaged && this.hoverClock > 1.1 && !this.videoState.element) {
       const featured = data.rooms.find((room) => room.id === this.featuredId)?.programs ?? [];
-      const program = featured[this.ledWall.currentIndex] ?? featured[0];
+      const program = featured[wall.currentIndex] ?? featured[0];
       const playable = program?.trailerUrl && (!program.trailerMimeType || /mp4|webm|ogg/.test(program.trailerMimeType));
       if (!playable) return;
       const video = document.createElement("video");
@@ -740,7 +730,7 @@ export class LotEngine {
           const texture = new THREE.VideoTexture(video);
           texture.colorSpace = THREE.SRGBColorSpace;
           this.videoState.texture = texture;
-          this.ledWall.setOverride({ texture, aspect: (video.videoWidth || 16) / (video.videoHeight || 9) });
+          wall.setOverride({ texture, aspect: (video.videoWidth || 16) / (video.videoHeight || 9) });
         },
         { once: true },
       );
@@ -756,7 +746,7 @@ export class LotEngine {
 
   private stopVideo() {
     const { element, texture } = this.videoState;
-    if (texture) this.ledWall.setOverride(null);
+    if (texture) this.featuredWall?.setOverride(null);
     if (element) {
       element.pause();
       element.removeAttribute("src");

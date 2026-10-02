@@ -25,6 +25,11 @@ export type LotProgram = {
   isNew: boolean;
   seasons: number;
   episodes: number;
+  /**
+   * Whether it has a program page to open. False, as on /home's HeroCarousel, for CMS hero images
+   * (not programs, no actions) and discontinued programs (actions disabled).
+   */
+  linkable: boolean;
 };
 
 export type LotArticle = {
@@ -108,6 +113,7 @@ export function toLotProgram(title: Title): LotProgram {
     isNew: Boolean(title.isNew),
     seasons: seasons.length,
     episodes: seasons.reduce((total, season) => total + season.episodes.length, 0),
+    linkable: title.showHeroActions !== false && !title.isDiscontinued,
   };
 }
 

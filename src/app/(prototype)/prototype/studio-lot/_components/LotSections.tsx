@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { lotProgramHref, slateNumber, type LotLinkItem, type LotProgram, type LotRoom } from "../_lib/data";
 import styles from "../studio-lot.module.css";
+import { FeaturedContent, StoryScreenContent, type HallScreen } from "./FeaturedContent";
 
 /** Section content shared by the 3D panels and the 2D call sheet. */
 
@@ -31,46 +32,6 @@ export function SlateCard({ program, index = 0, orientation = "portrait", sizes 
       </span>
       <span className={styles.slateTitle}>{program.title}</span>
     </Link>
-  );
-}
-
-export function PremiereContent({ programs }: { programs: LotProgram[] }) {
-  const [lead, ...rest] = programs;
-  if (!lead) return <EmptyNote>No premieres scheduled tonight.</EmptyNote>;
-  return (
-    <div className={styles.premiere}>
-      <Link className={styles.premiereLead} data-cursor="Enter the screening room" href={lotProgramHref(lead.slug)}>
-        <span className={styles.premiereArt}>
-          <Artwork alt="" priority sizes="(max-width: 900px) 100vw, 520px" src={lead.hero} />
-          <span className={styles.premiereBadge}>
-            <span className={styles.recDot} /> Now screening
-          </span>
-        </span>
-        <span className={styles.premiereCopy}>
-          <ProgramMeta program={lead} />
-          <span className={styles.premiereTitle}>{lead.title}</span>
-          <span className={styles.premiereText}>{lead.description}</span>
-          <span className={styles.textLink}>{lead.trailerUrl ? "Screen the trailer" : "Open the program"} →</span>
-        </span>
-      </Link>
-      {rest.length ? (
-        <ol className={styles.runningOrder}>
-          {rest.slice(0, 5).map((program, index) => (
-            <li key={program.slug}>
-              <Link data-cursor="Screen it" href={lotProgramHref(program.slug)}>
-                <span className={styles.orderThumb}>
-                  <Artwork alt="" sizes="96px" src={program.hero} tone={index} />
-                </span>
-                <span className={styles.orderCopy}>
-                  <strong>{program.title}</strong>
-                  <ProgramMeta program={program} />
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ol>
-      ) : null}
-    </div>
   );
 }
 
@@ -144,8 +105,9 @@ export function RowContent({ programs, viewAllHref, layout = "vertical" }: { pro
 }
 
 /** Picks the right content for a room, so the 3D panel and the 2D guide always match. */
-export function RoomContent({ room }: { room: LotRoom }) {
-  if (room.kind === "featured") return <PremiereContent programs={room.programs} />;
+export function RoomContent({ room, screen }: { room: LotRoom; screen?: HallScreen }) {
+  if (room.kind === "featured") return <FeaturedContent programs={room.programs} screen={screen} />;
+  if (room.kind === "links" && room.itemShape === "hero") return <StoryScreenContent items={room.items} screen={screen} viewAllHref={room.viewAllHref} />;
   if (room.kind === "links") return <LinksContent items={room.items} shape={room.itemShape} viewAllHref={room.viewAllHref} />;
   return <RowContent layout={room.layout} programs={room.programs} viewAllHref={room.viewAllHref} />;
 }

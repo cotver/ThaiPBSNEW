@@ -64,6 +64,8 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
   const [panel, setPanel] = useState<LotSectionId | null>(null);
   const [nearest, setNearest] = useState<LotSectionId>(data.rooms[0]?.id ?? "");
   const [atRoom, setAtRoom] = useState(false);
+  /** Which slide each room's hall screen is showing (Featured, ThaiPBS Journal); its panel follows and steers it. */
+  const [screenSlides, setScreenSlides] = useState<Record<LotSectionId, number>>({});
   const [failed, setFailed] = useState(false);
   const mode: Mode = !capabilities ? "detecting" : failed ? "sheet" : override ?? (!capabilities.webgl || capabilities.compact || wantsList ? "sheet" : "lot");
 
@@ -84,6 +86,11 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
     setPanel(null);
     setCursorLabel(null);
     engine.focus(section);
+  }, []);
+
+  const showSlide = useCallback((section: LotSectionId, index: number) => {
+    setScreenSlides((slides) => ({ ...slides, [section]: index }));
+    engineRef.current?.showSlide(section, index);
   }, []);
 
   const close = useCallback(() => {
@@ -142,6 +149,7 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
               setPanel(section);
             }
           },
+          onScreenChange: (section, index) => setScreenSlides((slides) => ({ ...slides, [section]: index })),
           onTravel: (progress, near, atRoom) => {
             setNearest(near);
             setAtRoom(atRoom);
@@ -325,7 +333,7 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
 
       {/* Shown once the gallery is open — not over the loading countdown. */}
       {walkSlot && phase !== "loading" ? createPortal(walk, walkSlot) : null}
-      {panel ? <LotPanel data={data} onClose={close} onSelect={select} section={panel} /> : null}
+      {panel ? <LotPanel data={data} onClose={close} onSelect={select} screen={{ active: screenSlides[panel] ?? 0, onActiveChange: (index) => showSlide(panel, index) }} section={panel} /> : null}
       {selected && !panel ? <div aria-live="polite" className={styles.srOnly}>Moving to {data.rooms.find((room) => room.id === selected)?.title}</div> : null}
 
       <LotLoader phase={phase} progress={loadProgress} reducedMotion={Boolean(capabilities?.reducedMotion)} />

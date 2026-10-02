@@ -43,12 +43,17 @@ const fragmentShader = /* glsl */ `
 
 type Slide = { texture: THREE.Texture; aspect: number };
 
-/** Outdoor LED wall that cycles programme artwork with a vision-mixer wipe. */
+/**
+ * Outdoor LED wall that cycles programme artwork with a vision-mixer wipe. Slides keep their programme's
+ * index (they load out of order), so the wall and the room panel always agree on what is showing.
+ */
 export class LedWall {
   readonly mesh: THREE.Mesh;
   private readonly material: THREE.ShaderMaterial;
   private readonly aspect: number;
-  private slides: Slide[] = [];
+  private slides: (Slide | undefined)[] = [];
+  /** Whether `uA` holds a real slide yet (rather than the blank). */
+  private showing = false;
   private index = 0;
   private transition = -1;
   private hold = 0;
@@ -79,10 +84,36 @@ export class LedWall {
 
   setSlides(slides: Slide[]) {
     this.slides = slides;
-    if (!slides.length) return;
     this.index = 0;
-    this.assign("A", slides[0]);
+    this.showing = false;
+    if (slides[0]) this.setSlide(0, slides[0]);
+  }
+
+  /** Slide `index` finished loading. The current slot goes up straight away if it was still blank. */
+  setSlide(index: number, slide: Slide) {
+    this.slides[index] = slide;
+    if (index === this.index && !this.showing && !this.override) {
+      this.assign("A", slide);
+      this.showing = true;
+      this.hold = 0;
+    }
+  }
+
+  /** Cut to slide `index` (a viewer picked it); the hold restarts so it stays up for a full cycle. */
+  show(index: number) {
+    if (index === this.index || index < 0 || index >= this.slides.length) return;
+    this.index = index;
     this.hold = 0;
+    const slide = this.slides[index];
+    // Under a trailer the engine stops the video next, which wipes back to this slide.
+    if (!slide || this.override) return;
+    if (!this.showing) {
+      this.assign("A", slide);
+      this.showing = true;
+      return;
+    }
+    this.assign("B", slide);
+    this.transition = 0;
   }
 
   /** Temporarily put a live source (e.g. a trailer) on the wall. */
@@ -93,7 +124,13 @@ export class LedWall {
       this.transition = 0;
     } else if (this.override) {
       this.override = null;
-      this.assign("B", this.slides[this.index] ?? this.override);
+      const slide = this.slides[this.index];
+      if (!slide) {
+        // Not loaded yet: it goes up the moment it arrives.
+        this.showing = false;
+        return;
+      }
+      this.assign("B", slide);
       this.transition = 0;
     }
   }
@@ -141,9 +178,17 @@ export class LedWall {
     if (this.override || this.slides.length < 2) return;
     this.hold += dt;
     if (this.hold > 6.5) {
-      this.index = (this.index + 1) % this.slides.length;
-      this.assign("B", this.slides[this.index]);
-      this.transition = 0;
+      // Next slide that has loaded; one still loading is skipped this time round.
+      for (let step = 1; step < this.slides.length; step += 1) {
+        const next = (this.index + step) % this.slides.length;
+        const slide = this.slides[next];
+        if (!slide) continue;
+        this.index = next;
+        this.assign("B", slide);
+        this.transition = 0;
+        break;
+      }
+      this.hold = 0;
     }
   }
 }

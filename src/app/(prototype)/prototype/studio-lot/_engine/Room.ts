@@ -19,7 +19,10 @@ export type RoomConfig = {
   art: [number, number];
   /** Horizontal extent of the hung work, used to place the label and aim the light. */
   artWidth: number;
-  label: { title: string; meta: string; note: string };
+  /** Museum label beside the work; left out where the work speaks for itself (the featured screen). */
+  label?: { title: string; meta: string; note: string };
+  /** Where the ON AIR box hangs: the top-right corner, or under the title when the work fills that corner. */
+  onAir?: "corner" | "underTitle";
   focusDistance?: number;
 };
 
@@ -92,13 +95,15 @@ export class Room {
     this.wall.add(this.underline);
 
     // Museum label beside the work.
-    const label = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.42, 0.28),
-      new THREE.MeshStandardMaterial({ map: labelTexture({ ...config.label, font }), roughness: 0.8 }),
-    );
     const [artX, artY] = config.art;
-    label.position.set(Math.min(width / 2 - 0.4, artX + config.artWidth / 2 + 0.42), 1.3, 0.015);
-    this.wall.add(label);
+    if (config.label) {
+      const label = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.42, 0.28),
+        new THREE.MeshStandardMaterial({ map: labelTexture({ ...config.label, font }), roughness: 0.8 }),
+      );
+      label.position.set(Math.min(width / 2 - 0.4, artX + config.artWidth / 2 + 0.42), 1.3, 0.015);
+      this.wall.add(label);
+    }
 
     // Ceiling spot washing the work, plus a faint visible beam through the haze.
     const fixture = new THREE.Vector3(artX, 6.75, 3.6);
@@ -147,10 +152,10 @@ export class Room {
    * for the panel by sliding sideways, never by turning.
    */
   focusPose(out: { position: THREE.Vector3; target: THREE.Vector3 }, view: FocusView) {
-    const { width, height, art, artWidth, focusDistance } = this.config;
+    const { width, height, art, artWidth, focusDistance, label } = this.config;
     // What should be in frame, in wall-local metres: title at the left through the label at the right.
     const left = -width / 2 + 0.4;
-    const workRight = Math.min(width / 2 - 0.2, art[0] + artWidth / 2 + 0.75);
+    const workRight = Math.min(width / 2 - 0.2, art[0] + artWidth / 2 + (label ? 0.75 : 0.35));
     const bottom = 0.45;
     const top = height - 0.35;
     const contentWidth = workRight - left;
