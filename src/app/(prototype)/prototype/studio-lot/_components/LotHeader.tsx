@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import { lotBase } from "../_lib/data";
-import { cue, onSoundChange, setSoundEnabled, soundEnabled } from "../_lib/sound";
+import { cue } from "../_lib/sound";
 import styles from "../studio-lot.module.css";
 
 const subscribeScroll = (onChange: () => void) => {
@@ -18,7 +18,6 @@ export const walkSlotId = "lot-walk-slot";
 
 export function LotHeader() {
   const pathname = usePathname();
-  const sound = useSyncExternalStore(onSoundChange, soundEnabled, () => false);
   const scrolled = useSyncExternalStore(subscribeScroll, isScrolled, () => false);
 
   return (
@@ -39,27 +38,8 @@ export function LotHeader() {
         )}
       </div>
 
-      <div className={styles.headerTools}>
-        <button
-          aria-label={sound ? "Turn interface sound off" : "Turn interface sound on"}
-          aria-pressed={sound}
-          className={styles.soundToggle}
-          data-cursor={sound ? "Sound on" : "Sound off"}
-          onClick={() => setSoundEnabled(!sound)}
-          type="button"
-        >
-          <span aria-hidden="true" className={styles.soundBars} data-on={sound || undefined}>
-            <i />
-            <i />
-            <i />
-            <i />
-          </span>
-          <span className={styles.soundLabel}>{sound ? "Sound" : "Muted"}</span>
-        </button>
-        <Link className={styles.classicLink} data-cursor="Classic site" href="/home">
-          Classic
-        </Link>
-      </div>
+      {/* Keeps the walk centred in the header's three-column grid. */}
+      <div aria-hidden="true" className={styles.headerTools} />
     </header>
   );
 }
