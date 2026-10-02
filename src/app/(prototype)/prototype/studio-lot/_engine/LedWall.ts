@@ -41,7 +41,11 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
-type Slide = { texture: THREE.Texture; aspect: number };
+/**
+ * `fit: "fill"` stretches the whole picture over the 16:9 screen, as /home's HeroCarousel shows hero art
+ * (object-fill); otherwise it covers the screen, cropping the overflow — as /home shows trailers.
+ */
+type Slide = { texture: THREE.Texture; aspect: number; fit?: "fill" | "cover" };
 
 /**
  * Outdoor LED wall that cycles programme artwork with a vision-mixer wipe. Slides keep their programme's
@@ -158,7 +162,9 @@ export class LedWall {
     const uniforms = this.material.uniforms;
     uniforms[`u${slot}`].value = slide.texture;
     const cover = uniforms[`uCover${slot}`].value as THREE.Vector4;
-    if (slide.aspect > this.aspect) {
+    if (slide.fit === "fill") {
+      cover.set(1, 1, 0, 0);
+    } else if (slide.aspect > this.aspect) {
       const scale = this.aspect / slide.aspect;
       cover.set(scale, 1, (1 - scale) / 2, 0);
     } else {

@@ -1,6 +1,7 @@
 import { BlocksFeature, EXPERIMENTAL_TableFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import type { Access, Block, CollectionBeforeDeleteHook, CollectionConfig } from 'payload'
 import { relatedStoriesField } from './RelatedStoryFields.ts'
+import { siteOnlyFiles } from './siteOnlyFiles.ts'
 
 const COLUMN_GROUP = 'Column'
 
@@ -203,6 +204,8 @@ export const ColumnVideos: CollectionConfig = {
   upload: {
     staticDir: process.env.PAYLOAD_COLUMN_VIDEOS_DIR || './payload-uploads/column-videos',
     mimeTypes: ['video/*', 'image/gif'],
+    // ThaiPBS Journal videos (/api/column-videos/file/...) open only for signed-in Payload users, or when the site plays them.
+    ...siteOnlyFiles,
   },
   fields: [
     { name: 'title', type: 'text', required: true },

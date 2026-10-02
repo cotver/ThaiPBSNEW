@@ -653,6 +653,11 @@
   opacity: 1;
 }
 
+/* The whole picture fills the 16:9 screen, as /home's HeroCarousel shows hero art (object-fill). */
+.featureSlide .art {
+  object-fit: fill;
+}
+
 .premiereLead:hover .featureSlide[data-active] .art {
   transform: scale(1.04);
 }
@@ -759,8 +764,14 @@
   cursor: auto !important;
 }
 
-.premiereArt:fullscreen .art {
-  object-fit: contain;
+/* Full screen keeps the picture a 16:9 frame, centred, as large as the display allows. */
+.premiereArt:fullscreen .featureSlide {
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  width: min(100vw, calc(100vh * 16 / 9));
+  height: min(100vh, calc(100vw * 9 / 16));
+  transform: translate(-50%, -50%);
 }
 
 .premiereArt:fullscreen .screenTrailer {

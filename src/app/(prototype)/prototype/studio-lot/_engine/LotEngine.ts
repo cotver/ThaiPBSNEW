@@ -521,7 +521,9 @@ export class LotEngine {
       this.screens.set(room.config.id, { wall, reported: -1 });
       if (!slides.length) return wall.setSlides([{ texture: testCardTexture(font), aspect: 16 / 9 }]);
       wall.setSlides(new Array(slides.length));
-      slides.forEach((slide, index) => loadImage(slide.image, slide.title, index, (texture, aspect) => wall.setSlide(index, { texture, aspect }), 1920));
+      slides.forEach((slide, index) => loadImage(slide.image, slide.title, index, (texture, aspect) =>
+          // The whole picture fills the 16:9 screen, as /home shows hero art; a drawn placeholder keeps its shape.
+          wall.setSlide(index, { texture, aspect, fit: (texture as THREE.CanvasTexture).isCanvasTexture ? "cover" : "fill" }), 1920));
     };
 
     for (const section of data.rooms) {
