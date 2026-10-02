@@ -16,6 +16,8 @@
   --tally: #ff3b30;
   --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
   --display: var(--lot-font), "IBM Plex Sans Thai", system-ui, sans-serif;
+  /* Used by the loader's opening card. */
+  --serif: Georgia, "Times New Roman", var(--lot-font), serif;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --header-h: 64px;
   --gutter: clamp(16px, 4vw, 56px);
@@ -61,6 +63,31 @@
   padding: 0 var(--gutter);
   background: linear-gradient(180deg, rgb(8 9 13 / 92%), rgb(8 9 13 / 0%));
   pointer-events: none;
+}
+
+/*
+ * List view: over the home hero the bar is almost transparent (a light scrim keeps it readable);
+ * once the page scrolls, a darker blurred backing fades in. Gradients cannot animate, so the
+ * backing is its own layer whose opacity transitions.
+ */
+:global(html[data-lot-list]) .header {
+  background: linear-gradient(180deg, rgb(8 9 13 / 42%), rgb(8 9 13 / 0%));
+}
+
+:global(html[data-lot-list]) .header::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgb(8 9 13 / 86%);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 1px 0 var(--line);
+  opacity: 0;
+  content: "";
+  transition: opacity 400ms var(--ease);
+}
+
+:global(html[data-lot-list]) .header[data-scrolled]::before {
+  opacity: 1;
 }
 
 .header > * {

@@ -7,15 +7,22 @@ import { lotBase } from "../_lib/data";
 import { cue, onSoundChange, setSoundEnabled, soundEnabled } from "../_lib/sound";
 import styles from "../studio-lot.module.css";
 
+const subscribeScroll = (onChange: () => void) => {
+  window.addEventListener("scroll", onChange, { passive: true });
+  return () => window.removeEventListener("scroll", onChange);
+};
+const isScrolled = () => window.scrollY > 24;
+
 /** The gallery renders its walk controls (progress + rooms) into this header slot. */
 export const walkSlotId = "lot-walk-slot";
 
 export function LotHeader() {
   const pathname = usePathname();
   const sound = useSyncExternalStore(onSoundChange, soundEnabled, () => false);
+  const scrolled = useSyncExternalStore(subscribeScroll, isScrolled, () => false);
 
   return (
-    <header className={styles.header} data-lot-header>
+    <header className={styles.header} data-lot-header data-scrolled={scrolled || undefined}>
       <Link aria-label="Studio Lot home" className={styles.brand} data-cursor="Back to the gallery" href={lotBase}>
         <span aria-hidden="true" className={styles.tally} />
         <span className={styles.brandText}>

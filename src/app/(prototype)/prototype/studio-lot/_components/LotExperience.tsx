@@ -1,24 +1,23 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { LotEngine, LotQuality } from "../_engine/LotEngine";
 import type { LotData, LotSectionId } from "../_lib/data";
 import { cue } from "../_lib/sound";
 import styles from "../experience.module.css";
-import { CallSheet } from "./CallSheet";
-import { DragScroller } from "./DragScroller";
+import { ListWalk } from "./ListWalk";
 import { setCursorLabel } from "./LotCursor";
 import { walkSlotId } from "./LotHeader";
 import { LotLoader, RouteLeader } from "./LotLoader";
 import { LotPanel } from "./LotPanel";
+import { WalkNav } from "./WalkNav";
 
 type Mode = "detecting" | "lot" | "sheet";
 type Phase = "loading" | "reveal" | "live";
 type Capabilities = { webgl: boolean; quality: LotQuality; reducedMotion: boolean; compact: boolean };
 
-const REEL_SECONDS = 180;
 
 function detectCapabilities(): Capabilities {
   let webgl = false;
@@ -47,13 +46,8 @@ const noSubscription = () => () => {};
 const noWalkSlot = () => null;
 const readWalkSlot = () => document.getElementById(walkSlotId);
 
-function timecode(progress: number) {
-  const total = progress * REEL_SECONDS;
-  const pad = (value: number) => String(Math.floor(value)).padStart(2, "0");
-  return `00:${pad(total / 60)}:${pad(total % 60)}:${pad((total % 1) * 25)}`;
-}
-
-export function LotExperience({ data, fontFamily }: { data: LotData; fontFamily: string }) {
+/** `listView` is the real /home page (server-rendered), shown in list view and as the fallback. */
+export function LotExperience({ data, fontFamily, listView }: { data: LotData; fontFamily: string; listView: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialStage = searchParams.get("stage") as LotSectionId | null;
@@ -69,13 +63,14 @@ export function LotExperience({ data, fontFamily }: { data: LotData; fontFamily:
   const [selected, setSelected] = useState<LotSectionId | null>(null);
   const [panel, setPanel] = useState<LotSectionId | null>(null);
   const [nearest, setNearest] = useState<LotSectionId>(data.rooms[0]?.id ?? "");
+  const [atRoom, setAtRoom] = useState(false);
   const [failed, setFailed] = useState(false);
   const mode: Mode = !capabilities ? "detecting" : failed ? "sheet" : override ?? (!capabilities.webgl || capabilities.compact || wantsList ? "sheet" : "lot");
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<LotEngine | null>(null);
   const reelFillRef = useRef<HTMLSpanElement>(null);
-  const timecodeRef = useRef<HTMLSpanElement>(null);
   const markerRefs = useRef(new Map<LotSectionId, HTMLButtonElement>());
   const selectedRef = useRef<LotSectionId | null>(null);
   const pendingStage = useRef<LotSectionId | null>(initialStage && data.rooms.some((room) => room.id === initialStage) ? initialStage : null);
@@ -147,10 +142,10 @@ export function LotExperience({ data, fontFamily }: { data: LotData; fontFamily:
               setPanel(section);
             }
           },
-          onTravel: (progress, near) => {
+          onTravel: (progress, near, atRoom) => {
             setNearest(near);
+            setAtRoom(atRoom);
             if (reelFillRef.current) reelFillRef.current.style.transform = `scaleX(${progress})`;
-            if (timecodeRef.current) timecodeRef.current.textContent = timecode(progress);
           },
         });
         // Keep the handles before awaiting: leaving mid-build can still dispose it, and "ready" (which can
@@ -218,6 +213,16 @@ export function LotExperience({ data, fontFamily }: { data: LotData; fontFamily:
     return () => window.removeEventListener("keydown", onKey);
   }, [mode, phase, close, select, data.rooms]);
 
+  // List view: the header floats over the home page's hero (see .header in studio-lot.module.css).
+  useEffect(() => {
+    if (mode !== "sheet") return;
+    const root = document.documentElement;
+    root.dataset.lotList = "";
+    return () => {
+      delete root.dataset.lotList;
+    };
+  }, [mode]);
+
   // The lot owns the viewport; stop the document behind it from scrolling.
   useEffect(() => {
     if (mode !== "lot") return;
@@ -248,11 +253,16 @@ export function LotExperience({ data, fontFamily }: { data: LotData; fontFamily:
       <>
         {/* Until the device is known, keep the same leader the server showed instead of flashing the sheet. */}
         {mode === "detecting" ? <RouteLeader /> : null}
-        <CallSheet
-        data={data}
-        notice={failed ? "The 3D gallery could not start on this device, so here is the exhibition guide." : undefined}
-        onEnterLot={capabilities?.webgl && !failed ? enterLot : undefined}
-        />
+        <div className={styles.homeList} ref={listRef}>
+          {listView}
+        </div>
+        {walkSlot && mode === "sheet" ? createPortal(<ListWalk rooms={data.rooms} rootRef={listRef} />, walkSlot) : null}
+        {failed ? <p className={styles.listNotice}>The 3D gallery could not start on this device, so here is the home page.</p> : null}
+        {capabilities?.webgl && !failed ? (
+          <button className={styles.walkButton} data-cursor="Walk the gallery in 3D" onClick={enterLot} type="button">
+            Walk the gallery in 3D
+          </button>
+        ) : null}
       </>
     );
   }
@@ -262,43 +272,25 @@ export function LotExperience({ data, fontFamily }: { data: LotData; fontFamily:
   const highlight = selected ?? hovered;
 
   const walk = (
-    <div className={styles.reel} data-in-header>
-      <div className={styles.reelMeta}>
-        <span>Your walk</span>
-        <span ref={timecodeRef}>00:00:00:00</span>
-      </div>
-      <div className={styles.reelTrack}>
-        <span className={styles.reelFill} ref={reelFillRef} />
-      </div>
-      <DragScroller ariaLabel="Rooms in the gallery" className={styles.markers} followKey={highlight ?? nearest} followSelector="[data-follow]">
-        {data.rooms.map((section) => (
-          <button
-            aria-current={selected === section.id ? "true" : undefined}
-            className={styles.marker}
-            data-active={highlight === section.id || undefined}
-            data-cursor={`Step into ${section.title}`}
-            data-follow={(highlight ?? nearest) === section.id || undefined}
-            data-near={nearest === section.id || undefined}
-            key={section.id}
-            onBlur={() => engineRef.current?.setForcedHover(null)}
-            onClick={() => select(section.id)}
-            onFocus={() => {
-              engineRef.current?.setForcedHover(section.id);
-              if (!selectedRef.current) engineRef.current?.travelTo(section.id);
-            }}
-            onMouseEnter={() => engineRef.current?.setForcedHover(section.id)}
-            onMouseLeave={() => engineRef.current?.setForcedHover(null)}
-            ref={(element) => {
-              if (element) markerRefs.current.set(section.id, element);
-              else markerRefs.current.delete(section.id);
-            }}
-            type="button"
-          >
-            <span className={styles.markerName}>{section.title}</span>
-          </button>
-        ))}
-      </DragScroller>
-    </div>
+    <WalkNav
+      active={highlight}
+      current={selected}
+      cursorVerb="Step into"
+      fillRef={reelFillRef}
+      markerRef={(id, element) => {
+        if (element) markerRefs.current.set(id, element);
+        else markerRefs.current.delete(id);
+      }}
+      near={nearest}
+      onBlurRoom={() => engineRef.current?.setForcedHover(null)}
+      onFocusRoom={(id) => {
+        engineRef.current?.setForcedHover(id);
+        if (!selectedRef.current) engineRef.current?.travelTo(id);
+      }}
+      onHoverRoom={(id) => engineRef.current?.setForcedHover(id)}
+      onSelect={select}
+      rooms={data.rooms}
+    />
   );
 
   return (
@@ -309,7 +301,8 @@ export function LotExperience({ data, fontFamily }: { data: LotData; fontFamily:
       <div aria-hidden="true" className={styles.vignetteFocus} />
       <div aria-hidden="true" className={styles.grain} />
 
-      <div aria-hidden={selected ? true : undefined} className={styles.caption}>
+      {/* Only while you are at a room (or pointing at one) — not in the foyer or between rooms. */}
+      <div aria-hidden={selected || !(hovered || atRoom) ? true : undefined} className={styles.caption} data-hidden={hovered || atRoom ? undefined : ""}>
         <p className={styles.captionKicker}>
           <span className={styles.rec} /> Now viewing
         </p>

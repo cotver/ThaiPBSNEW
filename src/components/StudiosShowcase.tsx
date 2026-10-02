@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { cache } from "react";
 import Link from "next/link";
 import type { ColumnArticle, ColumnCategory, ColumnMedia, ColumnSubcategory, ColumnTag, ColumnVideo } from "../../payload-types";
 import { getPayloadClient } from "@/lib/payload-client";
@@ -340,11 +341,14 @@ export type StudiosShowcaseData = Awaited<ReturnType<typeof getStudioContent>> &
   marketEventGroups: Awaited<ReturnType<typeof getMarketEventGroups>>;
 };
 
-/** Everything the showcase renders, so other views (e.g. the gallery prototype) apply the same rules. */
-export async function getStudiosShowcaseData(): Promise<StudiosShowcaseData> {
+/**
+ * Everything the showcase renders, so other views (e.g. the gallery prototype) apply the same rules.
+ * Cached per request: a page that both renders the showcase and reads this data loads it only once.
+ */
+export const getStudiosShowcaseData = cache(async (): Promise<StudiosShowcaseData> => {
   const [studioContent, marketCompanies, marketEventGroups] = await Promise.all([getStudioContent(20), getMarketCompanies(), getMarketEventGroups()]);
   return { ...studioContent, marketCompanies, marketEventGroups };
-}
+});
 
 export type StudiosShowcaseProps = {
   showCurtain?: boolean;

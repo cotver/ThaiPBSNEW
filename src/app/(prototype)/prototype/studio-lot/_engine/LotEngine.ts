@@ -6,11 +6,11 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import type { LotData, LotSectionId } from "../_lib/data";
 import { Atmosphere } from "./Atmosphere";
 import { Exhibits } from "./Exhibits";
-import { CameraRig } from "./CameraRig";
+import { CameraRig, FOCUS_FOV } from "./CameraRig";
 import { Hall } from "./Hall";
 import { LedWall } from "./LedWall";
 import { disposeTree } from "./math";
-import { Room, type RoomConfig } from "./Room";
+import { Room, type FocusView, type RoomConfig } from "./Room";
 import { captionTexture, partnerLogoTexture, posterFallback, printTexture, testCardTexture } from "./signage";
 
 export type LotQuality = "high" | "low";
@@ -23,7 +23,8 @@ export type LotEngineEvents = {
   onHover: (section: LotSectionId | null) => void;
   onSelect: (section: LotSectionId) => void;
   onFocusSettled: (section: LotSectionId | null) => void;
-  onTravel: (progress: number, nearest: LotSectionId) => void;
+  /** `atRoom`: you are within AT_ROOM_RANGE of the nearest room's approach point (not in the foyer or between rooms). */
+  onTravel: (progress: number, nearest: LotSectionId, atRoom: boolean) => void;
 };
 
 export type LotEngineOptions = LotEngineEvents & {
@@ -41,6 +42,18 @@ function yieldToBrowser() {
 }
 
 const ROOM_SPACING = 13;
+/**
+ * How far before a room (along the walk) it becomes the current room. At ~10m the room is clearly in
+ * the forward view; the switch to it then happens about midway from the previous room's anchor.
+ */
+const APPROACH_LEAD = 10;
+/** How close (metres along the walk) to a room's approach point counts as "at" that room. */
+const AT_ROOM_RANGE = 4.5;
+/**
+ * How far the walking camera turns toward an approaching room's work (fraction of the way).
+ * 0.12 ≈ a 9–10° glance at the peak — close to the path's own gentle weave (3–6°), just well-timed.
+ */
+const GAZE_STRENGTH = 0.12;
 const ACCENTS = ["#c9a24a", "#2f6f86", "#b5462f", "#5d7a3a", "#7a4a8c", "#b07a3a"];
 
 /** Rooms alternate left and right down the nave, one per /home section, in the same order. */
@@ -154,6 +167,8 @@ export class LotEngine {
   /** Frames of the hero thumbnail rail; the one matching the screen lights up, like the /home rail. */
   private readonly thumbFrames: THREE.MeshStandardMaterial[] = [];
   private readonly raycaster = new THREE.Raycaster();
+  private readonly gazePoint = new THREE.Vector3();
+  private trackLength = 1;
   private readonly pointer = new THREE.Vector2(9, 9);
   private readonly clock = new THREE.Timer();
   private resizeObserver?: ResizeObserver;
@@ -169,6 +184,7 @@ export class LotEngine {
   private disposed = false;
   private ready = false;
   private lastNearest: LotSectionId | null = null;
+  private lastAtRoom = false;
   private lastProgressReport = -1;
   private hoverClock = 0;
   private touchY: number | null = null;
@@ -250,6 +266,7 @@ export class LotEngine {
 
     this.scene.updateMatrixWorld(true);
     this.computeTrackPositions();
+    this.trackLength = this.rig.track.getLength();
     for (const room of this.rooms.values()) this.hitTargets.push(...room.hitTargets);
 
     if (high) {
@@ -320,8 +337,47 @@ export class LotEngine {
     }
     const room = this.rooms.get(section);
     if (!room) return;
-    const pose = room.focusPose({ position: new THREE.Vector3(), target: new THREE.Vector3() });
+    const pose = room.focusPose({ position: new THREE.Vector3(), target: new THREE.Vector3() }, this.focusView());
     this.rig.focus(pose, room.trackT, this.options.reducedMotion);
+  }
+
+  /**
+   * The screen area the room panel leaves free, so a focused room can be framed inside it.
+   * Mirrors the panel and header sizes in experience.module.css / studio-lot.module.css.
+   */
+  private focusView(): FocusView {
+    const { width: W, height: H } = this.size();
+    const gutter = THREE.MathUtils.clamp(W * 0.03, 16, 40);
+    const headerHeight = W <= 860 ? 104 : 64;
+    let x0: number;
+    let x1: number;
+    let y0: number;
+    let y1: number;
+    if (W > 760) {
+      // Desktop: the panel is a column on the right.
+      const panelWidth = Math.min(620, W - 2 * gutter);
+      x0 = gutter;
+      x1 = W - gutter - panelWidth - gutter;
+      y0 = headerHeight + 12;
+      y1 = H - THREE.MathUtils.clamp(H * 0.03, 16, 32);
+    } else {
+      // Phones: the panel is a sheet along the bottom; frame the room above it.
+      const panelHeight = Math.min(H * 0.78, 680);
+      x0 = 12;
+      x1 = W - 12;
+      y0 = headerHeight + 8;
+      y1 = H - THREE.MathUtils.clamp(H * 0.03, 16, 32) - panelHeight - 12;
+      if ((y1 - y0) / H < 0.18) y1 = H - 16; // too little room above the sheet: frame the full screen
+    }
+    return {
+      fov: FOCUS_FOV,
+      aspect: W / H,
+      zoom: this.rig.camera.zoom,
+      usableX: Math.max(0.2, (x1 - x0) / W),
+      usableY: Math.max(0.2, (y1 - y0) / H),
+      centerX: (x0 + x1) / W - 1, // midpoint in NDC
+      centerY: 1 - (y0 + y1) / H,
+    };
   }
 
   dispose() {
@@ -553,18 +609,48 @@ export class LotEngine {
     this.options.onReady();
   }
 
+  /**
+   * Each room's place on the walk. The camera looks ahead down the hall, so a room is "in view" well
+   * before you are level with it: anchor it APPROACH_LEAD metres earlier on the path (toward the
+   * entrance, +z). The current room, the top-bar highlight and "walk to" all use this anchor.
+   */
+  /**
+   * Turn the walking camera toward the room you are approaching. The pull peaks at the room's anchor
+   * (APPROACH_LEAD metres before it, while it is ahead of you) and falls to zero halfway to the next
+   * anchor — so the look leads into each room early and hands over to the next one without a jump.
+   */
+  private updateGaze() {
+    const progress = this.rig.trackProgress;
+    let closest: Room | undefined;
+    let closestDistance = Infinity;
+    for (const room of this.rooms.values()) {
+      const distance = Math.abs(room.trackT - progress);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closest = room;
+      }
+    }
+    if (!closest) return this.rig.setGaze(null, 0);
+    const halfSpacing = (ROOM_SPACING / 2) / Math.max(1, this.trackLength);
+    const t = THREE.MathUtils.clamp(1 - closestDistance / halfSpacing, 0, 1);
+    const weight = t * t * (3 - 2 * t) * GAZE_STRENGTH; // smoothstep
+    const [artX, artY] = closest.config.art;
+    this.rig.setGaze(closest.wall.localToWorld(this.gazePoint.set(artX, artY, 0)), weight);
+  }
+
   private computeTrackPositions() {
     const point = new THREE.Vector3();
     for (const room of this.rooms.values()) {
       const wall = room.wall.getWorldPosition(new THREE.Vector3());
+      const anchor = new THREE.Vector3(0, wall.y, wall.z + APPROACH_LEAD);
       let best = 0;
       let bestDistance = Infinity;
-      for (let i = 0; i <= 200; i += 1) {
-        this.rig.track.getPointAt(i / 200, point);
-        const distance = point.distanceToSquared(wall);
+      for (let i = 0; i <= 400; i += 1) {
+        this.rig.track.getPointAt(i / 400, point);
+        const distance = (point.x - anchor.x) ** 2 + (point.z - anchor.z) ** 2;
         if (distance < bestDistance) {
           bestDistance = distance;
-          best = i / 200;
+          best = i / 400;
         }
       }
       room.trackT = best;
@@ -579,6 +665,7 @@ export class LotEngine {
     const time = this.time;
 
     if (this.pointerDirty) this.pick();
+    this.updateGaze();
     this.rig.update(dt, reducedMotion);
 
     const progress = this.rig.trackProgress;
@@ -609,10 +696,12 @@ export class LotEngine {
     this.atmosphere.update(dt, time, this.rig.velocity, reducedMotion);
     this.exhibits.update(dt, time, this.rig.velocity, reducedMotion);
 
-    if (nearest !== this.lastNearest || Math.abs(progress - this.lastProgressReport) > 0.002) {
+    const atRoom = nearestDistance * this.trackLength <= AT_ROOM_RANGE;
+    if (nearest !== this.lastNearest || atRoom !== this.lastAtRoom || Math.abs(progress - this.lastProgressReport) > 0.002) {
       this.lastNearest = nearest;
+      this.lastAtRoom = atRoom;
       this.lastProgressReport = progress;
-      this.options.onTravel(progress, nearest);
+      this.options.onTravel(progress, nearest, atRoom);
     }
 
     this.draw();
@@ -719,6 +808,9 @@ export class LotEngine {
     this.bloom?.resolution.set(width / 2, height / 2);
     this.hall?.resize(width, height);
     this.rig.resize(width / height);
+    // Keep a focused room framed inside the panel's free area at the new size.
+    const room = this.focused ? this.rooms.get(this.focused) : undefined;
+    if (room) this.rig.retarget(room.focusPose({ position: new THREE.Vector3(), target: new THREE.Vector3() }, this.focusView()));
     // setSize clears the drawing buffer; repaint now instead of showing a black frame.
     if (this.ready) this.draw();
   }

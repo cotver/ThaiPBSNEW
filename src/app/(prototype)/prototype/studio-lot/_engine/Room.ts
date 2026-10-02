@@ -23,7 +23,14 @@ export type RoomConfig = {
   focusDistance?: number;
 };
 
-const EYE_HEIGHT = 1.7;
+/** Furthest the camera may stand from a wall — the nave is about 15m across. */
+const MAX_FOCUS_DISTANCE = 14.4;
+
+/**
+ * The focused camera's lens and the part of the screen left free by the room panel.
+ * `usableX/Y` are fractions of the viewport; `centerX/Y` are that area's centre in NDC (-1..1).
+ */
+export type FocusView = { fov: number; aspect: number; zoom: number; usableX: number; usableY: number; centerX: number; centerY: number };
 
 /**
  * One gallery room: a plaster feature wall with cut-vinyl title, a museum label and a ceiling
@@ -132,18 +139,42 @@ export class Room {
   }
 
   /** World-space camera pose at eye height, framing the wall with room for the panel on the right. */
-  focusPose(out: { position: THREE.Vector3; target: THREE.Vector3 }) {
-    const { width, focusDistance } = this.config;
-    const focusY = 2.6;
-    // Stand back far enough that the whole wall, title included, fits left of the panel.
-    const distance = focusDistance ?? Math.min(13.5, width * 1.1);
+  /**
+   * Square-on framing, like a gallery photograph: the camera faces the wall dead-on at the content's
+   * mid-height (no yaw, no tilt — frames stay rectangular, verticals stay vertical) and stands back
+   * just far enough to fit the hang inside the part of the screen the panel leaves free. It makes room
+   * for the panel by sliding sideways, never by turning.
+   */
+  focusPose(out: { position: THREE.Vector3; target: THREE.Vector3 }, view: FocusView) {
+    const { width, height, art, artWidth, focusDistance } = this.config;
+    // What should be in frame, in wall-local metres: title at the left through the label at the right.
+    const left = -width / 2 + 0.4;
+    const workRight = Math.min(width / 2 - 0.2, art[0] + artWidth / 2 + 0.75);
+    const bottom = 0.45;
+    const top = height - 0.35;
+    const contentWidth = workRight - left;
+    const contentHeight = top - bottom;
+
+    const vTan = Math.tan(THREE.MathUtils.degToRad(view.fov) / 2) / view.zoom;
+    const hTan = vTan * view.aspect;
+    const margin = 1.08;
+    const fitDistance = Math.max((contentWidth * margin) / (view.usableX * 2 * hTan), (contentHeight * margin) / (view.usableY * 2 * vTan));
+    // The nave is ~15m wall to wall; never back into the opposite wall.
+    const distance = focusDistance ?? THREE.MathUtils.clamp(fitDistance, 6, MAX_FOCUS_DISTANCE);
+
+    const visibleW = 2 * distance * hTan;
+    const visibleH = 2 * distance * vTan;
+    const usableW = view.usableX * visibleW;
+    // Everything fits: centre it. Too wide for the hall: keep the work and label whole, let the title crop.
+    const regionX = usableW >= contentWidth * margin ? (left + workRight) / 2 : workRight + 0.3 - usableW / 2;
+    const regionY = (bottom + top) / 2;
+    // Slide the (square-on) camera so the content's centre lands in the middle of the free screen area.
+    const axisX = regionX - (view.centerX * visibleW) / 2;
+    const axisY = THREE.MathUtils.clamp(regionY - (view.centerY * visibleH) / 2, 0.6, 6.4);
+
     const normal = new THREE.Vector3(Math.sin(this.config.facing), 0, Math.cos(this.config.facing));
-    const right = new THREE.Vector3().crossVectors(normal.clone().negate(), new THREE.Vector3(0, 1, 0)).normalize();
-    const centre = this.wall.localToWorld(new THREE.Vector3(0, focusY, 0));
-    out.position.copy(centre).addScaledVector(normal, distance).addScaledVector(right, -width * 0.05);
-    out.position.y = EYE_HEIGHT + 0.25;
-    out.target.copy(centre).addScaledVector(right, distance * 0.2);
-    out.target.y = focusY;
+    this.wall.localToWorld(out.target.set(axisX, axisY, 0));
+    out.position.copy(out.target).addScaledVector(normal, distance);
     return out;
   }
 

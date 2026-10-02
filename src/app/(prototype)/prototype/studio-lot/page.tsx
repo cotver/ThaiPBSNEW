@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { Suspense } from "react";
+import { HomeSections } from "@/components/HomeSections";
 import { getStudiosShowcaseData } from "@/components/StudiosShowcase";
 import type { Title } from "@/lib/content";
 import { hiddenCatalogSectionsEnabled } from "@/lib/feature-flags";
@@ -12,6 +13,8 @@ import { LotExperience } from "./_components/LotExperience";
 import { RouteLeader } from "./_components/LotLoader";
 import { lotBase, toLotProgram, type LotLinkItem, type LotRoom } from "./_lib/data";
 import { plexThai } from "./_lib/font";
+// The site's responsive rules for the home sections; every selector is scoped to [data-responsive-site].
+import "../../../(site)/responsive.css";
 
 export const dynamic = "force-dynamic";
 
@@ -125,5 +128,17 @@ async function StudioLot() {
   ].filter((room) => room.programs.length);
 
   const rooms = [featured, ...studioRooms, ...brandTiles, ...rows];
-  return <LotExperience data={{ rooms }} fontFamily={plexThai.style.fontFamily} />;
+  // List view: the real /home sections — same components, data, conditions and links — inside the
+  // same responsive wrappers the site layout gives them, so it looks and works exactly like /home.
+  const listView = (
+    <div data-responsive-site>
+      <div data-site-shell>
+        <div className="app-shell-content relative pb-20">
+          <HomeSections categories={categories} collections={collections} showHiddenCatalogSections={showHiddenCatalogSections} />
+        </div>
+      </div>
+    </div>
+  );
+
+  return <LotExperience data={{ rooms }} fontFamily={plexThai.style.fontFamily} listView={listView} />;
 }

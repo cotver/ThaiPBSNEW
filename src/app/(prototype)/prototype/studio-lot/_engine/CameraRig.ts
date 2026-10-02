@@ -4,7 +4,20 @@ import { clamp01, damp, dampVector, easeInOutCubic } from "./math";
 type Pose = { position: THREE.Vector3; target: THREE.Vector3 };
 
 const TRACK_FOV = 52;
-const FOCUS_FOV = 44;
+/** How fast the walking glance turns toward a room, and (slower) back to the hall. */
+const GAZE_EASE_IN = 4;
+const GAZE_EASE_OUT = 1.1;
+/**
+ * How fast the previous room's leftover glance clears after the hand-over to the next room —
+ * quick enough that it never holds back the turn toward the room ahead.
+ */
+const GAZE_HANDOVER_FADE = 2.2;
+/**
+ * Lens when framed on a room. The camera faces the wall square-on, so a wider lens adds no skew —
+ * it just fits the whole wall (title, work, label) beside the panel within the ~15m nave.
+ * 60° is the narrowest that does so at common laptop sizes (1280–1440 wide).
+ */
+export const FOCUS_FOV = 60;
 
 /**
  * Dolly track + crane moves. The camera never jumps: scroll moves a target along the track,
@@ -28,6 +41,15 @@ export class CameraRig {
   private readonly smoothed: Pose = { position: new THREE.Vector3(), target: new THREE.Vector3() };
   private readonly previous = new THREE.Vector3();
   private readonly temp = new THREE.Vector3();
+  /** Where the walking camera's attention is pulled (a room's work), and how strongly (0..1). */
+  private readonly gaze = new THREE.Vector3();
+  private gazeWeight = 0;
+  private gazeWeightTarget = 0;
+  private hasGaze = false;
+  /** The previous room's glance, easing out on its own after the hand-over to the next room. */
+  private readonly fadingGaze = new THREE.Vector3();
+  private fadingWeight = 0;
+  private readonly gazeOffset = new THREE.Vector3();
   private initialised = false;
   onFocusSettled?: (focused: boolean) => void;
 
@@ -85,6 +107,30 @@ export class CameraRig {
     }
   }
 
+  /**
+   * While walking, turn the head toward an approaching room instead of always staring down the hall.
+   * `weight` 0..1 is how far to turn (the rig eases toward it); pass null to look straight ahead.
+   */
+  setGaze(point: THREE.Vector3 | null, weight: number) {
+    if (point && (!this.hasGaze || point.distanceToSquared(this.gaze) > 0.01)) {
+      // A new room: let the current glance ease out by itself instead of jumping to the new point.
+      if (this.hasGaze && this.gazeWeight > this.fadingWeight) {
+        this.fadingGaze.copy(this.gaze);
+        this.fadingWeight = this.gazeWeight;
+      }
+      this.gaze.copy(point);
+      this.gazeWeight = 0;
+      this.hasGaze = true;
+    }
+    this.gazeWeightTarget = point ? clamp01(weight) : 0;
+  }
+
+  /** Re-aim a focused (or focusing) camera without restarting the move — e.g. after a resize. */
+  retarget(pose: Pose) {
+    this.focusPose.position.copy(pose.position);
+    this.focusPose.target.copy(pose.target);
+  }
+
   private sampleTrack(t: number, out: Pose) {
     // The curve throws outside 0..1 (or on NaN), which would skip the frame and flash black.
     t = Number.isFinite(t) ? clamp01(t) : 0;
@@ -106,6 +152,15 @@ export class CameraRig {
     this.look.y = damp(this.look.y, this.lookTarget.y, 3, dt);
 
     this.sampleTrack(this.progress, this.trackPose);
+    // Lead the eye into the room you are approaching; eased so it never snaps.
+    // Turning toward a room keeps its pace; turning back to the hall is eased about three times slower,
+    // so passing a room glides the head back to centre instead of snapping it.
+    const easing = this.gazeWeightTarget > this.gazeWeight ? GAZE_EASE_IN : GAZE_EASE_OUT;
+    this.gazeWeight = reducedMotion ? this.gazeWeightTarget : damp(this.gazeWeight, this.gazeWeightTarget, easing, dt);
+    this.fadingWeight = reducedMotion ? 0 : damp(this.fadingWeight, 0, GAZE_HANDOVER_FADE, dt);
+    const base = this.gazeOffset.copy(this.trackPose.target);
+    if (this.gazeWeight > 0.001) this.trackPose.target.addScaledVector(this.gaze.clone().sub(base), this.gazeWeight);
+    if (this.fadingWeight > 0.001) this.trackPose.target.addScaledVector(this.fadingGaze.clone().sub(base), this.fadingWeight);
 
     if (this.focusDirection !== 0) {
       const before = this.focusBlend;
@@ -123,8 +178,8 @@ export class CameraRig {
     desiredPosition.y += Math.sin(blend * Math.PI) * 0.35;
     const desiredTarget = new THREE.Vector3().copy(this.trackPose.target).lerp(this.focusPose.target, blend);
 
-    // Head turn from the pointer, reduced while framed on a building.
-    const lookStrength = 1 - blend * 0.75;
+    // Head turn from the pointer; none once framed on a room, so the wall stays square-on.
+    const lookStrength = 1 - blend;
     const forward = desiredTarget.clone().sub(desiredPosition).normalize();
     const right = new THREE.Vector3().crossVectors(forward, this.camera.up).normalize();
     desiredTarget.addScaledVector(right, this.look.x * 1.6 * lookStrength);
