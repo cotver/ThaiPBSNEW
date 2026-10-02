@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { StudiosHero } from "@/components/StudiosHero";
 import { ArticlePdfPagesLoader } from "@/components/final-prototype/ArticlePdfPagesLoader";
 import { FinalArticleRichText } from "@/components/final-prototype/FinalArticleRichText";
 import { getColumnArticleBySlug, getGlobalRelatedStories, getRelatedColumnArticles } from "@/lib/column-articles";
@@ -69,7 +70,7 @@ async function RelatedStoriesRail({ article }: { article: ColumnArticleDetail })
           {recommendations.map((item) => (
             <Link className={styles.relatedCard} href={item.href} key={item.href}>
               <span className={styles.relatedImage}>
-                {item.heroUrl ? <Image alt="" fill sizes="(max-width: 560px) 110px, 120px" src={item.heroUrl} /> : null}
+                {item.heroUrl ? <Image alt="" fill sizes="(min-width: 3840px) 144px, (min-width: 1920px) 3.75vw, (max-width: 850px) 105px, 72px" src={item.heroUrl} /> : null}
               </span>
               <span className={styles.relatedCopy}>
                 <strong>{item.title}</strong>
@@ -107,27 +108,22 @@ export default async function ColumnArticlePage({ params }: PageProps) {
 
   return (
     <main className={styles.page}>
-      <header className={styles.hero}>
-        {article.heroUrl ? (
-          <Image
-            alt={article.heroAlt}
-            className={styles.heroImage}
-            fill
-            priority
-            sizes="100vw"
-            src={article.heroUrl}
-          />
-        ) : null}
-        <div className={styles.heroShade} />
-        <div className={styles.heroContent}>
-          <Link className={styles.backLink} href="/home#catalog"><span aria-hidden>←</span> Studios</Link>
-          {article.categories.length ? <p className={styles.eyebrow}>{article.categories.map((item) => item.name).join("  /  ")}</p> : null}
-          <h1>{article.title}</h1>
-          {article.description ? <p className={styles.lede}>{article.description}</p> : null}
-        </div>
+      <header className={styles.articleHero}>
+        <StudiosHero showActions={false} showSelectors={false} items={[{
+          id: article.id,
+          href: "#article-content",
+          imageAlt: article.heroAlt,
+          imageUrl: article.heroUrl || "",
+          title: article.title,
+          description: article.description,
+          eyebrow: article.categories.map((item) => item.name).join("  ›  ") || undefined,
+          videoAlt: article.video?.alt,
+          videoMimeType: article.video?.mimeType,
+          videoUrl: article.video?.url,
+        }]} />
       </header>
 
-      <div className={styles.articleShell}>
+      <div className={styles.articleShell} id="article-content">
         <aside className={styles.meta} aria-label="Article information">
           <div><span>Published</span><time dateTime={article.date}>{formatDate(article.date)}</time></div>
           {article.author ? <div><span>Words by</span><strong>{article.author}</strong></div> : null}

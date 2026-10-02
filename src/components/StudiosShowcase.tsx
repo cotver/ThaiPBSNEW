@@ -372,6 +372,7 @@ export async function StudiosShowcase({ showCurtain = true }: StudiosShowcasePro
   if (!featuredArticles.length && !categories.length && !otherCategories.length && !hasNews && !marketEventGroups.length) return null;
   return (
     <section
+      id="studios"
       className={styles.showcase}
       aria-label={entranceTitle}
       data-studios-curtain-visible={showCurtain}

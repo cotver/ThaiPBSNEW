@@ -84,7 +84,7 @@ function getHeroTrailerSource(title: HeroCarouselItem | undefined): { mimeType?:
   return { mimeType: seasonTrailer?.trailerMimeType, url: seasonTrailer?.trailerUrl ?? "" };
 }
 
-export function HeroCarousel({ titles }: { titles: HeroCarouselItem[] }) {
+export function HeroCarousel({ titles, showSelectors = true }: { titles: HeroCarouselItem[]; showSelectors?: boolean }) {
   const [active, setActive] = useState(0);
   const current = titles[active];
   const activeThumbRef = useRef<HTMLButtonElement | null>(null);
@@ -723,7 +723,7 @@ export function HeroCarousel({ titles }: { titles: HeroCarouselItem[] }) {
               />}
               </div>
             )}
-            <div className="no-scrollbar pointer-events-auto mt-8 flex max-w-full items-center gap-2 overflow-x-auto lg:hidden">
+            {showSelectors && <div className="no-scrollbar pointer-events-auto mt-8 flex max-w-full items-center gap-2 overflow-x-auto lg:hidden">
               {titles.map((title, index) => (
                 <button
                   aria-label={`Show ${title.title}`}
@@ -738,12 +738,12 @@ export function HeroCarousel({ titles }: { titles: HeroCarouselItem[] }) {
                   }`} />
                 </button>
               ))}
-            </div>
+            </div>}
           </div>
         </div>
       )}
 
-      {(current.showHeroDetails === false || hideHeroDetails) && (
+      {showSelectors && (current.showHeroDetails === false || hideHeroDetails) && (
         <div data-hero-indicators className="no-scrollbar absolute bottom-20 left-5 right-5 z-20 flex items-center gap-2 overflow-x-auto sm:left-8 sm:right-8 lg:hidden">
           {titles.map((title, index) => (
             <button
@@ -762,7 +762,7 @@ export function HeroCarousel({ titles }: { titles: HeroCarouselItem[] }) {
         </div>
       )}
 
-      <div className="absolute bottom-10 right-8 z-20 hidden w-[min(34rem,38vw)] lg:block">
+      {showSelectors && <div className="absolute bottom-10 right-8 z-20 hidden w-[min(34rem,38vw)] lg:block">
         <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-5 bg-gradient-to-r from-[#030714]/55 to-transparent" />
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-5 bg-gradient-to-l from-[#030714]/55 to-transparent" />
         <div
@@ -817,7 +817,7 @@ export function HeroCarousel({ titles }: { titles: HeroCarouselItem[] }) {
           );
         })}
         </div>
-      </div>
+      </div>}
     </section>
   );
 }

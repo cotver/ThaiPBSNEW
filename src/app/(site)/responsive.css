@@ -78,14 +78,14 @@
   [data-responsive-site] [data-top-navigation] > .app-shell-content { padding-top: 76px; }
   [data-responsive-site] .disney-sidebar { left: max(0px, calc((100vw - var(--site-max-width)) / 2)); }
   [data-responsive-site] .disney-sidebar > nav {
-    position: static;
+    position: absolute;
     transform: none;
     min-height: 0;
-    overflow-y: auto;
+    overflow: visible;
     margin-block: auto;
-    padding-block: 24px;
-    padding-left: 20px;
-    gap: clamp(8px, 2vh, 24px);
+    padding-block: 0;
+    padding-left: 0;
+    gap: clamp(8px, 2vh, 18px);
   }
   [data-responsive-site] [data-site-shell] > nav:first-child {
     max-width: var(--site-max-width);

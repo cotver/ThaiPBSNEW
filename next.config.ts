@@ -11,6 +11,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  async redirects() {
+    // Keep the entrance page available in the codebase for future use.
+    return [{ source: "/", destination: "/home", permanent: false }];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

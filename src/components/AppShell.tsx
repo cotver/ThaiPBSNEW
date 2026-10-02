@@ -3,11 +3,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { navItems, type NavItem } from "@/lib/content";
 
 // Keep the Studios top navigation ready for a later switch back.
 const ENABLE_STUDIOS_TOP_NAVIGATION = false;
+const studiosNavItem: NavItem = { label: "Studios", href: "/home#studios", icon: "news" };
+const studiosSectionNavItems: NavItem[] = [
+  { label: "Press Releases", href: "/studios/news/press-releases", icon: "news" },
+  { label: "Content Distribution", href: "/studios/news/content-distribution", icon: "screen" },
+  { label: "Market & Events", href: "/studios/events", icon: "calendar" },
+];
 
 export function AppShell({
   children,
@@ -23,8 +29,12 @@ export function AppShell({
   const pathname = usePathname();
   const isPrototype = pathname.startsWith("/prototype");
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [studiosMenuOpen, setStudiosMenuOpen] = useState(false);
   const [studiosNavState, setStudiosNavState] = useState({ path: "", fullWidth: false, topNav: false });
+  const [studiosMenuShift, setStudiosMenuShift] = useState(0);
   const sidebarRef = useRef<HTMLElement>(null);
+  const studiosTriggerRef = useRef<HTMLButtonElement>(null);
+  const studiosPanelRef = useRef<HTMLDivElement>(null);
   const studiosNavPhaseRef = useRef({ fullWidth: false, topNav: false });
   const studiosRelatedPage = pathname.startsWith("/studios") || pathname.startsWith("/article");
   const homeStudiosFullWidth = pathname === "/home" && studiosNavState.path === pathname && studiosNavState.fullWidth;
@@ -33,9 +43,15 @@ export function AppShell({
   const studiosTopNav = ENABLE_STUDIOS_TOP_NAVIGATION && (studiosRelatedPage || homeStudiosTopNav);
   const appNavItems = [
     ...navItems.filter((item) => showWatchlist || item.href !== "/watchlist"),
+    ...(!isPrototype ? [studiosNavItem] : []),
     ...typeNavItems,
   ];
-  const mobileNavItems = isPrototype ? appNavItems : [...appNavItems, ...columnNavItems];
+  const sidebarNavItems = appNavItems;
+  const studiosMenuItems = [studiosNavItem, ...columnNavItems, ...studiosSectionNavItems];
+  const mobileNavItems = isPrototype ? appNavItems : [...appNavItems, ...columnNavItems, ...studiosSectionNavItems];
+  const isNavItemActive = (item: NavItem) => item.href === studiosNavItem.href
+    ? studiosRelatedPage
+    : item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
 
   useEffect(() => {
     const activeElement = document.activeElement;
@@ -45,6 +61,23 @@ export function AppShell({
     }
 
   }, [pathname]);
+
+  useLayoutEffect(() => {
+    if (!studiosMenuOpen) return;
+
+    const placeMenu = () => {
+      const trigger = studiosTriggerRef.current;
+      const panel = studiosPanelRef.current;
+      if (!trigger || !panel) return;
+      // Align with the trigger, nudging up only when the panel would run off-screen.
+      const overflow = trigger.getBoundingClientRect().top + panel.offsetHeight - (window.innerHeight - 24);
+      setStudiosMenuShift(overflow > 0 ? -overflow : 0);
+    };
+
+    placeMenu();
+    window.addEventListener("resize", placeMenu);
+    return () => window.removeEventListener("resize", placeMenu);
+  }, [studiosMenuOpen]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -146,7 +179,7 @@ export function AppShell({
           <div className="flex min-w-0 flex-1 items-center">
             <div className="flex min-w-0 max-w-full items-center gap-1 overflow-x-auto text-[12px] font-black uppercase text-white/52">
               {appNavItems.map((item) => {
-                const active = item.href !== "/" && pathname.startsWith(item.href);
+                const active = isNavItemActive(item);
 
                 return (
                   <Link
@@ -201,7 +234,7 @@ export function AppShell({
           sidebarExpanded ? "w-[292px]" : "w-[92px]"
         } ${studiosFullWidth ? "pointer-events-none -translate-x-full opacity-0" : "translate-x-0 opacity-100"}`}
         inert={studiosFullWidth}
-        onPointerLeave={() => setSidebarExpanded(false)}
+        onPointerLeave={() => { setSidebarExpanded(false); setStudiosMenuOpen(false); }}
         ref={sidebarRef}
       >
           <Link
@@ -229,10 +262,73 @@ export function AppShell({
               />
             </span>
           </Link>
-          <nav className="absolute left-5 top-1/2 flex -translate-y-1/2 flex-col gap-6 overflow-x-hidden text-[12px] font-black uppercase text-white/46">
-            {appNavItems.map((item) => {
-              const active =
-                item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          <nav aria-label="Primary navigation" className="absolute inset-y-0 left-5 my-auto flex h-fit min-h-0 flex-col gap-[18px] text-[12px] font-black uppercase text-white/46">
+            {sidebarNavItems.map((item) => {
+              const active = isNavItemActive(item);
+
+              if (item.href === studiosNavItem.href) {
+                return (
+                  <div
+                    className="relative"
+                    key={item.href}
+                    onBlur={(event) => {
+                      if (!event.currentTarget.contains(event.relatedTarget)) setStudiosMenuOpen(false);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") setStudiosMenuOpen(false);
+                    }}
+                    onPointerEnter={() => { setSidebarExpanded(true); setStudiosMenuOpen(true); }}
+                    onPointerLeave={() => setStudiosMenuOpen(false)}
+                  >
+                    <button
+                      aria-controls="desktop-studios-navigation"
+                      aria-expanded={studiosMenuOpen}
+                      aria-label="Studios navigation"
+                      className={`relative z-20 flex h-10 items-center gap-7 whitespace-nowrap rounded-l-xl transition-[background-color,color] duration-200 hover:text-white ${sidebarExpanded ? "w-[248px]" : "w-12 overflow-hidden"} ${studiosMenuOpen ? "bg-[#0c1428] text-white" : ""} ${active ? "text-white" : ""}`}
+                      onClick={() => setStudiosMenuOpen((open) => !open)}
+                      onFocus={() => setSidebarExpanded(true)}
+                      ref={studiosTriggerRef}
+                      type="button"
+                    >
+                      <span className="flex h-10 w-12 shrink-0 items-center justify-center"><Icon name={item.icon} active={active} /></span>
+                      <span className="disney-nav-label flex flex-1 items-center justify-between pr-4 opacity-0 transition duration-300">
+                        Studios
+                        <span aria-hidden="true" className={`transition-transform duration-200 ${studiosMenuOpen ? "translate-x-1" : ""}`}>›</span>
+                      </span>
+                    </button>
+                    <div
+                      aria-hidden={!studiosMenuOpen}
+                      className={`absolute left-full top-0 z-10 transition-[opacity,transform] duration-200 ease-out ${
+                        studiosMenuOpen ? "translate-x-0 opacity-100" : "pointer-events-none -translate-x-2 opacity-0"
+                      }`}
+                      id="desktop-studios-navigation"
+                      inert={!studiosMenuOpen}
+                      // Sits flush against the trigger so the two read as one surface.
+                      style={{ marginTop: studiosMenuShift }}
+                    >
+                      <div
+                        aria-label="Studios sections and categories"
+                        className={`grid max-h-[calc(100dvh-48px)] max-w-[calc(100vw-320px)] grid-flow-col gap-1 rounded-xl bg-[#0c1428] p-2 shadow-2xl shadow-black/50 ${studiosMenuShift ? "" : "rounded-tl-none"}`}
+                        ref={studiosPanelRef}
+                        style={{ gridTemplateRows: `repeat(${Math.min(8, studiosMenuItems.length)}, minmax(0, 1fr))` }}
+                      >
+                        {studiosMenuItems.map((studioItem) => (
+                          <Link
+                            aria-current={isNavItemActive(studioItem) ? "page" : undefined}
+                            className={`flex min-w-40 max-w-60 items-center gap-3 rounded-md px-3 py-2 text-[11px] transition hover:bg-white/10 hover:text-white ${isNavItemActive(studioItem) ? "text-white" : "text-white/60"}`}
+                            href={studioItem.href}
+                            key={studioItem.href}
+                            onClick={(event) => { event.currentTarget.blur(); setStudiosMenuOpen(false); setSidebarExpanded(false); }}
+                          >
+                            <Icon name={studioItem.icon} small />
+                            {studioItem.href === studiosNavItem.href ? "Studios Overview" : studioItem.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
 
               return (
                 <Link
@@ -271,7 +367,7 @@ export function AppShell({
         style={{ gridTemplateColumns: `repeat(${mobileNavItems.length}, minmax(0, 1fr))` }}
       >
         {mobileNavItems.map((item) => {
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          const active = isNavItemActive(item);
 
           return (
             <Link
@@ -321,6 +417,7 @@ function Icon({
       {name === "film" && <path d="M5 4h14v16H5V4ZM8 4v16M16 4v16M5 8h3M5 16h3M16 8h3M16 16h3" />}
       {name === "screen" && <path d="M4 6h16v10H4V6ZM9 20h6M12 16v4" />}
       {name === "news" && <path d="M5 5h14v14H5V5ZM8 9h8M8 13h8M8 17h5" />}
+      {name === "calendar" && <path d="M5 6h14v14H5V6ZM8 3v6M16 3v6M5 11h14M8 15h2M14 15h2" />}
       {name === "music" && <path d="M9 18V6l10-2v12M9 18a3 3 0 1 1-2-2.83M19 16a3 3 0 1 1-2-2.83" />}
       {name === "food" && <path d="M7 4v7M4 4v7a3 3 0 0 0 6 0V4M7 14v6M17 4v16M14 4h6" />}
       {name === "travel" && <path d="M4 16 20 8M7 7l10 10M9 5l2 12M13 7l4 8" />}

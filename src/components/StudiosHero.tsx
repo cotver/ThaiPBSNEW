@@ -15,7 +15,11 @@ export type StudiosHeroItem = {
   videoUrl?: string;
 };
 
-export function StudiosHero({ items }: { items: StudiosHeroItem[] }) {
+export function StudiosHero({ items, showActions = true, showSelectors = true }: {
+  items: StudiosHeroItem[];
+  showActions?: boolean;
+  showSelectors?: boolean;
+}) {
   if (!items.length) return null;
 
   const titles: HeroCarouselItem[] = items.map((item) => ({
@@ -32,11 +36,12 @@ export function StudiosHero({ items }: { items: StudiosHeroItem[] }) {
     tone: "from-[#030714] to-[#111827]",
     href: item.href,
     actionLabel: "Read",
+    showHeroActions: showActions,
     hideWatchlist: true,
     directVideo: Boolean(item.videoUrl),
     trailerUrl: item.videoUrl,
     trailerMimeType: item.videoMimeType,
   }));
 
-  return <HeroCarousel titles={titles} />;
+  return <HeroCarousel titles={titles} showSelectors={showSelectors} />;
 }
