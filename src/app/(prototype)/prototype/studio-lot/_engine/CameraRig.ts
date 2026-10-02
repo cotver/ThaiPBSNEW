@@ -58,7 +58,8 @@ export class CameraRig {
   /** `endZ` is the end wall; the walk is laid out to reach it however many rooms there are. */
   constructor(aspect: number, endZ: number) {
     this.endZ = endZ;
-    this.camera = new THREE.PerspectiveCamera(TRACK_FOV, aspect, 0.1, 160);
+    // Far plane past the end wall from the foyer (z 25), so the whole hall is drawn from the start.
+    this.camera = new THREE.PerspectiveCamera(TRACK_FOV, aspect, 0.1, Math.max(160, 25 - endZ + 20));
     // A visitor at eye height: foyer, through the portal, then weaving gently down the nave.
     const points = [new THREE.Vector3(0, 1.75, 25), new THREE.Vector3(0, 1.72, 13)];
     const stop = endZ + 10;

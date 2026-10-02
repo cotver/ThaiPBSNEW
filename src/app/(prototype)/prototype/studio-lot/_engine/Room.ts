@@ -103,8 +103,9 @@ export class Room {
     // Ceiling spot washing the work, plus a faint visible beam through the haze.
     const fixture = new THREE.Vector3(artX, 6.75, 3.6);
     const target = new THREE.Vector3(artX, artY, 0);
-    this.spotBase = 6 + config.artWidth * 0.9;
-    this.spot = new THREE.SpotLight("#ffe8d0", this.spotBase, 16, Math.min(0.78, 0.3 + config.artWidth * 0.048), 0.9, 1.4);
+    // Kept soft: a hot spot blows out the work and the label it is meant to show.
+    this.spotBase = 2.6 + config.artWidth * 0.4;
+    this.spot = new THREE.SpotLight("#ffe8d0", this.spotBase, 16, Math.min(0.78, 0.3 + config.artWidth * 0.048), 1, 1.4);
     this.spot.position.copy(fixture);
     this.spot.target.position.copy(target);
     this.wall.add(this.spot, this.spot.target);
@@ -180,8 +181,8 @@ export class Room {
 
   update(dt: number) {
     this.hover = damp(this.hover, this.hoverTarget, 6, dt);
-    this.spot.intensity = this.spotBase * (0.9 + this.hover * 0.3 + this.active * 0.1);
-    this.cone.uniforms.uOpacity.value = 0.014 + this.hover * 0.014;
+    this.spot.intensity = this.spotBase * (0.9 + this.hover * 0.12 + this.active * 0.05);
+    this.cone.uniforms.uOpacity.value = 0.01 + this.hover * 0.008;
     this.underline.scale.x = 0.12 + this.hover * 0.88;
   }
 }

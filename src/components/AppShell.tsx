@@ -17,11 +17,13 @@ const studiosSectionNavItems: NavItem[] = [
 
 export function AppShell({
   children,
+  availableStudiosHrefs,
   columnNavItems = [],
   showWatchlist = false,
   typeNavItems = [],
 }: {
   children: React.ReactNode;
+  availableStudiosHrefs?: string[];
   columnNavItems?: NavItem[];
   showWatchlist?: boolean;
   typeNavItems?: NavItem[];
@@ -46,8 +48,9 @@ export function AppShell({
     ...(!isPrototype ? [studiosNavItem] : []),
     ...typeNavItems,
   ];
-  const sidebarNavItems = appNavItems;
-  const studiosMenuItems = [studiosNavItem, ...columnNavItems, ...studiosSectionNavItems];
+  const studiosMenuItems = [studiosNavItem, ...columnNavItems, ...studiosSectionNavItems]
+    .filter((item) => !availableStudiosHrefs || availableStudiosHrefs.includes(item.href));
+  const sidebarNavItems = appNavItems.filter((item) => item.href !== studiosNavItem.href || studiosMenuItems.length > 0);
   const mobileNavItems = isPrototype ? appNavItems : [...appNavItems, ...columnNavItems, ...studiosSectionNavItems];
   const isNavItemActive = (item: NavItem) => item.href === studiosNavItem.href
     ? studiosRelatedPage

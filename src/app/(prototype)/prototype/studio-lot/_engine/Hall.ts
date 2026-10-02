@@ -53,10 +53,18 @@ export class Hall {
     const navePlaster = plasterTexture(5);
     navePlaster.repeat.set(length / 5, CEILING / 5);
     const naveMaterial = new THREE.MeshStandardMaterial({ color: "#cfc8bc", map: navePlaster, roughness: 0.95 });
+    // The foyer outside the portal has no fixtures of its own, so its walls stay dark like the portal —
+    // otherwise the hall's fill and sky light make them read as lit.
+    const foyerMaterial = new THREE.MeshStandardMaterial({ color: "#3d3833", roughness: 0.95 });
+    const naveLength = ENTRANCE_Z - BACK;
+    const foyerLength = FRONT - ENTRANCE_Z;
     for (const side of [-1, 1]) {
-      const wall = new THREE.Mesh(new THREE.BoxGeometry(0.4, CEILING, length), naveMaterial);
-      wall.position.set(side * (NAVE_HALF_WIDTH + 0.2), CEILING / 2, centreZ);
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(0.4, CEILING, naveLength), naveMaterial);
+      wall.position.set(side * (NAVE_HALF_WIDTH + 0.2), CEILING / 2, (ENTRANCE_Z + BACK) / 2);
       this.group.add(wall);
+      const foyerWall = new THREE.Mesh(new THREE.BoxGeometry(0.4, CEILING, foyerLength), foyerMaterial);
+      foyerWall.position.set(side * (NAVE_HALF_WIDTH + 0.2), CEILING / 2, (FRONT + ENTRANCE_Z) / 2);
+      this.group.add(foyerWall);
     }
     const endWall = new THREE.Mesh(new THREE.BoxGeometry(NAVE_HALF_WIDTH * 2, CEILING, 0.4), naveMaterial);
     endWall.position.set(0, CEILING / 2, BACK);
@@ -115,7 +123,7 @@ export class Hall {
     this.group.add(logo);
 
     // A warm ceiling wash, like the rooms, so the extruded edges catch light and cast depth.
-    const wash = new THREE.SpotLight("#fff0dc", 26, 14, 0.62, 0.85, 1.4);
+    const wash = new THREE.SpotLight("#fff0dc", 11, 14, 0.62, 1, 1.4);
     wash.position.set(0, 6.8, wallFace + 4.5);
     wash.target.position.set(0, 3.2, wallFace);
     this.group.add(wash, wash.target);

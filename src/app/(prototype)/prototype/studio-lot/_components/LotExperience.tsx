@@ -173,8 +173,8 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
   useEffect(() => {
     if (phase !== "reveal") return;
     const engine = engineRef.current;
+    // The walk rests at the very start of the track, so there's nothing behind it to scroll back to.
     engine?.start();
-    if (!capabilities?.reducedMotion) engine?.nudge(0.055);
     const timer = window.setTimeout(() => {
       setPhase("live");
       const stage = pendingStage.current;

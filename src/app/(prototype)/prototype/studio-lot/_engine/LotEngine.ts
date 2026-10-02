@@ -209,7 +209,9 @@ export class LotEngine {
     // After-hours gallery: warm dark air, the work lit by its own spots.
     // A lit gallery, warm and open — the haze only softens the far end of the hall.
     this.scene.background = new THREE.Color("#2b2620");
-    this.scene.fog = new THREE.FogExp2("#2e2822", 0.011);
+    // Thin enough that the end wall still reads from the foyer (~78% clear), however long the hall is.
+    const walkLength = 25 - hallEnd(options.data.rooms.length);
+    this.scene.fog = new THREE.FogExp2("#2e2822", Math.min(0.011, 0.5 / walkLength));
     this.scene.add(new THREE.HemisphereLight("#fff3e4", "#5a5048", 1.5));
     // Ceiling fill every 18m down the whole hall, however many rooms it holds.
     for (let z = 6; z > hallEnd(options.data.rooms.length); z -= 18) {
