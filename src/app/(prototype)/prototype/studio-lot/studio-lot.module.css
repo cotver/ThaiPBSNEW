@@ -653,8 +653,12 @@
   opacity: 1;
 }
 
-/* The whole picture fills the 16:9 screen, as /home's HeroCarousel shows hero art (object-fill). */
-.featureSlide .art {
+/*
+ * The whole picture fills the 16:9 frame, as /home's HeroCarousel shows hero art (object-fill) — on the
+ * big screen and on every slide in the list beneath it, so a pick looks exactly like what it puts up.
+ */
+.featureSlide .art,
+.featurePick .art {
   object-fit: fill;
 }
 

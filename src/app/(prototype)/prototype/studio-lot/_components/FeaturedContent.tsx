@@ -263,19 +263,28 @@ function ScreenContent({ slides, screen, badge, listLabel, empty }: { slides: Sl
   const [fullscreen, setFullscreen] = useState(false);
   useEffect(() => {
     const art = artRef.current;
-    const sync = () => setFullscreen(Boolean(art) && document.fullscreenElement === art);
+    const sync = () => {
+      const element = document.fullscreenElement;
+      // The video player's own full-screen button, pressed while the screen is already full screen, asks
+      // for the video on top of it — read that as "leave full screen", like the same button on /home.
+      if (art && element && element !== art && art.contains(element)) {
+        void exitAllFullscreen();
+        return;
+      }
+      setFullscreen(Boolean(art) && element === art);
+    };
     document.addEventListener("fullscreenchange", sync);
     return () => {
       document.removeEventListener("fullscreenchange", sync);
       // Closing the panel mid-trailer leaves full screen too.
-      if (art && document.fullscreenElement === art) void document.exitFullscreen().catch(() => {});
+      if (art && document.fullscreenElement && art.contains(document.fullscreenElement)) void exitAllFullscreen();
     };
   }, []);
   const toggleFullscreen = () => {
     const art = artRef.current;
     if (!art) return;
     if (document.fullscreenElement) {
-      void document.exitFullscreen().catch(() => {});
+      void exitAllFullscreen();
       return;
     }
     if (art.requestFullscreen) {
@@ -391,6 +400,17 @@ function ScreenContent({ slides, screen, badge, listLabel, empty }: { slides: Sl
       ) : null}
     </div>
   );
+}
+
+/** Leave full screen completely, however many levels deep (the screen, then the video on top of it). */
+async function exitAllFullscreen() {
+  for (let level = 0; level < 3 && document.fullscreenElement; level += 1) {
+    try {
+      await document.exitFullscreen();
+    } catch {
+      return;
+    }
+  }
 }
 
 function ExpandIcon() {
