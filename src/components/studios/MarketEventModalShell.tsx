@@ -5,7 +5,18 @@ import { useCallback, useEffect, useRef, useSyncExternalStore, type ReactNode } 
 import { createPortal } from 'react-dom';
 import styles from '../MarketEvents.module.css';
 
-export function MarketEventModalShell({ children, title }: { children: ReactNode; title: string }) {
+/** The routed modal for Market & Events, also used by Contact Information (wider, via dialogClassName). */
+export function MarketEventModalShell({
+  children,
+  closeLabel = "Close Market & Events",
+  dialogClassName,
+  title,
+}: {
+  children: ReactNode;
+  closeLabel?: string;
+  dialogClassName?: string;
+  title: string;
+}) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDivElement>(null);
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
@@ -53,8 +64,8 @@ export function MarketEventModalShell({ children, title }: { children: ReactNode
   if (!mounted) return null;
   return createPortal(
     <div className={styles.overlay} onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
-      <div aria-label={title} aria-modal="true" className={styles.dialog} ref={dialogRef} role="dialog" tabIndex={-1}>
-        <button aria-label="Close Market & Events" className={styles.close} onClick={close} type="button">×</button>
+      <div aria-label={title} aria-modal="true" className={dialogClassName ? `${styles.dialog} ${dialogClassName}` : styles.dialog} ref={dialogRef} role="dialog" tabIndex={-1}>
+        <button aria-label={closeLabel} className={styles.close} onClick={close} type="button">×</button>
         {children}
       </div>
     </div>,

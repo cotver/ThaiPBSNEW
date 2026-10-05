@@ -22,7 +22,7 @@ const morphFallbackMs = 30000;
 
 /**
  * What opens a modal, which then grows out of it and back: posters and their hover previews (title modal),
- * and Market & Events cards (event modal).
+ * Market & Events cards (event modal) and "Contact Information" links (contact modal).
  */
 const modalOriginSelector = [
   "[data-poster-rail] > button",
@@ -30,6 +30,7 @@ const modalOriginSelector = [
   "[data-content-rail] button",
   "#market-events a[data-studios-reveal-item]",
   'a[href^="/studios/events/"]',
+  'a[href^="/studios/contact/"]',
 ].join(",");
 const modalSelector = '[role="dialog"][aria-modal="true"]';
 /** The event modal arrives through a navigation, which can take a few seconds while a route compiles. */

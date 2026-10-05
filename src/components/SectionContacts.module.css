@@ -1,0 +1,37 @@
+.linkRow{display:flex;justify-content:flex-end;margin:28px auto 0;max-width:1500px}
+.link{color:#f6f6f6;font-size:13px;font-weight:800;letter-spacing:.02em;text-decoration:underline;text-transform:uppercase;text-underline-offset:4px;transition:color .2s ease}
+.linkRow[data-tone="light"] .link{color:#1d2125}
+.link:hover,.link:focus-visible{color:#ff650f}
+/* Home rows: sit right under the row it belongs to, aligned to the row's edge. */
+:global([data-home-content]) > .linkRow{margin-top:-20px!important;max-width:none}
+
+.page{background:#050505;color:#f6f6f6;font-family:Kanit,Prompt,"Noto Sans Thai",Arial,Helvetica,sans-serif;min-height:100vh;padding:56px clamp(20px,4.6vw,58px) 96px}
+.page *{box-sizing:border-box}
+.inner{margin:0 auto;max-width:1500px}
+.back{color:#bfc3c5;font-size:14px;font-weight:800;text-decoration:none}
+.back:hover,.back:focus-visible{color:#ff650f}
+.heading{font-size:clamp(28px,3.4vw,44px);font-weight:700;letter-spacing:.01em;margin:40px 0 6px;text-align:center;text-transform:uppercase}
+.sectionName{color:#bfc3c5;font-size:15px;font-weight:700;margin:0 0 72px;text-align:center}
+.grid{display:grid;gap:56px 48px;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))}
+.empty{color:#bfc3c5;text-align:center}
+
+.card{min-width:0}
+.photo{border-radius:50%;display:block;height:96px;margin-bottom:22px;overflow:hidden;position:relative;width:96px}
+.photo img{object-fit:cover}
+.name{color:#f3ece2;font-size:clamp(28px,2.6vw,40px);font-weight:500;line-height:1.2;margin:0 0 18px;overflow-wrap:anywhere}
+.position{font-size:19px;font-weight:700;margin:0 0 22px}
+.details{display:grid;gap:10px;list-style:none;margin:0;padding:0}
+.details li{align-items:flex-start;display:flex;font-size:15px;gap:10px;line-height:1.4}
+.details a,.details li>span:last-child{color:inherit;min-width:0;overflow-wrap:anywhere;text-decoration:none;white-space:pre-line}
+.details a:hover,.details a:focus-visible{color:#ff650f}
+.icon{align-items:center;background:#fff;border-radius:50%;display:flex;flex:0 0 22px;height:22px;justify-content:center;margin-top:-1px}
+.icon svg{fill:#050505;height:13px;width:13px}
+
+@media(max-width:700px){.page{padding:40px 16px 72px}.sectionName{margin-bottom:48px}.grid{gap:44px}}
+
+/* As a modal: the Market & Events dialog, wider so three contacts sit side by side. */
+[role="dialog"].modal{width:min(100%,1240px)}
+.modalBody{color:#f6f6f6;font-family:Kanit,Prompt,"Noto Sans Thai",Arial,Helvetica,sans-serif;padding:clamp(28px,4vw,56px) clamp(20px,4vw,56px) clamp(36px,5vw,64px)}
+.modalBody *{box-sizing:border-box}
+.modalBody .heading{margin-top:0;padding:0 44px}
+.modalBody .sectionName{margin-bottom:clamp(36px,5vw,56px)}

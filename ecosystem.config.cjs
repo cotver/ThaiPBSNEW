@@ -29,7 +29,7 @@ module.exports = {
       cwd: appCwd,
       script: 'node_modules/next/dist/bin/next',
       args: 'start -p 3008',
-      instances: 2,
+      instances: 6,
       exec_mode: 'cluster',
       max_memory_restart: '4G',
       node_args: '--max-old-space-size=4096',

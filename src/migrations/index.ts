@@ -39,6 +39,7 @@ import * as migration_20260928_075949_add_market_event_content from './20260928_
 import * as migration_20260928_081450_reorder_market_event_groups from './20260928_081450_reorder_market_event_groups';
 import * as migration_20260928_082233_optional_market_event_details from './20260928_082233_optional_market_event_details';
 import * as migration_20261005_041042_upgrade_check from './20261005_041042_upgrade_check';
+import * as migration_20261005_094204_add_section_contacts from './20261005_094204_add_section_contacts';
 
 export const migrations = [
   {
@@ -244,6 +245,11 @@ export const migrations = [
   {
     up: migration_20261005_041042_upgrade_check.up,
     down: migration_20261005_041042_upgrade_check.down,
-    name: '20261005_041042_upgrade_check'
+    name: '20261005_041042_upgrade_check',
+  },
+  {
+    up: migration_20261005_094204_add_section_contacts.up,
+    down: migration_20261005_094204_add_section_contacts.down,
+    name: '20261005_094204_add_section_contacts'
   },
 ];

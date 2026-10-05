@@ -1,7 +1,8 @@
 import { BlocksFeature, EXPERIMENTAL_TableFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
-import type { Access, Block, CollectionBeforeDeleteHook, CollectionConfig } from 'payload'
+import type { Access, Block, CollectionBeforeChangeHook, CollectionBeforeDeleteHook, CollectionConfig } from 'payload'
 import { relatedStoriesField } from './RelatedStoryFields.ts'
 import { siteOnlyFiles } from './siteOnlyFiles.ts'
+import { contactSectionOptionLabel, contactSections } from '../src/lib/contact-sections.ts'
 
 const COLUMN_GROUP = 'Column'
 
@@ -650,6 +651,84 @@ export const MarketEventContent: CollectionConfig = {
   ],
 }
 
+// Every contact field is optional, so the admin title falls back through whatever was filled in.
+const setContactTitle: CollectionBeforeChangeHook = ({ data }) => ({
+  ...data,
+  title: [data.name, data.position, data.email, data.phone, data.website]
+    .map((value) => (typeof value === 'string' ? value.trim() : ''))
+    .find(Boolean) || 'Untitled contact',
+})
+
+export const Contacts: CollectionConfig = {
+  slug: 'contacts',
+  labels: { singular: 'Contact', plural: 'Contacts' },
+  admin: columnAdmin({
+    useAsTitle: 'title',
+    defaultColumns: ['title', 'position', 'phone', 'email', 'updatedAt'],
+    listSearchableFields: ['name', 'position', 'email', 'phone'],
+    description: 'Contact people. Add them to one or more home page sections in Section Contacts.',
+  }),
+  access: editableAccess,
+  hooks: { beforeChange: [setContactTitle] },
+  fields: [
+    { name: 'title', type: 'text', admin: { hidden: true } },
+    { name: 'name', type: 'text' },
+    { name: 'image', type: 'upload', relationTo: 'column-media' },
+    { name: 'position', label: 'Job position', type: 'text' },
+    { name: 'phone', type: 'text' },
+    { name: 'website', type: 'text' },
+    { name: 'email', type: 'email' },
+    { name: 'address', type: 'textarea' },
+  ],
+}
+
+const setSectionContactTitle: CollectionBeforeChangeHook = async ({ data, req }) => {
+  const section = contactSections.find(({ value }) => value === data.section)
+  let title: string = section?.label || String(data.section || '')
+  if (data.section === 'type-row' && data.programType) {
+    const typeId = typeof data.programType === 'object' ? data.programType.id : data.programType
+    const type = await req.payload.findByID({ collection: 'categories', id: typeId, depth: 0, overrideAccess: true, req }).catch(() => null)
+    title = `${title}: ${type?.name || typeId}`
+  }
+  if (data.section === 'year-row' && data.year) title = `${title}: ${data.year}`
+  return { ...data, title }
+}
+
+export const SectionContacts: CollectionConfig = {
+  slug: 'section-contacts',
+  labels: { singular: 'Section Contact', plural: 'Section Contacts' },
+  admin: columnAdmin({
+    useAsTitle: 'title',
+    defaultColumns: ['title', 'contacts', 'updatedAt'],
+    description: 'Pick a home page section and the contacts shown under its "Contact Information" link.',
+  }),
+  access: editableAccess,
+  hooks: { beforeChange: [setSectionContactTitle] },
+  fields: [
+    { name: 'title', type: 'text', admin: { hidden: true } },
+    {
+      name: 'section', type: 'select', required: true, index: true,
+      options: contactSections.map((section) => ({ value: section.value, label: contactSectionOptionLabel(section) })),
+    },
+    {
+      name: 'programType', label: 'Program type', type: 'relationship', relationTo: 'categories',
+      admin: { condition: (data) => data?.section === 'type-row', description: 'The program type row these contacts belong to.' },
+      validate: (value: unknown, { siblingData }: { siblingData: { section?: string } }) =>
+        siblingData.section !== 'type-row' || value ? true : 'Pick the program type row.',
+    },
+    {
+      name: 'year', type: 'number', min: 1900, max: 9999,
+      admin: { condition: (data) => data?.section === 'year-row', description: 'The "ThaiPBS Year" row these contacts belong to, e.g. 2026.' },
+      validate: (value: unknown, { siblingData }: { siblingData: { section?: string } }) =>
+        siblingData.section !== 'year-row' || value ? true : 'Enter the year of the row.',
+    },
+    {
+      name: 'contacts', label: 'Contact people', type: 'relationship', relationTo: 'contacts', hasMany: true,
+      admin: { description: 'Shown in this order. A contact can be used in any number of sections.' },
+    },
+  ],
+}
+
 export const ColumnAnalyticsEvents: CollectionConfig = {
   slug: 'column-analytics-events',
   labels: { singular: 'Analytics Event', plural: 'Analytics Events' },
@@ -715,6 +794,8 @@ export const ColumnArticleStats: CollectionConfig = {
 export const columnCollections: CollectionConfig[] = [
   MarketEventGroups,
   MarketEventContent,
+  SectionContacts,
+  Contacts,
   ColumnArticles,
   ColumnAnalyticsEvents,
   ColumnArticleStats,

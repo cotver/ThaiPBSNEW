@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { SectionContactLink } from "@/components/SectionContacts";
 import { StudiosArticleCard, type CatalogFilter } from "@/components/StudiosCatalog";
 import { getStudioCategoryCatalogBySlug } from "@/components/StudiosShowcase";
 import styles from "@/components/StudiosShowcase.module.css";
@@ -43,6 +44,7 @@ export default async function StudiosCategoryPage({
       ) : (
         <p className={styles.browseEmpty}>No articles in this view yet.</p>
       )}
+      <SectionContactLink section="catalog" />
     </section>
   );
 }

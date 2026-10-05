@@ -16,6 +16,7 @@ import { StudiosHero, type StudiosHeroItem } from "./StudiosHero";
 import { BeadedCurtainEntrance } from "./BeadedCurtainEntrance";
 import { StudiosContentReveal } from "./StudiosContentReveal";
 import { StudiosCategoryAccordion } from "./StudiosCategoryAccordion";
+import { SectionContactLink } from "./SectionContacts";
 import styles from "./StudiosShowcase.module.css";
 
 export type StudiosNewsItem = {
@@ -383,6 +384,7 @@ export async function StudiosShowcase({ showCurtain = true }: StudiosShowcasePro
         {featuredArticles.length ? (
           <div className={styles.revealSection}>
             <StudiosHero items={featuredArticles} />
+            <SectionContactLink className={styles.heroContactLink} section="studios-hero" />
           </div>
         ) : null}
 
@@ -390,6 +392,7 @@ export async function StudiosShowcase({ showCurtain = true }: StudiosShowcasePro
           <div className={styles.revealSection}>
             <div className={styles.catalog} id="catalog">
               <StudiosCatalog categories={categories} showArticleSections={false} />
+              <SectionContactLink section="catalog" />
             </div>
           </div>
         ) : null}
@@ -400,6 +403,7 @@ export async function StudiosShowcase({ showCurtain = true }: StudiosShowcasePro
               <StudiosCategoryAccordion categories={otherCategories.map(({ id, name, slug, coverAlt, coverImageUrl }) => ({
                 id, name, slug, coverAlt, coverImageUrl,
               }))} />
+              <SectionContactLink section="other-categories" />
             </section>
           </div>
         ) : null}
@@ -416,6 +420,7 @@ export async function StudiosShowcase({ showCurtain = true }: StudiosShowcasePro
                   <div className={styles.pressGrid}>
                     {pressReleases.slice(0, 10).map((item) => <StudiosPressCard item={item} key={item.id} />)}
                   </div>
+                  <SectionContactLink section="press-releases" tone="light" />
                 </>
               ) : null}
               {marketLogoCompanies.length ? (
@@ -427,6 +432,7 @@ export async function StudiosShowcase({ showCurtain = true }: StudiosShowcasePro
                   <div data-market-logo-grid>
                     {marketLogoCompanies.slice(0, 10).map((company) => <StudiosMarketCompanyCard company={company} key={company.slug} />)}
                   </div>
+                  <SectionContactLink section="content-distribution" tone="light" />
                 </>
               ) : null}
             </section>
@@ -440,6 +446,7 @@ export async function StudiosShowcase({ showCurtain = true }: StudiosShowcasePro
                 <Link className={eventStyles.viewAll} href="/studios/events">View All <span aria-hidden="true">›</span></Link>
               </div>
               <MarketEventGroupGrid groups={marketEventGroups.slice(0, 6)} />
+              <SectionContactLink section="market-events" />
             </section>
           </div>
         ) : null}

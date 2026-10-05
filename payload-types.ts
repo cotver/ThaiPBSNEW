@@ -94,6 +94,8 @@ export interface Config {
     articles: Article;
     'market-event-groups': MarketEventGroup;
     'market-event-content': MarketEventContent;
+    'section-contacts': SectionContact;
+    contacts: Contact;
     'column-articles': ColumnArticle;
     'column-analytics-events': ColumnAnalyticsEvent;
     'column-article-stats': ColumnArticleStat;
@@ -157,6 +159,8 @@ export interface Config {
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
     'market-event-groups': MarketEventGroupsSelect<false> | MarketEventGroupsSelect<true>;
     'market-event-content': MarketEventContentSelect<false> | MarketEventContentSelect<true>;
+    'section-contacts': SectionContactsSelect<false> | SectionContactsSelect<true>;
+    contacts: ContactsSelect<false> | ContactsSelect<true>;
     'column-articles': ColumnArticlesSelect<false> | ColumnArticlesSelect<true>;
     'column-analytics-events': ColumnAnalyticsEventsSelect<false> | ColumnAnalyticsEventsSelect<true>;
     'column-article-stats': ColumnArticleStatsSelect<false> | ColumnArticleStatsSelect<true>;
@@ -3321,6 +3325,66 @@ export interface MarketEventContent {
   createdAt: string;
 }
 /**
+ * Pick a home page section and the contacts shown under its "Contact Information" link.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "section-contacts".
+ */
+export interface SectionContact {
+  id: number;
+  title?: string | null;
+  section:
+    | 'studios-hero'
+    | 'catalog'
+    | 'other-categories'
+    | 'press-releases'
+    | 'content-distribution'
+    | 'market-events'
+    | 'hero-carousel'
+    | 'brand-tiles'
+    | 'recommended'
+    | 'type-row'
+    | 'continue-watching'
+    | 'continue-programs'
+    | 'discontinued-programs'
+    | 'year-row'
+    | 'thai-programs'
+    | 'international-programs';
+  /**
+   * The program type row these contacts belong to.
+   */
+  programType?: (number | null) | Category;
+  /**
+   * The "ThaiPBS Year" row these contacts belong to, e.g. 2026.
+   */
+  year?: number | null;
+  /**
+   * Shown in this order. A contact can be used in any number of sections.
+   */
+  contacts?: (number | Contact)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Contact people. Add them to one or more home page sections in Section Contacts.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contacts".
+ */
+export interface Contact {
+  id: number;
+  title?: string | null;
+  name?: string | null;
+  image?: (number | null) | ColumnMedia;
+  position?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  email?: string | null;
+  address?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "column-articles".
  */
@@ -3747,6 +3811,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'market-event-content';
         value: number | MarketEventContent;
+      } | null)
+    | ({
+        relationTo: 'section-contacts';
+        value: number | SectionContact;
+      } | null)
+    | ({
+        relationTo: 'contacts';
+        value: number | Contact;
       } | null)
     | ({
         relationTo: 'column-articles';
@@ -4578,6 +4650,35 @@ export interface MarketEventContentSelect<T extends boolean = true> {
         id?: T;
       };
   content?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "section-contacts_select".
+ */
+export interface SectionContactsSelect<T extends boolean = true> {
+  title?: T;
+  section?: T;
+  programType?: T;
+  year?: T;
+  contacts?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contacts_select".
+ */
+export interface ContactsSelect<T extends boolean = true> {
+  title?: T;
+  name?: T;
+  image?: T;
+  position?: T;
+  phone?: T;
+  website?: T;
+  email?: T;
+  address?: T;
   updatedAt?: T;
   createdAt?: T;
 }

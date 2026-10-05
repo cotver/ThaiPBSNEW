@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { MarketEventGroupGrid } from '@/components/MarketEvents';
+import { SectionContactLink } from '@/components/SectionContacts';
 import { getMarketEventGroups } from '@/lib/market-events';
 import styles from '@/components/MarketEvents.module.css';
 
@@ -13,5 +14,6 @@ export default async function MarketEventsPage() {
       <h1 className={styles.heading}>Market &amp; Events</h1>
     </div></div>
     {groups.length ? <MarketEventGroupGrid groups={groups} /> : <p className={styles.empty}>No market and event groups are available yet.</p>}
+    <SectionContactLink section="market-events" />
   </div></main>;
 }

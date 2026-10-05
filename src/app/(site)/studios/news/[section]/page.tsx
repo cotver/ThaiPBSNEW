@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { SectionContactLink } from "@/components/SectionContacts";
 import { getStudioNewsBySection, StudiosMarketCompanyCard, StudiosPressCard } from "@/components/StudiosShowcase";
 import styles from "@/components/StudiosShowcase.module.css";
 import { getMarketCompanies } from "@/lib/d1-market";
@@ -35,6 +36,7 @@ export default async function StudiosNewsPage({ params }: { params: Promise<{ se
           {marketLogoCompanies.map((company) => <StudiosMarketCompanyCard company={company} key={company.slug} />)}
         </div>
       ) : <p className={styles.emptyNews}>{isPress ? "No articles in this section yet." : "No market partners are available yet."}</p>}
+      <SectionContactLink section={isPress ? "press-releases" : "content-distribution"} />
     </main>
   );
 }
