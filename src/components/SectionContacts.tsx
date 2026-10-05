@@ -21,7 +21,7 @@ export async function SectionContactLink({
   if (!contacts.length) return null;
   return (
     <div className={className ? `${styles.linkRow} ${className}` : styles.linkRow} data-section-contact-link data-tone={tone}>
-      <Link className={styles.link} href={sectionContactHref(section)}>Contact Information</Link>
+      <Link prefetch={false} className={styles.link} href={sectionContactHref(section)}>Contact Information</Link>
     </div>
   );
 }

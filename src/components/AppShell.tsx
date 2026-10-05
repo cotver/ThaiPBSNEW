@@ -172,7 +172,7 @@ export function AppShell({
           studiosTopNav ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-full opacity-0"
         }`}
       >
-          <Link
+          <Link prefetch={false}
             aria-label="ThaiPBS Studio home"
             className="mr-7 flex shrink-0 items-baseline gap-1.5 whitespace-nowrap leading-none"
             href="/"
@@ -186,7 +186,7 @@ export function AppShell({
                 const active = isNavItemActive(item);
 
                 return (
-                  <Link
+                  <Link prefetch={false}
                     aria-current={active ? "page" : undefined}
                     className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-2 transition duration-200 hover:bg-white/8 hover:text-white ${active ? "bg-white/10 text-white" : ""}`}
                     href={item.href}
@@ -216,7 +216,7 @@ export function AppShell({
                     const active = pathname.startsWith(item.href);
 
                     return (
-                      <Link
+                      <Link prefetch={false}
                         aria-current={active ? "page" : undefined}
                         className={`block rounded px-3 py-2 text-[11px] font-black uppercase transition hover:bg-white/10 hover:text-white ${active ? "bg-white/10 text-white" : "text-white/68"}`}
                         href={item.href}
@@ -242,7 +242,7 @@ export function AppShell({
         ref={sidebarRef}
       >
           {/* Two lines to fit the collapsed sidebar, centred where the icons sit below. */}
-          <Link
+          <Link prefetch={false}
             aria-label="ThaiPBS Studio home"
             className="ml-3 flex w-16 shrink-0 flex-col items-center justify-start text-center leading-none"
             href="/"
@@ -302,7 +302,7 @@ export function AppShell({
                         style={{ gridTemplateRows: `repeat(${Math.min(8, studiosMenuItems.length)}, minmax(0, 1fr))` }}
                       >
                         {studiosMenuItems.map((studioItem) => (
-                          <Link
+                          <Link prefetch={false}
                             aria-current={isNavItemActive(studioItem) ? "page" : undefined}
                             className={`flex min-w-40 max-w-60 items-center gap-3 rounded-md px-3 py-2 text-[11px] transition hover:bg-white/10 hover:text-white ${isNavItemActive(studioItem) ? "text-white" : "text-white/60"}`}
                             href={studioItem.href}
@@ -320,7 +320,7 @@ export function AppShell({
               }
 
               return (
-                <Link
+                <Link prefetch={false}
                   aria-current={active ? "page" : undefined}
                   className={`group/item flex h-10 items-center gap-7 whitespace-nowrap transition duration-200 hover:text-white ${
                     sidebarExpanded ? "w-[248px] overflow-visible" : "w-12 overflow-hidden"
@@ -359,7 +359,7 @@ export function AppShell({
           const active = isNavItemActive(item);
 
           return (
-            <Link
+            <Link prefetch={false}
               aria-current={active ? "page" : undefined}
               className={`flex flex-col items-center justify-center gap-1 text-[10px] font-bold uppercase ${
                 active ? "text-white" : "text-white/48"

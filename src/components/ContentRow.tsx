@@ -316,7 +316,7 @@ export function ContentRow({
       <div className="mb-4 flex items-center justify-between gap-4">
         <h2 className="text-lg font-black md:text-xl">{title}</h2>
         {viewAllHref ? (
-          <Link
+          <Link prefetch={false}
             className="group inline-flex shrink-0 items-center gap-1 text-xs font-black uppercase text-white/58 transition hover:text-white md:text-sm"
             href={viewAllHref}
           >

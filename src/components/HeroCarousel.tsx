@@ -634,14 +634,14 @@ export function HeroCarousel({ titles, showSelectors = true }: { titles: HeroCar
               ) : (
                 <>
                   {ENABLE_TITLE_PLAYBACK && !current.href ? (
-                    <Link
+                    <Link prefetch={false}
                       className="rounded-[6px] bg-white px-9 py-3 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
                       href={titleHref(current.slug)}
                     >
                       Play
                     </Link>
                   ) : null}
-                  <Link
+                  <Link prefetch={false}
                     className="rounded-[6px] border border-white/16 bg-white/12 px-8 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/20"
                     href={current.href ?? `${titleHref(current.slug)}#episodes`}
                   >

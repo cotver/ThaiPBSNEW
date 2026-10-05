@@ -252,7 +252,7 @@ export function RowFloatingPreview({
                 <PlayIcon />
               </button>
             ) : null}
-            <Link
+            <Link prefetch={false}
               aria-label={`Open ${title.title} page`}
               className="grid size-10 place-items-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
               href={titleHref(title.slug)}
