@@ -157,8 +157,9 @@ export function AppShell({
     };
   }, [pathname]);
 
-  // The Studio Lot prototype brings its own full-screen chrome.
-  if (pathname === "/" || pathname === "/prototype" || pathname.startsWith("/prototype/studio-lot")) {
+  // The Studio Lot brings its own full-screen chrome: its pages under /home/studio here; the gallery on
+  // /home?view=studio|list hides the shell with CSS (studio-shell.css), since this shell can't read the query.
+  if (pathname === "/" || pathname === "/prototype" || pathname.startsWith("/home/studio")) {
     return <main className="min-h-screen bg-black text-white">{children}</main>;
   }
 

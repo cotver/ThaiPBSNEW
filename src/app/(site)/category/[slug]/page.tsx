@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ContentRow } from "@/components/ContentRow";
-import { PostRoomImageGallery } from "@/components/PostRoomImageGallery";
+import { PostRoomImageGallery } from "@/components/category/PostRoomImageGallery";
 import { hiddenCatalogSectionsEnabled } from "@/lib/feature-flags";
 import { buildTitleCollections, getCategoryPage, type PostRoomGroupTile } from "@/lib/payload-content";
 import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";

@@ -4,11 +4,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { StudiosHero } from "@/components/StudiosHero";
-import { ArticlePdfPagesLoader } from "@/components/final-prototype/ArticlePdfPagesLoader";
-import { FinalArticleRichText } from "@/components/final-prototype/FinalArticleRichText";
-import { getColumnArticleBySlug, getGlobalRelatedStories, getRelatedColumnArticles } from "@/lib/column-articles";
+import { ArticlePdfPagesLoader } from "@/components/article/ArticlePdfPagesLoader";
+import { ArticleRichText } from "@/components/article/ArticleRichText";
+import { getColumnArticleBySlug, getGlobalRelatedStories, getRelatedColumnArticles } from "@/lib/article/column-articles";
 import { columnArticleHref } from "@/lib/content";
-import type { ColumnArticleDetail } from "@/lib/column-articles";
+import type { ColumnArticleDetail } from "@/lib/article/column-articles";
 import styles from "./ColumnArticlePage.module.css";
 
 export const dynamic = "force-dynamic";
@@ -145,7 +145,7 @@ export default async function ColumnArticlePage({ params }: PageProps) {
               </video>
             </figure>
           ) : null}
-          {!article.pdfUrl ? <FinalArticleRichText content={article.content} /> : null}
+          {!article.pdfUrl ? <ArticleRichText content={article.content} /> : null}
         </article>
 
         <Suspense fallback={<RelatedStoriesSkeleton />}>

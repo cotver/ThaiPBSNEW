@@ -1,0 +1,22 @@
+import { notFound } from "next/navigation";
+import { BlogPrototypeArticle } from "@/app/(prototype)/prototype/_components/blog/BlogPrototype";
+import { parsePrototypeStyle, withPrototypeFallback } from "@/app/(prototype)/prototype/_components/blog/blog-data";
+import { getCatalogTitle, getCatalogTitles, getHeroImageTitles } from "@/lib/payload-content";
+
+export const dynamic = "force-dynamic";
+
+export default async function StyleArticlePage({ params }: { params: Promise<{ slug: string; style: string }> }) {
+  const { slug, style: value } = await params;
+  const style = parsePrototypeStyle(value);
+  if (!style) notFound();
+  const [record, sourceTitles, heroTitles] = await Promise.all([
+    getCatalogTitle(slug),
+    getCatalogTitles(),
+    getHeroImageTitles(),
+  ]);
+  const catalog = [...heroTitles, ...withPrototypeFallback(sourceTitles)].filter((item) => !item.isDiscontinued);
+  const title = record ?? catalog.find((item) => item.slug === slug);
+  if (!title || title.isDiscontinued) notFound();
+  const related = catalog.filter((item) => item.slug !== title.slug).slice(0, 3);
+  return <BlogPrototypeArticle related={related} style={style} title={title} />;
+}

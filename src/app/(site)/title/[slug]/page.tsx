@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { TitlePageExperience } from "@/components/TitlePageExperience";
-import { WatchHistoryMarker } from "@/components/WatchHistoryMarker";
+import { TitlePageExperience } from "@/components/title/TitlePageExperience";
+import { WatchHistoryMarker } from "@/components/title/WatchHistoryMarker";
 import { getCatalogTitle } from "@/lib/payload-content";
 import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
 import { cookies } from "next/headers";

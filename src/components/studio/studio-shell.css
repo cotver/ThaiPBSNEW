@@ -1,0 +1,19 @@
+/*
+ * /home?view=studio and /home?view=list: the Studio Lot brings its own full-screen chrome (LotChrome), so
+ * the site's sidebar, top and bottom navigation step aside and the page content loses their padding.
+ * The site shell can't read the query string, so it keys off the gallery's own marker instead.
+ * (Pages under /home/studio get a bare shell by path; see AppShell.)
+ */
+main[data-site-shell]:has([data-studio-lot]) > nav,
+main[data-site-shell]:has([data-studio-lot]) > aside {
+  display: none !important;
+}
+
+main[data-site-shell]:has([data-studio-lot]) > .app-shell-content {
+  padding: 0 !important;
+  transition: none;
+}
+
+main[data-site-shell]:has([data-studio-lot]) {
+  background: #000;
+}

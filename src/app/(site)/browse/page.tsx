@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { BrowseTitleGrid } from "@/components/BrowseTitleGrid";
+import { BrowseTitleGrid } from "@/components/browse/BrowseTitleGrid";
 import type { Title } from "@/lib/content";
 import { getCatalogTitles } from "@/lib/payload-content";
 import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";

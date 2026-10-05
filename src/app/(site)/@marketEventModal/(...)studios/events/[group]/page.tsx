@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { MarketEventGroupDetail } from '@/components/MarketEvents';
-import { MarketEventModalShell } from '@/components/MarketEventModalShell';
+import { MarketEventModalShell } from '@/components/studios/MarketEventModalShell';
 import { getMarketEventGroup, getMarketEventsInGroup } from '@/lib/market-events';
 
 export const dynamic = 'force-dynamic';

@@ -1,4 +1,4 @@
-import { SearchExperience } from "@/components/SearchExperience";
+import { SearchExperience } from "@/components/search/SearchExperience";
 import { getCatalogTitles } from "@/lib/payload-content";
 
 export const dynamic = "force-dynamic";

@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { MarketEventContent, MarketEventGroup, Program } from '../../payload-types';
-import { FinalArticleRichText } from './final-prototype/FinalArticleRichText';
+import { ArticleRichText } from './article/ArticleRichText';
 import { titleHref } from '@/lib/content';
 import { formatMarketEventDate, marketEventGroupHref, marketEventImage } from '@/lib/market-events';
 import styles from './MarketEvents.module.css';
@@ -57,7 +57,7 @@ export function MarketEventGroupDetail({ group, events }: { group: MarketEventGr
               </Link>;
             })}</div>
           </div> : null}
-          {event.content ? <div className={styles.richText}><FinalArticleRichText content={event.content} /></div> : null}
+          {event.content ? <div className={styles.richText}><ArticleRichText content={event.content} /></div> : null}
           {eventCover?.url || photos.length ? <div className={styles.gallerySection}>
             <h3>Event</h3>
             <div className={styles.photoGrid}>
