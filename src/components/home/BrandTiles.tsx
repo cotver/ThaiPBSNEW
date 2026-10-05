@@ -33,6 +33,8 @@ export function BrandTiles({ categories }: { categories: CategoryTile[] }) {
             }`}
             href={`/category/${encodeURIComponent(category.slug)}`}
             key={category.id}
+            // /category is force-dynamic, so its prefetch expires at once and every hover (which plays the tile video) re-renders it on the server.
+            prefetch={false}
             onMouseEnter={(event) => {
               setHoveredId(category.id);
               if (category.videoUrl) {
