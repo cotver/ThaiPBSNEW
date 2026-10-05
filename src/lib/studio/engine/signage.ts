@@ -272,6 +272,29 @@ export function partnerLogoTexture(logo: MarketLogo & { frame: { width: number; 
 }
 
 /** Centred wall caption under a piece (Market & Events group names). */
+/**
+ * The "ThaiPBS Studio" lettering for the portal beside the doorway: paper-white on transparent, "ThaiPBS"
+ * bold and "Studio" regular (the Lot font's 700 and 400), sized to fill the canvas width.
+ */
+export function studioSignTexture(font: string) {
+  const [element, context] = canvas(2048, 512);
+  const bold = "ThaiPBS";
+  const light = " Studio";
+  const size = fitFont(context, `${bold}${light}`, font, 700, 300, 1960);
+  context.font = `700 ${size}px ${font}`;
+  const boldWidth = context.measureText(bold).width;
+  context.font = `400 ${size}px ${font}`;
+  const total = boldWidth + context.measureText(light).width;
+  const x = (2048 - total) / 2;
+  context.fillStyle = "#f2ede4";
+  context.textBaseline = "middle";
+  context.font = `700 ${size}px ${font}`;
+  context.fillText(bold, x, 256);
+  context.font = `400 ${size}px ${font}`;
+  context.fillText(light, x + boldWidth, 256);
+  return toTexture(element);
+}
+
 export function captionTexture(text: string, font: string) {
   const [element, context] = canvas(1024, 160);
   context.fillStyle = INK;

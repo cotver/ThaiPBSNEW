@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -174,11 +173,12 @@ export function AppShell({
         }`}
       >
           <Link
-            aria-label="ThaiPBS Parvilions home"
-            className="mr-7 flex h-12 w-12 shrink-0 items-center justify-center"
+            aria-label="ThaiPBS Studio home"
+            className="mr-7 flex shrink-0 items-baseline gap-1.5 whitespace-nowrap leading-none"
             href="/"
           >
-            <Image alt="ThaiPBS Parvilions" className="h-11 w-11 object-contain" height={48} priority src="/LOGO/Logo.png" width={48} />
+            <span className="text-lg font-black text-white">ThaiPBS</span>
+            <span className="text-sm font-semibold text-[#ff650f]">Studio</span>
           </Link>
           <div className="flex min-w-0 flex-1 items-center">
             <div className="flex min-w-0 max-w-full items-center gap-1 overflow-x-auto text-[12px] font-black uppercase text-white/52">
@@ -241,30 +241,15 @@ export function AppShell({
         onPointerLeave={() => { setSidebarExpanded(false); setStudiosMenuOpen(false); }}
         ref={sidebarRef}
       >
+          {/* Two lines to fit the collapsed sidebar, centred where the icons sit below. */}
           <Link
-            aria-label="ThaiPBS Parvilions home"
-            className="ml-5 flex w-12 shrink-0 flex-col items-center justify-start"
+            aria-label="ThaiPBS Studio home"
+            className="ml-3 flex w-16 shrink-0 flex-col items-center justify-start text-center leading-none"
             href="/"
             onClick={(event) => { event.currentTarget.blur(); setSidebarExpanded(false); }}
           >
-            <Image
-              alt="ThaiPBS Parvilions"
-              className="h-12 w-12 object-contain"
-              height={48}
-              priority
-              src="/LOGO/Logo.png"
-              width={48}
-            />
-            <span aria-hidden className="relative -mt-1 block h-[15px] w-16 overflow-hidden">
-              <Image
-                alt=""
-                className="absolute left-0 top-0 h-16 w-16 max-w-none -translate-y-[25px] object-contain"
-                height={1772}
-                priority
-                src="/LOGO/tagline.png"
-                width={1772}
-              />
-            </span>
+            <span className="whitespace-nowrap text-[13px] font-black tracking-tight text-white">ThaiPBS</span>
+            <span className="mt-1 whitespace-nowrap text-[11px] font-semibold tracking-[0.08em] text-[#ff650f]">Studio</span>
           </Link>
           <nav aria-label="Primary navigation" className="absolute inset-y-0 left-5 my-auto flex h-fit min-h-0 flex-col gap-[18px] text-[12px] font-black uppercase text-white/46">
             {sidebarNavItems.map((item) => {

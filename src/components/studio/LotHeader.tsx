@@ -22,11 +22,11 @@ export function LotHeader() {
 
   return (
     <header className={styles.header} data-lot-header data-scrolled={scrolled || undefined}>
-      <Link aria-label="Studio Lot home" className={styles.brand} data-cursor="Back to the gallery" href={lotGalleryHref}>
+      <Link aria-label="ThaiPBS Studio gallery home" className={styles.brand} data-cursor="Back to the gallery" href={lotGalleryHref}>
         <span aria-hidden="true" className={styles.tally} />
         <span className={styles.brandText}>
-          <strong>Thai PBS</strong>
-          <span>Studio Lot</span>
+          <strong>ThaiPBS</strong>
+          <span>Studio</span>
         </span>
       </Link>
 

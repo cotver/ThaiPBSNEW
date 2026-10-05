@@ -245,7 +245,7 @@ export class LotEngine {
       if (this.disposed) throw new Error("Gallery disposed while building");
     };
     const benches = options.data.rooms.map((_, index): [number, number] => [roomLayout(index).side * 3.4, roomLayout(index).z]);
-    this.hall = new Hall({ reflections: high, benches, back: hallEnd(options.data.rooms.length) });
+    this.hall = new Hall({ reflections: high, benches, back: hallEnd(options.data.rooms.length), font: options.font });
     this.scene.add(this.hall.group);
     this.atmosphere = new Atmosphere({ particles: high ? 600 : 220 });
     this.scene.add(this.atmosphere.group);

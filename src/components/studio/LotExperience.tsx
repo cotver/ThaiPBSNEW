@@ -119,6 +119,8 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
         const [{ LotEngine: Engine }] = await Promise.all([
           import("@/lib/studio/engine/LotEngine"),
           document.fonts.load(`700 64px ${fontFamily}`).catch(() => undefined),
+          // The portal sign's "Studio" is set in the regular weight.
+          document.fonts.load(`400 64px ${fontFamily}`).catch(() => undefined),
         ]);
         if (cancelled) return;
         setLoadProgress(0.22);

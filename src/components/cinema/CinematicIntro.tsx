@@ -1,13 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { IntroLogo3D } from "./IntroLogo3D";
 import { cinematicIntroCookieName } from "./intro-cookie";
 
 const holdMs = 2300;
 const openMs = 1000;
-/** How long the 3D logo may take to appear before the intro falls back to the lettered title. */
-const logoTimeoutMs = 1600;
 
 function hasSeenIntro() {
   return document.cookie.split("; ").some((cookie) => cookie.startsWith(`${cinematicIntroCookieName}=`));
@@ -17,11 +14,10 @@ function hasSeenIntro() {
  * Letterboxed title card that plays once per browser session on /home, then splits open onto the page.
  * The page only renders it while the session cookie is absent; if a cached render brings it back anyway,
  * html[data-intro-seen] hides it before paint. Skipped with any click, key or scroll, and never shown
- * with reduced motion. The title is the logo as a 3D tile, or the lettered title without WebGL.
+ * with reduced motion. The title resolves letter by letter.
  */
-export function CinematicIntro({ subtitle = "Parvilions", title = "Thai PBS" }: { subtitle?: string; title?: string }) {
+export function CinematicIntro({ title = "ThaiPBS Studio" }: { title?: string }) {
   const [phase, setPhase] = useState<"hold" | "open" | "done">("hold");
-  const [logoMode, setLogoMode] = useState<"pending" | "3d" | "text">("pending");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   // Decided once per mount, so effect re-runs (Strict Mode, Fast Refresh) don't see their own cookie.
   const skipIntro = useRef<boolean | null>(null);
@@ -55,10 +51,7 @@ export function CinematicIntro({ subtitle = "Parvilions", title = "Thai PBS" }: 
 
     root.setAttribute("data-intro-playing", "");
     root.setAttribute("data-intro-phase", "hold");
-    timers.current = [
-      setTimeout(open, holdMs),
-      setTimeout(() => setLogoMode((mode) => (mode === "pending" ? "text" : mode)), logoTimeoutMs),
-    ];
+    timers.current = [setTimeout(open, holdMs)];
     return () => {
       timers.current.forEach(clearTimeout);
       root.removeAttribute("data-intro-playing");
@@ -88,23 +81,13 @@ export function CinematicIntro({ subtitle = "Parvilions", title = "Thai PBS" }: 
       <span className="cine-intro__bar cine-intro__bar--bottom" />
       <div aria-hidden="true" className="cine-intro__stage">
         <span className="cine-intro__line" />
-        {logoMode !== "text" ? (
-          <div className="cine-intro__logo" data-ready={logoMode === "3d" || undefined}>
-            <IntroLogo3D
-              onFail={() => setLogoMode("text")}
-              onReady={() => setLogoMode((mode) => (mode === "pending" ? "3d" : mode))}
-            />
-          </div>
-        ) : (
-          <div className="cine-intro__title">
-            {Array.from(title).map((letter, index) => (
-              <span key={index} style={{ "--i": index } as React.CSSProperties}>
-                {letter === " " ? " " : letter}
-              </span>
-            ))}
-          </div>
-        )}
-        <p className="cine-intro__subtitle">{logoMode === "text" ? subtitle : `${title} ${subtitle}`}</p>
+        <div className="cine-intro__title">
+          {Array.from(title).map((letter, index) => (
+            <span key={index} style={{ "--i": index } as React.CSSProperties}>
+              {letter === " " ? " " : letter}
+            </span>
+          ))}
+        </div>
         <span className="cine-intro__flare" />
       </div>
       <button className="cine-intro__skip" onClick={open} type="button">

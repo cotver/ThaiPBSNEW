@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { Reflector } from "three/addons/objects/Reflector.js";
-import { concreteTexture, plasterTexture } from "./signage";
+import { concreteTexture, plasterTexture, studioSignTexture } from "./signage";
 import { buildThaiPbsLogo } from "./ThaiPbsLogo3D";
 
 const NAVE_HALF_WIDTH = 8;
@@ -13,8 +13,8 @@ export class Hall {
   readonly group = new THREE.Group();
   private reflector?: Reflector;
 
-  /** `back` is the end wall z — the hall grows with the number of rooms. */
-  constructor(options: { reflections: boolean; benches: [number, number][]; back: number }) {
+  /** `back` is the end wall z — the hall grows with the number of rooms; `font` letters the portal sign. */
+  constructor(options: { reflections: boolean; benches: [number, number][]; back: number; font: string }) {
     const BACK = options.back;
     const length = FRONT - BACK;
     const centreZ = (FRONT + BACK) / 2;
@@ -110,7 +110,7 @@ export class Hall {
       this.group.add(bench);
     }
 
-    this.buildEntrance();
+    this.buildEntrance(options.font);
   }
 
   /**
@@ -130,7 +130,7 @@ export class Hall {
   }
 
   /** The portal: a dark wall with a doorway, lettering on the left — the first composition the camera sees. */
-  private buildEntrance() {
+  private buildEntrance(font: string) {
     const portal = new THREE.Group();
     portal.position.set(0, 0, ENTRANCE_Z);
     const material = new THREE.MeshStandardMaterial({ color: "#3d3833", roughness: 0.85 });
@@ -145,23 +145,14 @@ export class Hall {
     lintel.position.set(0, 4.6 + (CEILING - 4.6) / 2, 0);
     portal.add(lintel);
 
-    // The Thai PBS Pavilions lockup (public/LOGO) on the dark portal, where its white lettering reads.
-    // The PNG is 1920×1080 with wide margins; UVs crop to the lockup's measured bounds (440,305 → 1485,743).
-    const crop = { x: 436, y: 301, w: 1054, h: 446, imageW: 1920, imageH: 1080 };
-    const lockupWidth = 4.6;
-    const lockupMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, toneMapped: false, color: new THREE.Color(0.95, 0.95, 0.95) });
-    const lockup = new THREE.Mesh(new THREE.PlaneGeometry(lockupWidth, lockupWidth * (crop.h / crop.w)), lockupMaterial);
-    lockup.position.set(-doorHalf - slabWidth / 2 + 0.1, 3.4, 0.31);
-    portal.add(lockup);
-    new THREE.TextureLoader().load(encodeURI("/LOGO/Logo with Tagline 2.png"), (texture) => {
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.anisotropy = 8;
-      texture.repeat.set(crop.w / crop.imageW, crop.h / crop.imageH);
-      texture.offset.set(crop.x / crop.imageW, 1 - (crop.y + crop.h) / crop.imageH);
-      lockupMaterial.map = texture;
-      lockupMaterial.opacity = 1;
-      lockupMaterial.needsUpdate = true;
-    });
+    // "ThaiPBS Studio" lettered on the dark portal, where the white reads (the texture is 2048×512).
+    const signWidth = 4.6;
+    const sign = new THREE.Mesh(
+      new THREE.PlaneGeometry(signWidth, signWidth * (512 / 2048)),
+      new THREE.MeshBasicMaterial({ depthWrite: false, map: studioSignTexture(font), toneMapped: false, transparent: true }),
+    );
+    sign.position.set(-doorHalf - slabWidth / 2 + 0.1, 3.4, 0.31);
+    portal.add(sign);
 
     // A single warm spot on the lettering, and the bright gallery beyond the doorway.
     const spot = new THREE.SpotLight("#ffe0b8", 40, 12, 0.5, 0.8, 1.4);
