@@ -29,7 +29,7 @@ function AccordionRow({ categories }: { categories: Category[] }) {
         const isActive = index === active;
 
         return (
-          <Link
+          <Link prefetch={false}
             aria-label={`Explore ${category.name}`}
             className={`${styles.panel} ${isActive ? styles.active : ""}`}
             href={`/studios/${encodeURIComponent(category.slug)}`}

@@ -38,11 +38,11 @@ const filters: { label: string; value: CatalogFilter }[] = [
 export function StudiosArticleCard({ article }: { article: StudiosCatalogArticle }) {
   return (
     <article className={styles.programCard} data-studios-reveal-item>
-      <Link aria-label={`Read ${article.title}`} className={styles.programImage} href={article.href}>
+      <Link prefetch={false} aria-label={`Read ${article.title}`} className={styles.programImage} href={article.href}>
         {article.imageUrl ? <Image alt={article.imageAlt} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 20vw" src={article.imageUrl} /> : null}
         {article.badge ? <span className={styles.newBadge}>{article.badge}</span> : null}
       </Link>
-      <h4><Link href={article.href}>{article.title}</Link></h4>
+      <h4><Link prefetch={false} href={article.href}>{article.title}</Link></h4>
       {article.dateLabel ? <p className={styles.format}>{article.dateLabel}</p> : null}
       {article.description ? <p className={styles.cardDescription}>{article.description}</p> : null}
       {article.tags.length ? <ul>{article.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul> : null}
@@ -116,7 +116,7 @@ function CategorySection({ category }: { category: StudiosCatalogCategory }) {
       <div className={styles.sectionHeading} data-studios-reveal-item>
         <div>
           <h3 id={`studio-${category.slug}-heading`}>{category.name}</h3>
-          <Link className={styles.viewAll} href={`/studios/${encodeURIComponent(category.slug)}?filter=${visibleFilter}`}>
+          <Link prefetch={false} className={styles.viewAll} href={`/studios/${encodeURIComponent(category.slug)}?filter=${visibleFilter}`}>
             View All <span aria-hidden="true">›</span>
           </Link>
         </div>
@@ -177,7 +177,7 @@ export function StudiosCatalog({ categories, showArticleSections = false }: { ca
 
       <section className={styles.selections} aria-label="Column Categories">
         {categories.map((category) => (
-          <Link
+          <Link prefetch={false}
             className={styles.selectionCard}
             data-studios-reveal-item
             href={`/studios/${encodeURIComponent(category.slug)}`}

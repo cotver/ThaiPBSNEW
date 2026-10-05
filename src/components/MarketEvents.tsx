@@ -10,7 +10,7 @@ export function MarketEventGroupGrid({ groups }: { groups: MarketEventGroup[] })
   return <div className={styles.grid}>
     {groups.map((group) => {
       const cover = marketEventImage(group.coverImage);
-      return <Link className={styles.groupCard} data-studios-reveal-item href={marketEventGroupHref(group.slug)} key={group.id}>
+      return <Link prefetch={false} className={styles.groupCard} data-studios-reveal-item href={marketEventGroupHref(group.slug)} key={group.id}>
         <span className={styles.groupImage}>{cover?.url ? <Image alt={cover.alt || group.name} fill sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw" src={cover.url} /> : null}</span>
         <span className={styles.groupName}>{group.name}</span>
       </Link>;
@@ -51,7 +51,7 @@ export function MarketEventGroupDetail({ group, events }: { group: MarketEventGr
             <div className={styles.programGrid}>{programs.map((program) => {
               const artwork = programArtwork(program);
               const title = program.titleEn || program.titleTh || program._displayTitle || program.slug;
-              return <Link aria-label={`View ${title}`} className={styles.programCard} href={titleHref(program.slug)} key={program.id}>
+              return <Link prefetch={false} aria-label={`View ${title}`} className={styles.programCard} href={titleHref(program.slug)} key={program.id}>
                 <span className={styles.programPoster}>{artwork?.url ? <Image alt={artwork.alt || title} fill sizes="(max-width: 600px) 42vw, 180px" src={artwork.url} /> : <span>{title}</span>}</span>
                 <span className={styles.programTitle}>{title}</span>
               </Link>;
