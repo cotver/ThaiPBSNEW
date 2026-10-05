@@ -248,6 +248,12 @@
 
 .cursor {
   --size: 22px;
+  /* Colours follow what the cursor is over (data-tone, data-kind; set by LotCursor). */
+  --cursor-frame: var(--paper);
+  --cursor-dot: var(--tally);
+  --cursor-label-bg: var(--paper);
+  --cursor-label-fg: var(--ink);
+  --cursor-halo: rgb(8 9 13 / 55%);
   position: fixed;
   top: 0;
   left: 0;
@@ -269,6 +275,51 @@
   --size: 16px;
 }
 
+/* Light backgrounds: ink instead of paper. */
+.cursor[data-tone="light"] {
+  --cursor-frame: var(--ink);
+  --cursor-label-bg: var(--ink);
+  --cursor-label-fg: var(--paper);
+  --cursor-halo: rgb(242 237 228 / 70%);
+}
+
+/* Links and buttons: tungsten amber, deepened on light backgrounds so it still reads. */
+.cursor[data-kind="action"] {
+  --cursor-frame: var(--tungsten);
+  --cursor-label-bg: var(--tungsten);
+  --cursor-label-fg: var(--ink);
+}
+.cursor[data-kind="action"][data-tone="light"] {
+  --cursor-frame: #9a4f00;
+  --cursor-label-bg: #9a4f00;
+  --cursor-label-fg: var(--paper);
+}
+
+/* Pictures: a contrasting tint of the picture's own colour; a halo keeps it clear on busy images. */
+.cursor[data-kind="media"] {
+  --cursor-frame: var(--cursor-tint, var(--paper));
+  --cursor-dot: var(--cursor-tint, var(--tally));
+}
+.cursor[data-kind="media"][data-tone="light"] {
+  --cursor-frame: var(--cursor-tint, var(--ink));
+}
+.cursor[data-kind="media"] .cursorFrame {
+  filter: drop-shadow(0 0 1.5px var(--cursor-halo));
+}
+
+/* Text and fields: LED cyan, with the dot drawn as a caret. */
+.cursor:is([data-kind="text"], [data-kind="field"]) {
+  --cursor-dot: var(--led);
+}
+.cursor:is([data-kind="text"], [data-kind="field"])[data-tone="light"] {
+  --cursor-dot: #00708a;
+}
+.cursor:is([data-kind="text"], [data-kind="field"]) .cursorDot {
+  width: 2px;
+  height: 16px;
+  border-radius: 1px;
+}
+
 .cursorFrame {
   position: absolute;
   width: var(--size);
@@ -281,8 +332,8 @@
   position: absolute;
   width: 7px;
   height: 7px;
-  border: 1.5px solid var(--paper);
-  mix-blend-mode: difference;
+  border: 1.5px solid var(--cursor-frame);
+  transition: border-color 220ms ease;
 }
 
 .cursorFrame i:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; }
@@ -290,18 +341,15 @@
 .cursorFrame i:nth-child(3) { bottom: 0; left: 0; border-right: 0; border-top: 0; }
 .cursorFrame i:nth-child(4) { bottom: 0; right: 0; border-left: 0; border-top: 0; }
 
-.cursor[data-active] .cursorFrame i {
-  border-color: var(--tungsten);
-  mix-blend-mode: normal;
-}
 
 .cursorDot {
   position: absolute;
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--tally);
+  background: var(--cursor-dot);
   transform: translate(-50%, -50%);
+  transition: background-color 220ms ease, width 260ms var(--ease), height 260ms var(--ease), border-radius 260ms var(--ease);
 }
 
 .cursorLabel {
@@ -310,8 +358,8 @@
   left: calc(var(--size) / 2 + 2px);
   padding: 5px 8px;
   border-radius: 3px;
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--cursor-label-bg);
+  color: var(--cursor-label-fg);
   font-family: var(--mono);
   font-size: 10px;
   font-weight: 600;

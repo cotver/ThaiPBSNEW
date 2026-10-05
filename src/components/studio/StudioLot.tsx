@@ -1,14 +1,9 @@
-import { cookies } from "next/headers";
 import { Suspense } from "react";
-import { HomeSections } from "@/components/home/HomeSections";
+import { getHomePageData, HomePage } from "@/components/home/HomePage";
 import { getStudiosShowcaseData } from "@/components/StudiosShowcase";
 import type { Title } from "@/lib/content";
-import { hiddenCatalogSectionsEnabled } from "@/lib/feature-flags";
 import { marketEventGroupHref, marketEventImage } from "@/lib/market-events";
 import { marketCompanyLogo, marketLogoFrame } from "@/lib/market-logos";
-import { getCatalogCollections, getCategoryTiles } from "@/lib/payload-content";
-import { parseSavedTitlesCookie, savedTitlesCookieName } from "@/lib/saved-titles";
-import { parseWatchHistoryCookie, watchHistoryCookieName } from "@/lib/watch-history";
 import { lotBase, toLotProgram, type LotLinkItem, type LotRoom } from "@/lib/studio/data";
 import { plexThai } from "@/lib/studio/font";
 import { LotChrome } from "./LotChrome";
@@ -62,13 +57,9 @@ function links(id: string, title: string, thai: string, blurb: string, items: Lo
  * - The hidden catalogue rows sit behind the same SHOW_HIDDEN_CATALOG_SECTIONS flag.
  */
 async function StudioLotRooms() {
-  const showHiddenCatalogSections = hiddenCatalogSectionsEnabled();
-  const cookieStore = await cookies();
-  const continueWatchingSlugs = parseWatchHistoryCookie(cookieStore.get(watchHistoryCookieName)?.value);
-  const savedTitleSlugs = parseSavedTitlesCookie(cookieStore.get(savedTitlesCookieName)?.value);
-  const [collections, categories, studios] = await Promise.all([
-    getCatalogCollections(continueWatchingSlugs, savedTitleSlugs),
-    getCategoryTiles(),
+  // The same per-request data /home renders from, so every room matches its section on the home page.
+  const [{ categories, collections, showHiddenCatalogSections }, studios] = await Promise.all([
+    getHomePageData(),
     getStudiosShowcaseData(),
   ]);
 
@@ -140,13 +131,13 @@ async function StudioLotRooms() {
   ].filter((room) => room.programs.length);
 
   const rooms = [featured, ...studioRooms, ...brandTiles, ...rows];
-  // List view: the real /home sections — same components, data, conditions and links — inside the
-  // same wrappers the site shell gives them (the site's own shell is hidden around the gallery), so it
-  // looks and works exactly like /home.
+  // List view: the /home page itself (HomePage, which /home renders too, so any change to the home page
+  // shows here as well) inside the same wrappers the site shell gives it, since the site's own shell is
+  // hidden around the gallery. The Lot brings its own entrance, so the home intro card is left out.
   const listView = (
     <div data-site-shell>
       <div className="app-shell-content relative pb-20">
-        <HomeSections categories={categories} collections={collections} showHiddenCatalogSections={showHiddenCatalogSections} />
+        <HomePage intro={false} />
       </div>
     </div>
   );

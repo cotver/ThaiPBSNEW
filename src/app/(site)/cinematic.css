@@ -1,0 +1,801 @@
+/*
+ * Cinematic motion layer. Motion only: nothing here changes colours, spacing or layout at rest.
+ * Driven by CinematicIntro / CinematicMotion (home) and the (site) template's <ViewTransition>.
+ */
+:root {
+  --cine-ease: cubic-bezier(.16, 1, .3, 1);
+  --cine-ease-in: cubic-bezier(.55, 0, 1, .45);
+}
+
+/* ---------- Page transitions: the old page falls back and goes dark, the new one exposes in. ---------- */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(.cine-page-in),
+::view-transition-group(.cine-page-out) {
+  animation-duration: 900ms;
+}
+::view-transition-old(.cine-page-out) {
+  animation: 420ms var(--cine-ease-in) both cine-page-out;
+  transform-origin: 50% 30vh;
+}
+::view-transition-new(.cine-page-in) {
+  animation: 820ms var(--cine-ease) 260ms both cine-page-in;
+  transform-origin: 50% 30vh;
+}
+@keyframes cine-page-out {
+  to {
+    filter: blur(10px) brightness(.35);
+    opacity: 0;
+    transform: scale(.94);
+  }
+}
+@keyframes cine-page-in {
+  from {
+    filter: blur(14px) brightness(1.7) saturate(.6);
+    opacity: 0;
+    transform: scale(1.06);
+  }
+  55% {
+    filter: blur(0) brightness(1.08) saturate(1);
+    opacity: 1;
+  }
+  to {
+    filter: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- Home intro: letterbox title card ---------- */
+html[data-intro-seen] [data-cinematic-intro] {
+  display: none;
+}
+html[data-intro-playing] {
+  overflow: hidden;
+}
+.cine-intro {
+  color: #fff;
+  cursor: pointer;
+  inset: 0;
+  position: fixed;
+  z-index: 10000;
+}
+.cine-intro__bar {
+  background: #000;
+  height: 50.5%;
+  left: 0;
+  position: absolute;
+  right: 0;
+  transition: transform 1s var(--cine-ease);
+}
+.cine-intro__bar--top {
+  top: 0;
+}
+.cine-intro__bar--bottom {
+  bottom: 0;
+}
+.cine-intro[data-phase="open"] .cine-intro__bar--top {
+  transform: translateY(-101%);
+}
+.cine-intro[data-phase="open"] .cine-intro__bar--bottom {
+  transform: translateY(101%);
+}
+.cine-intro__stage {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  inset: 0;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  transition: opacity .5s ease, transform .9s var(--cine-ease), filter .6s ease;
+}
+.cine-intro[data-phase="open"] .cine-intro__stage {
+  filter: blur(12px);
+  opacity: 0;
+  transform: scale(1.18);
+}
+.cine-intro__line {
+  animation: cine-line 1.1s var(--cine-ease) .15s both;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 85%) 30%, #fff 50%, rgb(255 255 255 / 85%) 70%, transparent);
+  box-shadow: 0 0 18px 2px rgb(255 190 140 / 55%);
+  height: 1px;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  translate: -50% 0;
+  width: min(1100px, 86vw);
+}
+@keyframes cine-line {
+  from {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: .45;
+    transform: scaleX(1);
+  }
+}
+.cine-intro__title {
+  display: flex;
+  font-size: clamp(48px, 11vw, 168px);
+  font-weight: 900;
+  letter-spacing: .14em;
+  line-height: 1;
+  margin: 0 0 .1em .14em;
+  text-transform: uppercase;
+}
+.cine-intro__title span {
+  animation: cine-letter 1.3s var(--cine-ease) both;
+  animation-delay: calc(.45s + var(--i) * 70ms);
+  background: linear-gradient(180deg, #fff 30%, #9aa7b8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+}
+@keyframes cine-letter {
+  from {
+    filter: blur(18px);
+    opacity: 0;
+    transform: translateY(.35em) scale(1.3);
+  }
+  to {
+    filter: blur(0);
+    opacity: 1;
+    transform: none;
+  }
+}
+.cine-intro__subtitle {
+  animation: cine-subtitle 1.4s var(--cine-ease) 1.15s both;
+  color: rgb(255 255 255 / 72%);
+  font-size: clamp(11px, 1.1vw, 15px);
+  font-weight: 800;
+  letter-spacing: .9em;
+  margin: 1.6em 0 0 .9em;
+  text-transform: uppercase;
+}
+@keyframes cine-subtitle {
+  from {
+    letter-spacing: .2em;
+    opacity: 0;
+  }
+  to {
+    letter-spacing: .9em;
+    opacity: 1;
+  }
+}
+.cine-intro__flare {
+  animation: cine-flare 1.6s cubic-bezier(.45, 0, .2, 1) 1s both;
+  background: radial-gradient(ellipse at center, rgb(255 236 214 / 85%) 0%, rgb(255 140 70 / 35%) 22%, transparent 60%);
+  height: 36vh;
+  left: 0;
+  mix-blend-mode: screen;
+  position: absolute;
+  top: calc(50% - 18vh);
+  width: 46vw;
+}
+@keyframes cine-flare {
+  from {
+    opacity: 0;
+    transform: translateX(-60vw) scaleY(.4);
+  }
+  35% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(120vw) scaleY(.4);
+  }
+}
+.cine-intro__skip {
+  background: rgb(255 255 255 / 8%);
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 999px;
+  bottom: 28px;
+  color: rgb(255 255 255 / 78%);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  padding: 9px 16px;
+  position: absolute;
+  right: 28px;
+  text-transform: uppercase;
+  transition: background .2s ease, color .2s ease, opacity .4s ease;
+}
+.cine-intro__skip:hover,
+.cine-intro__skip:focus-visible {
+  background: rgb(255 255 255 / 18%);
+  color: #fff;
+}
+.cine-intro[data-phase="open"] .cine-intro__skip {
+  opacity: 0;
+}
+
+/* The page waits pushed-in and dark behind the title, then settles as the letterbox opens. */
+[data-cinematic-home] {
+  transition: transform 1.6s var(--cine-ease), filter 1.4s ease;
+}
+html[data-intro-phase="hold"] [data-cinematic-home] {
+  filter: brightness(.35);
+  transform: scale(1.08);
+  transition: none;
+}
+
+/* ---------- Hero: parallax as it scrolls away ---------- */
+[data-cinematic-home] [data-responsive-hero="home"] div:has(> [data-hero-art]) {
+  overflow: hidden;
+}
+[data-cinematic-home] [data-hero-art] {
+  translate: 0 calc(var(--cine-hero, 0) * 18%);
+}
+[data-cinematic-home] [data-hero-copy] {
+  opacity: calc(1 - var(--cine-hero, 0) * 1.6);
+  translate: 0 calc(var(--cine-hero, 0) * -90px);
+}
+[data-cinematic-home] [data-responsive-hero="home"]::after {
+  background: #000;
+  content: "";
+  inset: 0;
+  opacity: calc(var(--cine-hero, 0) * .7);
+  pointer-events: none;
+  position: absolute;
+  z-index: 15;
+}
+[data-cine-hero] [data-hero-copy] > div > * {
+  transition: opacity 1.2s ease, transform 1.4s var(--cine-ease), filter 1.2s ease;
+}
+[data-cine-hero="pending"] [data-hero-copy] > div > * {
+  filter: blur(12px);
+  opacity: 0;
+  transform: translateY(40px);
+}
+[data-cine-hero="in"] [data-hero-copy] > div > :nth-child(2) { transition-delay: .12s; }
+[data-cine-hero="in"] [data-hero-copy] > div > :nth-child(3) { transition-delay: .24s; }
+[data-cine-hero="in"] [data-hero-copy] > div > :nth-child(4) { transition-delay: .36s; }
+[data-cine-hero="in"] [data-hero-copy] > div > :nth-child(n + 5) { transition-delay: .48s; }
+
+/* ---------- Rows: rise out of a blur, heading wipes in, cards follow in a stagger ---------- */
+[data-cine] {
+  transition: opacity 1.1s ease, transform 1.4s var(--cine-ease), filter 1.1s ease;
+}
+[data-cine="pending"] {
+  filter: blur(12px);
+  opacity: 0;
+  transform: translateY(80px) scale(.97);
+}
+[data-cine] h2 {
+  transition: clip-path 1.1s var(--cine-ease) .15s, translate 1.1s var(--cine-ease) .15s;
+}
+[data-cine="pending"] h2 {
+  clip-path: inset(0 100% 0 0);
+  translate: -24px 0;
+}
+[data-cine="in"] h2 {
+  clip-path: inset(0 0 0 0);
+}
+[data-cine-card] {
+  transition: opacity .9s ease, translate 1.2s var(--cine-ease), filter .9s ease !important;
+  transition-delay: calc(.2s + var(--cine-i, 0) * 75ms) !important;
+}
+[data-cine="pending"] [data-cine-card] {
+  filter: blur(6px);
+  opacity: 0;
+  translate: 90px 0;
+}
+
+/* ---------- Cards: 3D tilt with a pointer-tracked highlight ---------- */
+[data-cine-tilt] {
+  transform: perspective(900px) rotateX(var(--cine-rx, 0deg)) rotateY(var(--cine-ry, 0deg)) translateY(var(--cine-lift, -6px)) !important;
+  transition: transform .18s ease-out, box-shadow .3s ease, border-color .3s ease !important;
+  z-index: 2;
+}
+[data-cinematic-home] :where([data-brand-rail] > a, [data-market-logo-card], #news a[data-studios-reveal-item], #catalog section > a, #market-events a[data-studios-reveal-item], #catalog article > a:first-child) {
+  position: relative;
+}
+[data-cinematic-home] :where([data-brand-rail] > a, [data-market-logo-card], #news a[data-studios-reveal-item], #catalog section > a, #market-events a[data-studios-reveal-item], #catalog article > a:first-child)::after {
+  background: radial-gradient(circle at var(--cine-mx, 50%) var(--cine-my, 50%), rgb(255 255 255 / 26%), rgb(255 200 150 / 8%) 28%, transparent 55%);
+  border-radius: inherit;
+  content: "";
+  inset: 0;
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  transition: opacity .35s ease;
+  z-index: 30;
+}
+/* Article cards sit in a horizontal scroller, which would clip a lift, so they only tilt. */
+#catalog article > a[data-cine-tilt] {
+  --cine-lift: 0px;
+}
+[data-cinematic-home] [data-cine-tilt]::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-cinematic-intro] {
+    display: none;
+  }
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* ======================= Second wave ======================= */
+
+/* ---------- 1. Hero slide change: a light sweep crosses the slide, the new title lines rise in ---------- */
+[data-cine-cut] > div[aria-hidden="false"]::after {
+  animation: cine-cut-sweep 1.1s cubic-bezier(.45, 0, .2, 1) both;
+  background: linear-gradient(100deg, transparent 30%, rgb(255 236 214 / 32%) 47%, rgb(255 160 90 / 22%) 53%, transparent 70%);
+  content: "";
+  inset: 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  position: absolute;
+  z-index: 6;
+}
+@keyframes cine-cut-sweep {
+  from { opacity: 0; transform: translateX(-60%); }
+  25% { opacity: 1; }
+  to { opacity: 0; transform: translateX(60%); }
+}
+[data-cine-cut] [data-hero-copy] > div > * {
+  animation: cine-cut-line 1s var(--cine-ease) both;
+}
+[data-cine-cut] [data-hero-copy] > div > :nth-child(2) { animation-delay: .1s; }
+[data-cine-cut] [data-hero-copy] > div > :nth-child(3) { animation-delay: .2s; }
+[data-cine-cut] [data-hero-copy] > div > :nth-child(n + 4) { animation-delay: .3s; }
+[data-cine-cut] [data-hero-copy] :is(h1, h2) {
+  animation-name: cine-cut-title;
+}
+@keyframes cine-cut-line {
+  from { filter: blur(8px); opacity: 0; transform: translateY(26px); }
+  to { filter: none; opacity: 1; transform: none; }
+}
+@keyframes cine-cut-title {
+  from { filter: blur(14px); letter-spacing: .08em; opacity: 0; transform: translateY(18px); }
+  to { filter: none; opacity: 1; transform: none; }
+}
+
+/* ---------- 2. Posters: a glow in the poster's own colour ---------- */
+[data-cinematic-home] [data-poster-rail] > button:hover {
+  box-shadow: 0 0 34px 2px var(--cine-glow, rgb(255 101 15 / 55%)), 0 18px 34px rgb(0 0 0 / 40%) !important;
+}
+[data-cinematic-home] [data-hover-preview-panel] {
+  filter: drop-shadow(0 0 30px var(--cine-glow, rgb(255 101 15 / 45%)));
+}
+
+/* ---------- 3. Section headings: a warm light passes over the text as each one appears ---------- */
+[data-cine="in"] :is(h2, h3),
+[data-cinematic-home] [data-studios-reveal-item][data-reveal-visible="true"] > :is(h2, h3),
+[data-cinematic-home] [data-studios-reveal-item][data-reveal-visible="true"] > div > h3 {
+  animation: cine-heading-light 1.6s ease-out .35s both;
+}
+@keyframes cine-heading-light {
+  from { text-shadow: -40px 0 24px rgb(255 170 110 / 0%); }
+  45% { text-shadow: 0 0 18px rgb(255 170 110 / 85%), 0 0 2px rgb(255 240 225 / 90%); }
+  to { text-shadow: 40px 0 24px rgb(255 170 110 / 0%); }
+}
+
+/* ---------- 4. Film grain and vignette over the whole site (not the Studio Lot) ---------- */
+main[data-site-shell]:not(:has([data-studio-lot]))::before,
+main[data-site-shell]:not(:has([data-studio-lot]))::after {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  z-index: 9000;
+}
+main[data-site-shell]:not(:has([data-studio-lot]))::before {
+  background: radial-gradient(ellipse at center, transparent 58%, rgb(0 0 0 / 38%) 100%);
+  inset: 0;
+}
+main[data-site-shell]:not(:has([data-studio-lot]))::after {
+  animation: cine-grain 1.2s steps(6) infinite;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 220px;
+  inset: -60px;
+  opacity: .055;
+}
+@keyframes cine-grain {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-18px, 12px); }
+  40% { transform: translate(14px, -20px); }
+  60% { transform: translate(-10px, -8px); }
+  80% { transform: translate(20px, 16px); }
+  100% { transform: translate(0, 0); }
+}
+
+/* ---------- 5. Scroll progress line ---------- */
+[data-cine-progress] {
+  background: linear-gradient(90deg, #ff650f, #ffb27a);
+  box-shadow: 0 0 12px rgb(255 101 15 / 70%);
+  height: 2px;
+  left: 0;
+  pointer-events: none;
+  position: fixed;
+  right: 0;
+  top: 0;
+  transform: scaleX(var(--cine-progress, 0));
+  transform-origin: left;
+  z-index: 70;
+}
+/* The Studio Lot's list view shows the home page under its own top nav, which has its own progress line. */
+[data-studio-lot] [data-cine-progress] {
+  display: none;
+}
+
+/* ---------- 6. Content Distribution: logos arrive one by one, each flaring as it lands ---------- */
+[data-cinematic-home] [data-market-logo-grid] > [data-reveal-visible="true"] {
+  animation: cine-logo-in 1.1s var(--cine-ease) backwards;
+}
+[data-cinematic-home] [data-market-logo-grid] > :nth-child(2) { animation-delay: .1s; }
+[data-cinematic-home] [data-market-logo-grid] > :nth-child(3) { animation-delay: .2s; }
+[data-cinematic-home] [data-market-logo-grid] > :nth-child(4) { animation-delay: .3s; }
+[data-cinematic-home] [data-market-logo-grid] > :nth-child(5) { animation-delay: .4s; }
+[data-cinematic-home] [data-market-logo-grid] > :nth-child(6) { animation-delay: .5s; }
+[data-cinematic-home] [data-market-logo-grid] > :nth-child(7) { animation-delay: .6s; }
+[data-cinematic-home] [data-market-logo-grid] > :nth-child(8) { animation-delay: .7s; }
+[data-cinematic-home] [data-market-logo-grid] > :nth-child(9) { animation-delay: .8s; }
+[data-cinematic-home] [data-market-logo-grid] > :nth-child(10) { animation-delay: .9s; }
+@keyframes cine-logo-in {
+  from { filter: brightness(2.4) blur(6px); opacity: 0; transform: translateY(26px) scale(.96); }
+  55% { filter: brightness(1.7) blur(0); opacity: 1; }
+  to { filter: none; opacity: 1; transform: none; }
+}
+
+/* ---------- 7. Market & Events: images uncover left to right ---------- */
+[data-cinematic-home] #market-events a[data-reveal-ready="true"] > span:first-child {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 1.3s var(--cine-ease) .15s;
+}
+[data-cinematic-home] #market-events a[data-reveal-visible="true"] > span:first-child {
+  clip-path: inset(0 0 0 0);
+}
+
+/* ---------- 8. Accordion: a light sweep and a typed-in name each time a panel opens ---------- */
+[data-cinematic-home] section[aria-label="More Studios categories"] a[data-cine-flash]::after {
+  animation: cine-cut-sweep 1.1s cubic-bezier(.45, 0, .2, 1) both;
+  background: linear-gradient(100deg, transparent 30%, rgb(255 236 214 / 38%) 48%, rgb(255 160 90 / 24%) 54%, transparent 70%);
+  content: "";
+  inset: 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  position: absolute;
+  z-index: 3;
+}
+[data-cinematic-home] section[aria-label="More Studios categories"] a[data-cine-flash] > span:last-child > span:last-child {
+  animation: cine-type .7s steps(14, end) .15s both;
+}
+@keyframes cine-type {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+/* ---------- 9. Doorway and event cards: the image drifts against the tilt for depth ---------- */
+[data-cinematic-home] :is(#catalog section > a, #market-events a[data-studios-reveal-item]) img {
+  transition: transform .5s cubic-bezier(.2, .7, .2, 1), translate .25s ease-out, filter .28s ease;
+}
+[data-cinematic-home] :is(#catalog section > a, #market-events a[data-studios-reveal-item])[data-cine-tilt] img {
+  translate: var(--cine-px, 0) var(--cine-py, 0);
+}
+
+/* ---------- 10. Buttons and "View All": push in and ring with light when pressed ---------- */
+[data-cine-press] {
+  animation: cine-press .55s var(--cine-ease);
+}
+@keyframes cine-press {
+  from { box-shadow: 0 0 0 0 rgb(255 140 60 / 55%); scale: .94; }
+  to { box-shadow: 0 0 0 16px rgb(255 140 60 / 0%); scale: 1; }
+}
+
+/* ---------- 11. Image morph: the clicked image becomes the article's hero ---------- */
+html[data-cine-morph] [data-cine-morph-source],
+html[data-cine-morph] [data-cine-morph-loading],
+html[data-cine-morph] [data-cine-morph-target]:not([data-cine-morph-old]) [aria-hidden="false"] div:has(> [data-hero-art]) {
+  view-transition-name: cine-morph;
+}
+::view-transition-group(cine-morph) {
+  animation-duration: 750ms;
+  animation-timing-function: cubic-bezier(.16, 1, .3, 1);
+  z-index: 50;
+}
+::view-transition-image-pair(cine-morph) {
+  animation: cine-morph-blur 750ms ease both;
+}
+::view-transition-old(cine-morph),
+::view-transition-new(cine-morph) {
+  height: 100%;
+  object-fit: cover;
+}
+@keyframes cine-morph-blur {
+  35% { filter: blur(4px) brightness(1.15); }
+}
+
+/* ---------- 12. Loading: letterboxed title shimmer ---------- */
+.cine-loading {
+  align-items: center;
+  background: #030714;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+.cine-loading::before,
+.cine-loading::after {
+  animation: cine-letterbox 1.4s var(--cine-ease) both;
+  background: #000;
+  content: "";
+  height: 11vh;
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+.cine-loading > :not(.cine-loading__frame) {
+  position: relative;
+  z-index: 2;
+}
+/* Holds the image of a morph in flight, where the article's hero will appear. */
+.cine-loading__frame {
+  aspect-ratio: 16 / 9;
+  left: 0;
+  max-height: 100%;
+  overflow: hidden;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+.cine-loading__frame img {
+  filter: brightness(.45);
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+.cine-loading::before,
+.cine-loading::after {
+  z-index: 3;
+}
+.cine-loading::before { top: 0; transform-origin: top; }
+.cine-loading::after { bottom: 0; transform-origin: bottom; }
+@keyframes cine-letterbox {
+  from { transform: scaleY(0); }
+}
+.cine-loading__title {
+  animation: cine-shimmer 1.8s linear infinite;
+  background: linear-gradient(100deg, rgb(255 255 255 / 18%) 35%, rgb(255 236 214 / 95%) 50%, rgb(255 255 255 / 18%) 65%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: clamp(32px, 6vw, 84px);
+  font-weight: 900;
+  letter-spacing: .14em;
+  margin: 0 0 0 .14em;
+  text-transform: uppercase;
+}
+@keyframes cine-shimmer {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+.cine-loading__line {
+  animation: cine-loading-line 1.8s ease-in-out infinite;
+  background: linear-gradient(90deg, transparent, #ff650f, transparent);
+  height: 1px;
+  margin-top: 22px;
+  width: min(420px, 60vw);
+}
+@keyframes cine-loading-line {
+  0%, 100% { opacity: .25; transform: scaleX(.3); }
+  50% { opacity: 1; transform: scaleX(1); }
+}
+::view-transition-old(.cine-loading-out) {
+  animation: 300ms ease-in both cine-page-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main[data-site-shell]::after,
+  .cine-loading__title,
+  .cine-loading__line,
+  .cine-loading::before,
+  .cine-loading::after {
+    animation: none !important;
+  }
+  [data-cinematic-home] #market-events a > span:first-child {
+    clip-path: none !important;
+  }
+}
+
+/* ======================= Third wave ======================= */
+
+/* ---------- 12. Intro: the logo as a 3D tile, faded in once its first frame is drawn ---------- */
+.cine-intro__logo {
+  height: min(44vh, 64vw);
+  opacity: 0;
+  transition: opacity .5s ease;
+  width: min(44vh, 64vw);
+}
+.cine-intro__logo[data-ready] {
+  opacity: 1;
+}
+.cine-intro__logo3d {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+.cine-intro__logo + .cine-intro__subtitle {
+  margin-top: .4em;
+}
+
+/* ---------- 4. Rows: cards lean into the direction the row is moving ---------- */
+[data-cine-leaning] > * {
+  transform: skewX(var(--cine-lean, 0deg));
+  transition: transform .45s cubic-bezier(.2, .9, .3, 1.3);
+}
+
+/* ---------- 5. Sidebar icons: each moves its own way on hover; the current page's icon glows ---------- */
+aside.disney-sidebar nav :is(a, button) > span:first-child {
+  position: relative;
+}
+aside.disney-sidebar nav :is(a, button) > span:first-child svg {
+  transition: transform .35s var(--cine-ease), filter .35s ease;
+}
+aside.disney-sidebar nav :is(a, button):hover > span:first-child svg {
+  animation: cine-icon-nudge .55s var(--cine-ease);
+}
+aside.disney-sidebar nav :is(a, button):hover > span:first-child svg:has(path[d^="M4 10.5"]) { animation-name: cine-icon-lift; }
+aside.disney-sidebar nav :is(a, button):hover > span:first-child svg:has(path[d^="m20 20"]) { animation-name: cine-icon-search; }
+aside.disney-sidebar nav :is(a, button):hover > span:first-child svg:has(path[d^="M12 3l"]) { animation-name: cine-icon-spin; }
+aside.disney-sidebar nav :is(a, button):hover > span:first-child svg:has(path[d^="M5 4h14"]) { animation-name: cine-icon-wobble; }
+aside.disney-sidebar nav :is(a, button):hover > span:first-child svg:has(path[d^="M4 6h16"]) { animation-name: cine-icon-bounce; }
+aside.disney-sidebar nav :is(a, button):hover > span:first-child svg:has(path[d^="M12 5v14"]) { animation-name: cine-icon-turn; }
+@keyframes cine-icon-nudge { 40% { transform: translateY(-2px) scale(1.12); } }
+@keyframes cine-icon-lift { 40% { transform: translateY(-4px); } 70% { transform: translateY(1px); } }
+@keyframes cine-icon-search { 30% { transform: scale(1.18) rotate(-12deg); } 65% { transform: scale(.96) rotate(6deg); } }
+@keyframes cine-icon-spin { to { transform: rotate(180deg) scale(1); } 50% { transform: rotate(90deg) scale(1.2); } }
+@keyframes cine-icon-wobble { 25% { transform: rotate(-10deg); } 50% { transform: rotate(8deg); } 75% { transform: rotate(-4deg); } }
+@keyframes cine-icon-bounce { 30% { transform: translateY(-4px) scaleY(1.06); } 60% { transform: translateY(1px) scaleY(.94); } }
+@keyframes cine-icon-turn { to { transform: rotate(90deg); } }
+aside.disney-sidebar nav :is(a, button) > span:first-child:has(svg.stroke-white)::before {
+  animation: cine-icon-glow 3s ease-in-out infinite;
+  background: radial-gradient(circle, rgb(255 101 15 / 45%), transparent 68%);
+  border-radius: 50%;
+  content: "";
+  inset: -2px 2px;
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
+}
+aside.disney-sidebar nav :is(a, button) > span:first-child svg.stroke-white {
+  filter: drop-shadow(0 0 6px rgb(255 150 80 / 75%));
+}
+@keyframes cine-icon-glow {
+  0%, 100% { opacity: .65; transform: scale(.9); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+/* ---------- 6. Back to top: a film reel that fills with progress and turns as you scroll ---------- */
+.cine-reel {
+  --reel-progress: 0;
+  background: rgb(3 7 20 / 78%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 50%;
+  bottom: 28px;
+  box-shadow: 0 12px 30px rgb(0 0 0 / 45%);
+  color: #fff;
+  cursor: pointer;
+  height: 54px;
+  opacity: 0;
+  padding: 0;
+  pointer-events: none;
+  position: fixed;
+  right: 28px;
+  transform: translateY(18px) scale(.8);
+  transition: opacity .35s ease, transform .5s var(--cine-ease), border-color .25s ease;
+  width: 54px;
+  z-index: 60;
+}
+.cine-reel[data-visible] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+.cine-reel:hover,
+.cine-reel:focus-visible {
+  border-color: rgb(255 101 15 / 70%);
+}
+.cine-reel svg {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+.cine-reel circle {
+  fill: none;
+  stroke-width: 2;
+}
+.cine-reel__track {
+  stroke: rgb(255 255 255 / 12%);
+}
+.cine-reel__ring {
+  stroke: #ff650f;
+  stroke-dashoffset: calc(138.23 * (1 - var(--reel-progress)));
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+.cine-reel__spool {
+  transform: rotate(calc(var(--reel-progress) * 1080deg));
+  transform-origin: 26px 26px;
+}
+.cine-reel__spool circle {
+  stroke: rgb(255 255 255 / 85%);
+  stroke-width: 1.6;
+}
+.cine-reel:hover .cine-reel__spool {
+  animation: cine-reel-rewind .8s var(--cine-ease);
+}
+@keyframes cine-reel-rewind {
+  from { rotate: 0deg; }
+  to { rotate: -360deg; }
+}
+main[data-site-shell]:has([data-studio-lot]) .cine-reel {
+  display: none;
+}
+@media (max-width: 1023px) {
+  .cine-reel {
+    bottom: calc(96px + env(safe-area-inset-bottom));
+    right: 16px;
+  }
+}
+
+/* ---------- 9. Article pages: the read-in reveal is driven by the Web Animations API in CinematicArticle.tsx ---------- */
+
+/* ---------- 11. Ambient colour: light from the featured hero spills around the top of the page ---------- */
+@property --cine-ambient {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgb(255 101 15 / 0%);
+}
+[data-cinematic-home] {
+  position: relative;
+  transition: --cine-ambient 1.6s ease, transform 1.6s var(--cine-ease), filter 1.4s ease;
+}
+[data-cinematic-home]::before {
+  background:
+    radial-gradient(ellipse 60% 40% at 18% 100vh, var(--cine-ambient), transparent 70%),
+    radial-gradient(ellipse 55% 45% at 88% 92vh, var(--cine-ambient), transparent 72%);
+  content: "";
+  height: 190vh;
+  left: 0;
+  mix-blend-mode: screen;
+  opacity: .55;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 20;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-cine-leaning] > *,
+  aside.disney-sidebar nav svg,
+  .cine-reel__spool {
+    animation: none !important;
+    transform: none !important;
+  }
+}

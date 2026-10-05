@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { AppShell } from "@/components/AppShell";
+import { CinematicGlobal } from "@/components/cinema/CinematicGlobal";
 import { getStudiosShowcaseData } from "@/components/StudiosShowcase";
 import { watchlistNavigationEnabled } from "@/lib/feature-flags";
 import { getColumnNavItems, getTypeNavItems } from "@/lib/payload-content";
 import "../globals.css";
 import "./responsive.css";
+import "./cinematic.css";
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
 
@@ -41,6 +43,7 @@ export default async function RootLayout({
         <AppShell availableStudiosHrefs={availableStudiosHrefs} columnNavItems={columnNavItems} showWatchlist={watchlistNavigationEnabled()} typeNavItems={typeNavItems}>
           {children}
           {marketEventModal}
+          <CinematicGlobal />
         </AppShell>
       </body>
     </html>

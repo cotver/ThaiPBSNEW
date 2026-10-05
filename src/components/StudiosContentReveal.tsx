@@ -30,7 +30,9 @@ export function StudiosContentReveal({ children }: { children: ReactNode }) {
     );
 
     const prepare = (item: HTMLElement) => {
-      if (item.dataset.revealReady === "true") return;
+      // Skip only items already shown: a re-run effect (Strict Mode, Fast Refresh) must re-observe items
+      // a previous run hid, or they stay at opacity 0 forever.
+      if (item.dataset.revealVisible === "true") return;
       item.dataset.revealReady = "true";
 
       const bounds = item.getBoundingClientRect();

@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { StudiosHero } from "@/components/StudiosHero";
 import { ArticlePdfPagesLoader } from "@/components/article/ArticlePdfPagesLoader";
 import { ArticleRichText } from "@/components/article/ArticleRichText";
+import { CinematicArticle } from "@/components/cinema/CinematicArticle";
 import { getColumnArticleBySlug, getGlobalRelatedStories, getRelatedColumnArticles } from "@/lib/article/column-articles";
 import { columnArticleHref } from "@/lib/content";
 import type { ColumnArticleDetail } from "@/lib/article/column-articles";
@@ -108,7 +109,7 @@ export default async function ColumnArticlePage({ params }: PageProps) {
 
   return (
     <main className={styles.page}>
-      <header className={styles.articleHero}>
+      <header className={styles.articleHero} data-cine-morph-target>
         <StudiosHero showActions={false} showSelectors={false} items={[{
           id: article.id,
           href: "#article-content",
@@ -123,7 +124,7 @@ export default async function ColumnArticlePage({ params }: PageProps) {
         }]} />
       </header>
 
-      <div className={styles.articleShell} id="article-content">
+      <div className={styles.articleShell} data-cine-article id="article-content">
         <aside className={styles.meta} aria-label="Article information">
           <div><span>Published</span><time dateTime={article.date}>{formatDate(article.date)}</time></div>
           {article.author ? <div><span>Words by</span><strong>{article.author}</strong></div> : null}
@@ -152,6 +153,7 @@ export default async function ColumnArticlePage({ params }: PageProps) {
           <RelatedStoriesRail article={article} />
         </Suspense>
       </div>
+      <CinematicArticle />
     </main>
   );
 }

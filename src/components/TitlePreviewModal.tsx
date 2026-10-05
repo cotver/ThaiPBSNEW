@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { titleDisplayLines, titleEyebrow, titleHref, titleSeasonEpisodeLabel, type Title } from "@/lib/content";
 import { ENABLE_TITLE_PLAYBACK, PREFER_TRAILER_SOUND } from "@/lib/features";
@@ -114,7 +114,8 @@ export function TitlePreviewModal({
     router.push(href);
   }, [closeForNavigation, router]);
 
-  useEffect(() => {
+  // A layout effect, so the page scrollbar is gone before the modal (with its own scrollbar) first paints.
+  useLayoutEffect(() => {
     if (!open || !title) {
       return;
     }

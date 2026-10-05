@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import styles from "@/components/studio/studio-lot.module.css";
+import { sampleUnder } from "./cursor-tone";
 
 export const cursorEvent = "studio-lot:cursor";
 
@@ -12,6 +13,8 @@ export function setCursorLabel(label: string | null) {
 
 /**
  * Viewfinder cursor: frame lines that open up around anything interactive and carry a label.
+ * Its colours follow what it is over (see cursor-tone.ts): ink on light backgrounds and paper on dark ones,
+ * amber over links and buttons, a contrasting tint of the picture over images, and a cyan caret over text.
  * Only on fine pointers; touch devices keep native behaviour.
  */
 export function LotCursor() {
@@ -40,6 +43,27 @@ export function LotCursor() {
     let visible = false;
     let frame = 0;
     let last = performance.now();
+    let sampled: Element | null = null;
+    let sampleFrame = 0;
+
+    // Read what is under the pointer and recolour the cursor; at most once a frame.
+    const resample = (force = false) => {
+      if (sampleFrame) return;
+      sampleFrame = requestAnimationFrame(() => {
+        sampleFrame = 0;
+        const cursor = frameRef.current;
+        const under = document.elementFromPoint(target.x, target.y);
+        if (!cursor || !under || (under === sampled && !force)) return;
+        sampled = under;
+        const { kind, tint, tone } = sampleUnder(under);
+        cursor.dataset.kind = kind;
+        cursor.dataset.tone = tone;
+        if (tint) cursor.style.setProperty("--cursor-tint", tint);
+        else cursor.style.removeProperty("--cursor-tint");
+      });
+    };
+    // Scrolling moves new content under a still pointer.
+    const scrolled = () => resample(true);
 
     const sync = () => setLabel(domLabel.current ?? sceneLabel.current);
 
@@ -58,6 +82,7 @@ export function LotCursor() {
         domLabel.current = next;
         sync();
       }
+      resample();
     };
     const leave = () => {
       visible = false;
@@ -86,8 +111,11 @@ export function LotCursor() {
     window.addEventListener("pointerdown", down);
     window.addEventListener("pointerup", up);
     window.addEventListener(cursorEvent, scene);
+    window.addEventListener("scroll", scrolled, { capture: true, passive: true });
     return () => {
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(sampleFrame);
+      window.removeEventListener("scroll", scrolled, { capture: true });
       delete root.dataset.lotCursor;
       window.removeEventListener("pointermove", move);
       document.removeEventListener("pointerleave", leave);

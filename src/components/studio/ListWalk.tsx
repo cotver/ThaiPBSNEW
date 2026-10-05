@@ -31,6 +31,16 @@ function findSection(root: HTMLElement, room: LotRoom): HTMLElement | null {
   }
 }
 
+/**
+ * A section's top in the document, from layout rather than its painted box: sections waiting to rise in as
+ * they scroll into view (the home page's motion) are drawn lower than where they will settle.
+ */
+function documentTop(element: HTMLElement) {
+  let top = 0;
+  for (let node: HTMLElement | null = element; node; node = node.offsetParent as HTMLElement | null) top += node.offsetTop;
+  return top;
+}
+
 function headerHeight() {
   return document.querySelector<HTMLElement>("[data-lot-header]")?.offsetHeight ?? 64;
 }
@@ -62,7 +72,7 @@ export function ListWalk({ rooms, rootRef }: { rooms: LotRoom[]; rootRef: RefObj
       let next: LotSectionId | null = rooms[0]?.id ?? null;
       for (const room of rooms) {
         const element = findSection(root, room);
-        if (element && element.getBoundingClientRect().top <= line) next = room.id;
+        if (element && documentTop(element) - window.scrollY <= line) next = room.id;
       }
       // At the very bottom, the last section is current even if it is short.
       if (max > 0 && window.scrollY >= max - 2) next = rooms[rooms.length - 1]?.id ?? next;
@@ -92,7 +102,7 @@ export function ListWalk({ rooms, rootRef }: { rooms: LotRoom[]; rootRef: RefObj
       const element = root && room ? findSection(root, room) : null;
       if (!element) return;
       cue("select");
-      const top = element.getBoundingClientRect().top + window.scrollY - headerHeight() - 12;
+      const top = documentTop(element) - headerHeight() - 12;
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       window.scrollTo({ top: Math.max(0, top), behavior: reducedMotion ? "auto" : "smooth" });
       gliding.current = { id, until: performance.now() + (reducedMotion ? 0 : 900) };
