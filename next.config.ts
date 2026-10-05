@@ -11,6 +11,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    // Almost every page is force-dynamic, whose prefetches expire at once (default 0s), so each hover over a
+    // card re-requested its page (?_rsc=) and re-rendered it on the server. Reuse a prefetch for 30s instead.
+    staleTimes: { dynamic: 30 },
+  },
   async redirects() {
     // Keep the entrance page available in the codebase for future use.
     return [{ source: "/", destination: "/home", permanent: false }];
