@@ -30,23 +30,25 @@
   -webkit-font-smoothing: antialiased;
 }
 
-.root ::selection {
+/* Not inside the list view's /home page ([data-lot-home]), which keeps the site's own. */
+.root :not([data-lot-home], [data-lot-home] *)::selection {
   background: var(--tungsten);
   color: var(--ink);
 }
 
-.root a {
+.root a:not([data-lot-home] *) {
   color: inherit;
   text-decoration: none;
 }
 
-.root :focus-visible {
+.root :not([data-lot-home], [data-lot-home] *):focus-visible {
   outline: 2px solid var(--tungsten);
   outline-offset: 3px;
 }
 
-:global(html[data-lot-cursor="on"]) .root,
-:global(html[data-lot-cursor="on"]) .root *:not(input):not(textarea) {
+/* The list view is the /home page, so it keeps the site's own cursor (see .cursor). */
+:global(html[data-lot-cursor="on"]:not([data-lot-list])) .root,
+:global(html[data-lot-cursor="on"]:not([data-lot-list])) .root *:not(input):not(textarea) {
   cursor: none;
 }
 
@@ -145,24 +147,22 @@
   min-width: 0;
 }
 
-.backLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 18px;
+/* Search, as in the site's navigation (AppShell's icon), in the lot's glass. */
+.searchLink {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 50%;
   background: rgb(14 16 22 / 70%);
   color: var(--paper-2);
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
   backdrop-filter: blur(14px);
   transition: color 240ms var(--ease), border-color 240ms var(--ease);
 }
 
-.backLink:hover {
+.searchLink:hover,
+.searchLink:focus-visible {
   border-color: var(--line-strong);
   color: var(--paper);
 }
@@ -265,6 +265,11 @@
   pointer-events: none;
   opacity: 0;
   transition: opacity 200ms;
+}
+
+/* Not in the list view: it is the /home page, with the site's own cursor. */
+:global(html[data-lot-list]) .cursor {
+  display: none;
 }
 
 .cursor[data-visible] {
@@ -1379,10 +1384,11 @@
   text-transform: uppercase;
 }
 
+/* Not the list view's /home page ([data-lot-home]): it handles reduced motion as /home does. */
 @media (prefers-reduced-motion: reduce) {
-  .root *,
-  .root *::before,
-  .root *::after {
+  .root :not([data-lot-home], [data-lot-home] *),
+  .root :not([data-lot-home], [data-lot-home] *)::before,
+  .root :not([data-lot-home], [data-lot-home] *)::after {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;

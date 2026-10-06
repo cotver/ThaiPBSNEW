@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { getHomePageData, HomePage } from "@/components/home/HomePage";
 import { getStudiosShowcaseData } from "@/components/StudiosShowcase";
+import { siteContentClassName, siteShellClassName } from "@/components/site-shell";
 import type { Title } from "@/lib/content";
 import { marketEventGroupHref, marketEventImage } from "@/lib/market-events";
 import { marketCompanyLogo, marketLogoFrame } from "@/lib/market-logos";
@@ -134,11 +135,11 @@ async function StudioLotRooms() {
   const rooms = [featured, ...studioRooms, ...brandTiles, ...rows];
   // List view: the /home page itself (HomePage, which /home renders too, so any change to the home page
   // shows here as well) inside the same wrappers the site shell gives it, since the site's own shell is
-  // hidden around the gallery. The Lot brings its own entrance, so the home intro card is left out.
+  // hidden around the gallery. Its intro card plays as on /home (once per session), so the two match.
   const listView = (
-    <div data-site-shell>
-      <div className="app-shell-content relative pb-20">
-        <HomePage intro={false} />
+    <div className={siteShellClassName} data-lot-home data-site-shell>
+      <div className={siteContentClassName}>
+        <HomePage />
       </div>
     </div>
   );

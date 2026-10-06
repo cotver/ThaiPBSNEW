@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { LotEngine, LotQuality } from "@/lib/studio/engine/LotEngine";
@@ -49,8 +49,13 @@ const readWalkSlot = () => document.getElementById(walkSlotId);
 /** `listView` is the real /home page (server-rendered), shown in list view and as the fallback. */
 export function LotExperience({ data, fontFamily, listView }: { data: LotData; fontFamily: string; listView: ReactNode }) {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const initialStage = searchParams.get("stage") as LotSectionId | null;
-  const wantsList = searchParams.get("view") === "list";
+  // The view comes from the URL only while it is the gallery's own: a page opened over it as a modal
+  // (/title/…, /article/…) has no ?view=list, and reading that would swap the list for the 3D walk.
+  const urlWantsList = searchParams.get("view") === "list";
+  const [wantsList, setWantsList] = useState(urlWantsList);
+  if (pathname === lotGalleryHref && urlWantsList !== wantsList) setWantsList(urlWantsList);
 
   const capabilities = useSyncExternalStore(noSubscription, readCapabilities, noCapabilities);
   // The header (from the layout) owns the slot; the gallery fills it with the walk controls.
@@ -260,14 +265,20 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
       <>
         {/* Until the device is known, show the site's loading screen rather than flashing the list. */}
         {mode === "detecting" ? <div className={styles.siteLoader}><SiteLoading /></div> : null}
-        <div className={styles.homeList} hidden={mode === "detecting"} ref={listRef}>
-          {listView}
-        </div>
+        {/*
+          Mounted only once it shows: the home page's motion (CinematicMotion) measures each row when it mounts
+          to decide which ones reveal on scroll, and a hidden list measures as all on screen, so none would.
+        */}
+        {mode === "sheet" ? (
+          <div className={styles.homeList} ref={listRef}>
+            {listView}
+          </div>
+        ) : null}
         {walkSlot && mode === "sheet" ? createPortal(<ListWalk rooms={data.rooms} rootRef={listRef} />, walkSlot) : null}
         {failed ? <p className={styles.listNotice}>The 3D gallery could not start on this device, so here is the home page.</p> : null}
         {capabilities?.webgl && !failed ? (
-          <button className={styles.walkButton} data-cursor="Walk the gallery in 3D" onClick={enterLot} type="button">
-            Walk the gallery in 3D
+          <button aria-label="Walk the gallery in 3D" className={`${styles.roundButton} ${styles.walkButton}`} data-cursor="Walk the gallery in 3D" onClick={enterLot} title="Walk the gallery in 3D" type="button">
+            3D
           </button>
         ) : null}
       </>
@@ -325,8 +336,8 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
           <span>1–{Math.min(9, data.rooms.length)} · Esc</span>
         </div>
 
-        <button className={styles.listToggle} data-cursor="Switch to list view" onClick={switchToSheet} type="button">
-          List view
+        <button aria-label="Switch to the list view" className={`${styles.roundButton} ${styles.listToggle}`} data-cursor="Switch to 2D" onClick={switchToSheet} title="Switch to the list view" type="button">
+          2D
         </button>
       </div>
 

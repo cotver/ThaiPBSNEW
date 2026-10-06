@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { siteContentClassName, siteShellClassName } from "@/components/site-shell";
 import { MarketEventModalShell } from "@/components/studios/MarketEventModalShell";
 import { plexThai } from "@/lib/studio/font";
 import lot from "./studio-lot.module.css";
@@ -15,8 +16,8 @@ export function StudioModal({ children, title, variant = "lot" }: { children: Re
   return (
     <MarketEventModalShell closeLabel={`Close ${title}`} dialogClassName={styles.dialog} overlayClassName={styles.overlay} title={title}>
       {variant === "site" ? (
-        <div className={styles.site} data-site-shell>
-          <div className="app-shell-content relative pb-20">{children}</div>
+        <div className={siteShellClassName} data-site-shell>
+          <div className={siteContentClassName}>{children}</div>
         </div>
       ) : (
         <div className={`${plexThai.variable} ${lot.root}`}>{children}</div>

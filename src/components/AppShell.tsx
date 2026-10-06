@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { navItems, type NavItem } from "@/lib/content";
+import { siteContentClassName, siteShellClassName } from "@/components/site-shell";
 
 // Keep the Studios top navigation ready for a later switch back.
 const ENABLE_STUDIOS_TOP_NAVIGATION = false;
@@ -164,7 +165,7 @@ export function AppShell({
   }
 
   return (
-    <main data-site-shell={!isPrototype || undefined} data-top-navigation={(ENABLE_STUDIOS_TOP_NAVIGATION && studiosRelatedPage) || undefined} className="min-h-screen overflow-x-clip bg-[#030714] text-white">
+    <main data-site-shell={!isPrototype || undefined} data-top-navigation={(ENABLE_STUDIOS_TOP_NAVIGATION && studiosRelatedPage) || undefined} className={siteShellClassName}>
       <nav
         aria-hidden={!studiosTopNav}
         aria-label="Primary navigation"
@@ -348,7 +349,7 @@ export function AppShell({
           </nav>
         </aside>
 
-      <div className={`app-shell-content relative pb-20 transition-[padding-left] duration-700 ease-in-out ${studiosFullWidth ? "lg:pl-0" : "lg:pl-[92px]"}`}>{children}</div>
+      <div className={`${siteContentClassName} transition-[padding-left] duration-700 ease-in-out ${studiosFullWidth ? "lg:pl-0" : "lg:pl-[92px]"}`}>{children}</div>
 
       <nav
         aria-label="Mobile navigation"
@@ -378,7 +379,8 @@ export function AppShell({
   );
 }
 
-function Icon({
+/** The site navigation's icons; the Studio Lot's header uses the same ones (LotHeader). */
+export function Icon({
   active,
   name,
   small,

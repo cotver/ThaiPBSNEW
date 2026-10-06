@@ -374,19 +374,23 @@ html[data-intro-phase="hold"] [data-cinematic-home] {
   to { text-shadow: 40px 0 24px rgb(255 170 110 / 0%); }
 }
 
-/* ---------- 4. Film grain and vignette over the whole site (not the Studio Lot) ---------- */
+/* ---------- 4. Film grain and vignette over the whole site (not the Studio Lot's 3D gallery; its list view is /home) ---------- */
 main[data-site-shell]:not(:has([data-studio-lot]))::before,
-main[data-site-shell]:not(:has([data-studio-lot]))::after {
+:root[data-lot-list] main[data-site-shell]::before,
+main[data-site-shell]:not(:has([data-studio-lot]))::after,
+:root[data-lot-list] main[data-site-shell]::after {
   content: "";
   pointer-events: none;
   position: fixed;
   z-index: 9000;
 }
-main[data-site-shell]:not(:has([data-studio-lot]))::before {
+main[data-site-shell]:not(:has([data-studio-lot]))::before,
+:root[data-lot-list] main[data-site-shell]::before {
   background: radial-gradient(ellipse at center, transparent 58%, rgb(0 0 0 / 38%) 100%);
   inset: 0;
 }
-main[data-site-shell]:not(:has([data-studio-lot]))::after {
+main[data-site-shell]:not(:has([data-studio-lot]))::after,
+:root[data-lot-list] main[data-site-shell]::after {
   animation: cine-grain 1.2s steps(6) infinite;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 220px;
@@ -416,8 +420,8 @@ main[data-site-shell]:not(:has([data-studio-lot]))::after {
   transform-origin: left;
   z-index: 70;
 }
-/* The Studio Lot's list view shows the home page under its own top nav, which has its own progress line. */
-[data-studio-lot] [data-cine-progress] {
+/* Not over the Studio Lot's 3D gallery or its pages; its list view is /home, so it keeps the line as /home does. */
+:root:not([data-lot-list]) [data-studio-lot] [data-cine-progress] {
   display: none;
 }
 
@@ -717,7 +721,8 @@ aside.disney-sidebar nav :is(a, button) > span:first-child svg.stroke-white {
   from { rotate: 0deg; }
   to { rotate: -360deg; }
 }
-main[data-site-shell]:has([data-studio-lot]) .cine-reel {
+/* Not over the Studio Lot's 3D gallery or its pages; its list view is /home, so it keeps the reel. */
+:root:not([data-lot-list]) main[data-site-shell]:has([data-studio-lot]) .cine-reel {
   display: none;
 }
 @media (max-width: 1023px) {
@@ -725,6 +730,24 @@ main[data-site-shell]:has([data-studio-lot]) .cine-reel {
     bottom: calc(96px + env(safe-area-inset-bottom));
     right: 16px;
   }
+}
+/*
+ * The Studio Lot's list view: its round "3D" button (.walkButton in experience.module.css) takes the reel's
+ * corner, and the reel stacks above it. Both read the corner from these, so they stay aligned.
+ */
+:root[data-lot-list] {
+  --lot-dock-right: 28px;
+  --lot-dock-bottom: calc(28px + env(safe-area-inset-bottom));
+}
+@media (max-width: 1023px) {
+  :root[data-lot-list] {
+    --lot-dock-right: 16px;
+    --lot-dock-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+}
+:root[data-lot-list] .cine-reel {
+  bottom: calc(var(--lot-dock-bottom) + 54px + 12px);
+  right: var(--lot-dock-right);
 }
 
 /* ---------- 9. Article pages: the read-in reveal is driven by the Web Animations API in CinematicArticle.tsx ---------- */

@@ -29,12 +29,6 @@
   z-index: 60;
 }
 
-/* The site's own page wrappers, as AppShell gives them (its navigation stays hidden). */
-.site {
-  min-height: 100dvh;
-  background: #030714;
-  color: #fff;
-}
 
 @keyframes modal-in {
   from {

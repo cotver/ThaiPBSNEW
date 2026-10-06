@@ -257,25 +257,11 @@
   text-transform: uppercase;
 }
 
+/* "2D": back to the list view, in the same round look as the list view's "3D" button (.roundButton). */
 .listToggle {
   position: absolute;
   right: 0;
   bottom: calc(100% + 16px);
-  padding: 8px 14px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgb(8 9 13 / 60%);
-  color: var(--paper);
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  backdrop-filter: blur(10px);
-  transition: border-color 300ms var(--ease);
-}
-
-.listToggle:hover {
-  border-color: var(--paper);
 }
 
 @media (max-width: 900px) {
@@ -712,41 +698,59 @@
 
 /* ——— List view: the real /home page, with the site's own ground, type and colours ——— */
 
+/*
+ * The list view is the /home page inside the lot's chrome: undo what .root sets (studio-lot.module.css) and
+ * take the page's own values, so it renders as /home does. Its wrappers come from AppShell (site-shell.ts).
+ */
 .homeList {
   min-height: 100vh;
-  background: var(--background, #030714);
-  color: var(--foreground, #ededed);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--foreground);
+  font-family: var(--site-font);
+  -webkit-font-smoothing: auto;
 }
 
+/*
+ * The "2D" / "3D" view switches: round, in the home page's back-to-top reel's own look (.cine-reel in
+ * cinematic.css).
+ */
+.roundButton {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 50%;
+  background: rgb(3 7 20 / 78%);
+  color: #fff;
+  font-family: var(--site-font);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: 0 12px 30px rgb(0 0 0 / 45%);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: border-color 0.25s ease;
+}
+
+.roundButton:hover,
+.roundButton:focus-visible {
+  border-color: rgb(255 101 15 / 70%);
+}
+
+/* List view: "3D" takes the reel's corner, and the reel stacks above it. Both read the corner from --lot-dock-*. */
 .walkButton {
   position: fixed;
-  right: clamp(16px, 3vw, 32px);
-  bottom: calc(clamp(16px, 3vh, 28px) + env(safe-area-inset-bottom));
+  right: var(--lot-dock-right, 28px);
+  bottom: var(--lot-dock-bottom, 28px);
   z-index: 70;
-  padding: 12px 20px;
-  border: 1px solid rgb(242 237 228 / 22%);
-  border-radius: 999px;
-  background: rgb(8 9 13 / 82%);
-  color: #f2ede4;
-  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  box-shadow: 0 12px 40px rgb(0 0 0 / 45%);
-  backdrop-filter: blur(12px);
-  transition: border-color 300ms cubic-bezier(0.22, 1, 0.36, 1), transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.walkButton:hover {
-  border-color: #ffb547;
-  transform: translateY(-2px);
 }
 
 .listNotice {
   position: fixed;
   left: 50%;
-  bottom: calc(clamp(16px, 3vh, 28px) + 56px + env(safe-area-inset-bottom));
+  /* Shown only when the 3D gallery could not start, so the "3D" button is not there; the reel stacks above. */
+  bottom: var(--lot-dock-bottom, 28px);
   z-index: 70;
   max-width: min(520px, calc(100vw - 32px));
   margin: 0;

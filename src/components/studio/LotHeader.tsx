@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
+import { Icon } from "@/components/AppShell";
+import { navItems } from "@/lib/content";
 import { lotGalleryHref } from "@/lib/studio/data";
-import { cue } from "@/lib/studio/sound";
 import styles from "@/components/studio/studio-lot.module.css";
 
 const subscribeScroll = (onChange: () => void) => {
@@ -12,6 +13,9 @@ const subscribeScroll = (onChange: () => void) => {
   return () => window.removeEventListener("scroll", onChange);
 };
 const isScrolled = () => window.scrollY > 24;
+
+/** The site navigation's own Search entry (AppShell), so the lot's search goes where the site's does. */
+const search = navItems.find((item) => item.icon === "search");
 
 /** The gallery renders its walk controls (progress + rooms) into this header slot. */
 export const walkSlotId = "lot-walk-slot";
@@ -30,17 +34,16 @@ export function LotHeader() {
         </span>
       </Link>
 
-      <div className={styles.walkSlot} id={walkSlotId}>
-        {/* The gallery is /home/studio itself; its own pages (/home/studio/…) get a way back. */}
-        {pathname === lotGalleryHref ? null : (
-          <Link className={styles.backLink} data-cursor="Back to the gallery" href={lotGalleryHref} onMouseEnter={() => cue("tick")}>
-            <span aria-hidden="true">←</span> Back to the gallery
-          </Link>
-        )}
-      </div>
+      <div className={styles.walkSlot} id={walkSlotId} />
 
-      {/* Keeps the walk centred in the header's three-column grid. */}
-      <div aria-hidden="true" className={styles.headerTools} />
+      {/* Search, as in the site's navigation; from the gallery it opens over it as a modal (@lotModal). */}
+      <div className={styles.headerTools}>
+        {search ? (
+          <Link aria-label={search.label} className={styles.searchLink} data-cursor={search.label} href={search.href}>
+            <Icon active={pathname.startsWith(search.href)} name={search.icon} />
+          </Link>
+        ) : null}
+      </div>
     </header>
   );
 }
