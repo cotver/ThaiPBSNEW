@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 /** Opened from the Studio Lot: the same page, over the gallery. */
 export default function StudiosCategoryPageModal(props: Parameters<typeof StudiosCategoryPage>[0]) {
   return (
-    <StudioModal title="Studios">
+    <StudioModal title="Studios" variant="site">
       <StudiosCategoryPage {...props} />
     </StudioModal>
   );

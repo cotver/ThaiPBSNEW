@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 /** Opened from the Studio Lot: the same page, over the gallery. */
 export default function MarketEventsPageModal() {
   return (
-    <StudioModal title="Market & Events">
+    <StudioModal title="Market & Events" variant="site">
       <MarketEventsPage />
     </StudioModal>
   );

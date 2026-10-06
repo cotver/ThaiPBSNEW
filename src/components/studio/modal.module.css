@@ -1,30 +1,50 @@
-/* Over the gallery and its loading screen, under the lot's own cursor (z-index 9999). */
+/*
+ * Full-window, like the page itself: the site's pages size their heroes, videos and breakpoints from the
+ * viewport (vw, vh, media queries), so only a modal as big as the window keeps their proportions exact.
+ * Over the gallery and its loading screen, under the lot's own cursor (z-index 9999).
+ */
 .overlay {
   position: fixed;
   inset: 0;
   z-index: 9000;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: clamp(0px, 2.5vw, 32px);
   background: rgb(8 9 13 / 72%);
-  backdrop-filter: blur(6px);
   overscroll-behavior: contain;
 }
 
 .dialog.dialog {
-  width: min(100%, 1440px);
-  max-height: calc(100dvh - 2 * clamp(0px, 2.5vw, 32px));
-  background: #08090d;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  min-height: 0;
+  overflow-y: auto;
   overscroll-behavior: contain;
+  background: #030714;
+  /* backwards, not both: once it ends, no transform stays on the dialog to trap the page's fixed elements. */
+  animation: modal-in 420ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
-@media (max-width: 650px) {
-  .overlay {
-    padding: 0;
-  }
+/* The close button stays above the page's own layers (heroes, sticky bars). */
+.dialog.dialog > button:first-child {
+  z-index: 60;
+}
 
+/* The site's own page wrappers, as AppShell gives them (its navigation stays hidden). */
+.site {
+  min-height: 100dvh;
+  background: #030714;
+  color: #fff;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
   .dialog.dialog {
-    max-height: 100dvh;
+    animation-duration: 1ms;
   }
 }
