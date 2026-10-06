@@ -2,6 +2,8 @@ import { plexThai } from "@/lib/studio/font";
 import { LotCursor } from "./LotCursor";
 import { LotHeader } from "./LotHeader";
 import styles from "./studio-lot.module.css";
+// Hides the site's own navigation around the gallery and its pages (see the file).
+import "./studio-shell.css";
 
 /**
  * The Studio Lot's own full-screen chrome — its font, header and cursor — around the gallery on /home

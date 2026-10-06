@@ -6,7 +6,15 @@ export const metadata: Metadata = {
   description: "Walk the Thai PBS catalogue as a gallery: every home page section, hung room by room.",
 };
 
-/** The Studio Lot's own pages (programmes, newsroom, shortlist), in the gallery's chrome. */
-export default function StudioLotLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <LotChrome>{children}</LotChrome>;
+/**
+ * The Studio Lot: the gallery and its own pages (programmes, newsroom, shortlist), in the gallery's chrome.
+ * `lotModal` shows the pages it links to over it (see @lotModal), so the 3D walk never reloads.
+ */
+export default function StudioLotLayout({ children, lotModal }: Readonly<{ children: React.ReactNode; lotModal: React.ReactNode }>) {
+  return (
+    <LotChrome>
+      {children}
+      {lotModal}
+    </LotChrome>
+  );
 }

@@ -1,4 +1,4 @@
-import type { Title } from "@/lib/content";
+import { titleHref, type Title } from "@/lib/content";
 import { getHeroTrailerSource } from "@/lib/trailer-playback";
 import type { MarketLogo } from "@/lib/market-logos";
 import type { FinalArticleCard } from "@/lib/payload-articles";
@@ -6,11 +6,14 @@ import type { FinalArticleCard } from "@/lib/payload-articles";
 /** The gallery's own pages (programmes, newsroom, shortlist, partner logos) live under /home/studio. */
 export const lotBase = "/home/studio";
 
-/** The gallery itself is a view of /home: walked in 3D, or as its list. */
-export const lotGalleryHref = "/home?view=studio";
-export const lotListHref = "/home?view=list";
+/**
+ * The gallery itself, walked in 3D or as its list. It links to the same pages /home does, and opens them
+ * over itself as modals (app/(site)/home/studio/@lotModal), so the 3D walk stays loaded underneath.
+ */
+export const lotGalleryHref = lotBase;
+export const lotListHref = `${lotBase}?view=list`;
 
-/** /home?view=… values that show the gallery instead of the classic home page. */
+/** ?view=… values: /home redirects these old gallery links to /home/studio. */
 export type LotView = "studio" | "list";
 export function lotView(value: string | string[] | undefined): LotView | null {
   const view = Array.isArray(value) ? value[0] : value;
@@ -100,8 +103,9 @@ export type LotRoom = {
 
 export type LotData = { rooms: LotRoom[] };
 
+/** A programme opens where /home opens it: its title page. */
 export function lotProgramHref(slug: string) {
-  return `${lotBase}/programs/${encodeURIComponent(slug)}`;
+  return titleHref(slug);
 }
 
 export function lotArticleHref(slug: string) {

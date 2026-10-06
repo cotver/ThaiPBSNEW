@@ -1,0 +1,30 @@
+/* Over the gallery and its loading screen, under the lot's own cursor (z-index 9999). */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: clamp(0px, 2.5vw, 32px);
+  background: rgb(8 9 13 / 72%);
+  backdrop-filter: blur(6px);
+  overscroll-behavior: contain;
+}
+
+.dialog.dialog {
+  width: min(100%, 1440px);
+  max-height: calc(100dvh - 2 * clamp(0px, 2.5vw, 32px));
+  background: #08090d;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 650px) {
+  .overlay {
+    padding: 0;
+  }
+
+  .dialog.dialog {
+    max-height: 100dvh;
+  }
+}

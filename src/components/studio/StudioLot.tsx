@@ -4,33 +4,31 @@ import { getStudiosShowcaseData } from "@/components/StudiosShowcase";
 import type { Title } from "@/lib/content";
 import { marketEventGroupHref, marketEventImage } from "@/lib/market-events";
 import { marketCompanyLogo, marketLogoFrame } from "@/lib/market-logos";
-import { lotBase, toLotProgram, type LotLinkItem, type LotRoom } from "@/lib/studio/data";
+import { toLotProgram, type LotLinkItem, type LotRoom } from "@/lib/studio/data";
 import { plexThai } from "@/lib/studio/font";
 import styles from "@/components/studio/experience.module.css";
-import { LotChrome } from "./LotChrome";
 import { LotExperience } from "./LotExperience";
 import SiteLoading from "@/app/(site)/loading";
-// Hides the site's own navigation around the gallery on /home?view=… (see the file).
-import "./studio-shell.css";
 
 /**
- * The Studio Lot, as /home renders it for ?view=studio (the 3D walk) and ?view=list (its list view).
- * LotExperience reads the view from the URL, so both share this one server render.
+ * The Studio Lot at /home/studio: the 3D walk, or with ?view=list its list view. LotExperience reads the
+ * view from the URL, so both share this one server render. The studio layout brings the chrome (LotChrome).
  */
 export function StudioLot() {
   return (
-    <LotChrome>
-      <Suspense fallback={<div className={styles.siteLoader}><SiteLoading /></div>}>
-        <StudioLotRooms />
-      </Suspense>
-    </LotChrome>
+    <Suspense fallback={<div className={styles.siteLoader}><SiteLoading /></div>}>
+      <StudioLotRooms />
+    </Suspense>
   );
 }
 
-const allPrograms = `${lotBase}/programs`;
+/** A "view all" link exactly as /home's ContentRow builds it (HomeSections). */
+function browseHref(section: string, label: string, extra = "") {
+  return `/browse?section=${section}${extra}&label=${encodeURIComponent(label)}`;
+}
 
 /** A ContentRow as a room. Titles pass through untouched — /home applies no extra filtering. */
-function row(id: string, title: string, thai: string, titles: Title[], layout: NonNullable<LotRoom["layout"]>, options: { viewAllHref?: string } = {}): LotRoom {
+function row(id: string, title: string, thai: string, titles: Title[], layout: NonNullable<LotRoom["layout"]>, viewAllHref: string): LotRoom {
   return {
     id,
     kind: "row",
@@ -39,7 +37,7 @@ function row(id: string, title: string, thai: string, titles: Title[], layout: N
     blurb: `${titles.length} ${titles.length === 1 ? "program" : "programs"}`,
     programs: titles.map(toLotProgram),
     items: [],
-    viewAllHref: options.viewAllHref ?? allPrograms,
+    viewAllHref,
     layout,
   };
 }
@@ -109,23 +107,26 @@ async function StudioLotRooms() {
   // BrandTiles
   const brandTiles: LotRoom[] = categories.length
     ? [links("categories", "Categories", "หมวดหมู่", `${categories.length} collections to browse.`,
-        categories.map((category) => ({ id: `category-${category.id}`, title: category.name, href: `${allPrograms}?category=${encodeURIComponent(category.slug)}`, image: category.imageUrl })),
+        categories.map((category) => ({ id: `category-${category.id}`, title: category.name, href: `/category/${encodeURIComponent(category.slug)}`, image: category.imageUrl })),
         { itemShape: "tile" })]
     : [];
 
+  // ContentRows, with /home's own "view all" links.
   const rows: LotRoom[] = [
-    row("recommended", "Recommended For You", "แนะนำสำหรับคุณ", collections.recommended, "poster"),
+    row("recommended", "Recommended For You", "แนะนำสำหรับคุณ", collections.recommended, "poster", browseHref("recommended", "Recommended For You")),
     ...collections.typeRows.map((typeRow) =>
-      row(`type-${typeRow.type.slug}`, typeRow.type.name, "ประเภทรายการ", typeRow.titles, "vertical", { viewAllHref: `${allPrograms}?type=${encodeURIComponent(typeRow.type.slug)}` }),
+      row(`type-${typeRow.type.slug}`, typeRow.type.name, "ประเภทรายการ", typeRow.titles, "vertical", browseHref("type", typeRow.type.name, `&type=${encodeURIComponent(typeRow.type.slug)}`)),
     ),
     ...(showHiddenCatalogSections
       ? [
-          row("continue-watching", "Continue Watching", "ดูต่อ", collections.continueWatching, "wide", { viewAllHref: `${lotBase}/shortlist` }),
-          row("continue-programs", "Continue Programs", "รายการต่อเนื่อง", collections.continuePrograms, "vertical"),
-          row("discontinued-programs", "Discontinued Programs", "รายการที่ยุติแล้ว", collections.discontinuedPrograms, "vertical"),
-          ...collections.yearRows.map((yearRow) => row(`year-${yearRow.year}`, `ThaiPBS Year ${yearRow.year}`, `ปี ${yearRow.year}`, yearRow.titles, "vertical")),
-          row("thai-programs", "Thai Programs", "รายการไทย", collections.thaiPrograms, "vertical"),
-          row("international-programs", "International Programs", "รายการต่างประเทศ", collections.internationalPrograms, "vertical"),
+          row("continue-watching", "Continue Watching", "ดูต่อ", collections.continueWatching, "wide", browseHref("continue-watching", "Continue Watching")),
+          row("continue-programs", "Continue Programs", "รายการต่อเนื่อง", collections.continuePrograms, "vertical", browseHref("continue-programs", "Continue Programs")),
+          row("discontinued-programs", "Discontinued Programs", "รายการที่ยุติแล้ว", collections.discontinuedPrograms, "vertical", browseHref("discontinued-programs", "Discontinued Programs")),
+          ...collections.yearRows.map((yearRow) =>
+            row(`year-${yearRow.year}`, `ThaiPBS Year ${yearRow.year}`, `ปี ${yearRow.year}`, yearRow.titles, "vertical", browseHref("year", `ThaiPBS Year ${yearRow.year}`, `&year=${encodeURIComponent(String(yearRow.year))}`)),
+          ),
+          row("thai-programs", "Thai Programs", "รายการไทย", collections.thaiPrograms, "vertical", browseHref("thai", "Thai Programs")),
+          row("international-programs", "International Programs", "รายการต่างประเทศ", collections.internationalPrograms, "vertical", browseHref("international", "International Programs")),
         ]
       : []),
   ].filter((room) => room.programs.length);

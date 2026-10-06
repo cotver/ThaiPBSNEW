@@ -1,25 +1,17 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { HomePage } from "@/components/home/HomePage";
-import { StudioLot } from "@/components/studio/StudioLot";
-import { lotView } from "@/lib/studio/data";
+import { lotGalleryHref, lotListHref, lotView } from "@/lib/studio/data";
 
 export const dynamic = "force-dynamic";
 
 type HomeProps = { searchParams: Promise<{ [key: string]: string | string[] | undefined }> };
 
-export async function generateMetadata({ searchParams }: HomeProps): Promise<Metadata> {
-  if (!lotView((await searchParams).view)) return {};
-  return {
-    title: "Studio Lot — Thai PBS Programme Market",
-    description: "Walk the Thai PBS catalogue as a gallery: every home page section, hung room by room.",
-  };
-}
-
 /**
- * /home, or with ?view=studio (the 3D Studio Lot) / ?view=list (its list view) the Studio Lot gallery.
- * The page itself lives in HomePage, which the list view renders too, so the two never drift apart.
+ * /home. The Studio Lot gallery used to be /home?view=studio|list; it now lives at /home/studio, so it can
+ * open the pages /home links to as modals over itself. Old links land there.
  */
 export default async function HomeRoute({ searchParams }: HomeProps) {
-  if (lotView((await searchParams).view)) return <StudioLot />;
+  const view = lotView((await searchParams).view);
+  if (view) redirect(view === "list" ? lotListHref : lotGalleryHref);
   return <HomePage />;
 }

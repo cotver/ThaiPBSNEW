@@ -1,7 +1,8 @@
-import { redirect } from "next/navigation";
-import { lotGalleryHref } from "@/lib/studio/data";
+import { StudioLot } from "@/components/studio/StudioLot";
 
-/** The gallery itself is a view of /home; /home/studio only holds its pages. */
-export default function StudioLotIndex() {
-  redirect(lotGalleryHref);
+export const dynamic = "force-dynamic";
+
+/** The gallery: the 3D walk, or with ?view=list its list view. */
+export default function StudioLotPage() {
+  return <StudioLot />;
 }

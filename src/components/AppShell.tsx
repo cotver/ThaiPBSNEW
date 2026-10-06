@@ -156,9 +156,10 @@ export function AppShell({
     };
   }, [pathname]);
 
-  // The Studio Lot brings its own full-screen chrome: its pages under /home/studio here; the gallery on
-  // /home?view=studio|list hides the shell with CSS (studio-shell.css), since this shell can't read the query.
-  if (pathname === "/" || pathname === "/prototype" || pathname.startsWith("/home/studio")) {
+  // The Studio Lot (/home/studio: the gallery and its pages) hides this shell
+  // with CSS (studio-shell.css), not by path: a page opened over the gallery as a modal changes the path, and
+  // swapping the shell here would remount the 3D gallery underneath it.
+  if (pathname === "/" || pathname === "/prototype") {
     return <main className="min-h-screen bg-black text-white">{children}</main>;
   }
 

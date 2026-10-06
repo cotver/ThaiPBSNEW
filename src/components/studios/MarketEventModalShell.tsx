@@ -10,11 +10,14 @@ export function MarketEventModalShell({
   children,
   closeLabel = "Close Market & Events",
   dialogClassName,
+  overlayClassName,
   title,
 }: {
   children: ReactNode;
   closeLabel?: string;
   dialogClassName?: string;
+  /** Replaces the default overlay (the Studio Lot's sits under its own cursor). */
+  overlayClassName?: string;
   title: string;
 }) {
   const router = useRouter();
@@ -63,7 +66,7 @@ export function MarketEventModalShell({
 
   if (!mounted) return null;
   return createPortal(
-    <div className={styles.overlay} onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
+    <div className={overlayClassName ?? styles.overlay} onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
       <div aria-label={title} aria-modal="true" className={dialogClassName ? `${styles.dialog} ${dialogClassName}` : styles.dialog} ref={dialogRef} role="dialog" tabIndex={-1}>
         <button aria-label={closeLabel} className={styles.close} onClick={close} type="button">×</button>
         {children}

@@ -1,10 +1,10 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { LotEngine, LotQuality } from "@/lib/studio/engine/LotEngine";
-import type { LotData, LotSectionId } from "@/lib/studio/data";
+import { lotGalleryHref, lotListHref, type LotData, type LotSectionId } from "@/lib/studio/data";
 import { cue } from "@/lib/studio/sound";
 import styles from "@/components/studio/experience.module.css";
 import { ListWalk } from "./ListWalk";
@@ -48,7 +48,6 @@ const readWalkSlot = () => document.getElementById(walkSlotId);
 
 /** `listView` is the real /home page (server-rendered), shown in list view and as the fallback. */
 export function LotExperience({ data, fontFamily, listView }: { data: LotData; fontFamily: string; listView: ReactNode }) {
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialStage = searchParams.get("stage") as LotSectionId | null;
   const wantsList = searchParams.get("view") === "list";
@@ -194,6 +193,8 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
+      // A Studio Lot page is open over the gallery; its keys are its own.
+      if (document.querySelector("[aria-modal='true']")) return;
       const engine = engineRef.current;
       if (!engine) return;
       if (event.key === "Escape") {
@@ -244,14 +245,14 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
     cue("back");
     setOverride("sheet");
     // History API, not router.replace: no server round trip, so no blank frame.
-    window.history.replaceState(null, "", `${pathname}?view=list`);
+    window.history.replaceState(null, "", lotListHref);
   };
 
   const enterLot = () => {
     cue("open");
     setFailed(false);
     setOverride("lot");
-    window.history.replaceState(null, "", `${pathname}?view=studio`);
+    window.history.replaceState(null, "", lotGalleryHref);
   };
 
   if (mode === "sheet" || mode === "detecting") {

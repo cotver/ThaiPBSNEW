@@ -31,7 +31,7 @@ export const getHomePageData = cache(async () => {
 
 /**
  * The home page itself: its sections and the cinematic layer around them. /home renders it, and so does
- * the Studio Lot's list view (/home?view=list), so a change here shows up in both.
+ * the Studio Lot's list view (/home/studio?view=list), so a change here shows up in both.
  * `intro: false` leaves out the once-per-session title card, for places that bring their own entrance.
  */
 export async function HomePage({ intro = true }: { intro?: boolean } = {}) {
