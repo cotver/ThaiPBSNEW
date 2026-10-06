@@ -31,8 +31,8 @@ export function LotHeader() {
       </Link>
 
       <div className={styles.walkSlot} id={walkSlotId}>
-        {/* The gallery is /home itself; its own pages (/home/studio/…) get a way back. */}
-        {pathname === "/home" ? null : (
+        {/* The gallery is /home/studio itself; its own pages (/home/studio/…) get a way back. */}
+        {pathname === lotGalleryHref ? null : (
           <Link className={styles.backLink} data-cursor="Back to the gallery" href={lotGalleryHref} onMouseEnter={() => cue("tick")}>
             <span aria-hidden="true">←</span> Back to the gallery
           </Link>

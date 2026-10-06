@@ -99,6 +99,7 @@
   align-items: center;
   gap: 12px;
   justify-self: start;
+  flex-shrink: 0;
 }
 
 .tally {
@@ -117,6 +118,9 @@
 .brandText {
   display: grid;
   line-height: 1;
+  /* The site sets overflow-wrap: anywhere; the wordmark must never break between letters. */
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 
 .brandText strong {
