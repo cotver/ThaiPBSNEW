@@ -10,9 +10,9 @@ import styles from "@/components/studio/experience.module.css";
 import { ListWalk } from "./ListWalk";
 import { setCursorLabel } from "./LotCursor";
 import { walkSlotId } from "./LotHeader";
-import { LotLoader, RouteLeader } from "./LotLoader";
 import { LotPanel } from "./LotPanel";
 import { WalkNav } from "./WalkNav";
+import SiteLoading from "@/app/(site)/loading";
 
 type Mode = "detecting" | "lot" | "sheet";
 type Phase = "loading" | "reveal" | "live";
@@ -58,7 +58,6 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
   const walkSlot = useSyncExternalStore(noSubscription, readWalkSlot, noWalkSlot);
   const [override, setOverride] = useState<"lot" | "sheet" | null>(null);
   const [phase, setPhase] = useState<Phase>("loading");
-  const [loadProgress, setLoadProgress] = useState(0);
   const [hovered, setHovered] = useState<LotSectionId | null>(null);
   const [selected, setSelected] = useState<LotSectionId | null>(null);
   const [panel, setPanel] = useState<LotSectionId | null>(null);
@@ -112,7 +111,6 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
     let engine: LotEngine | null = null;
     const canvas = canvasRef.current;
     setPhase("loading");
-    setLoadProgress(0.04);
 
     (async () => {
       try {
@@ -123,16 +121,13 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
           document.fonts.load(`400 64px ${fontFamily}`).catch(() => undefined),
         ]);
         if (cancelled) return;
-        setLoadProgress(0.22);
         const building = new Engine({
           canvas,
           data,
           font: fontFamily,
           quality: capabilities.quality,
           reducedMotion: capabilities.reducedMotion,
-          // Countdown: code + fonts 0–22%, building the scene 22–50%, artwork 50–100%.
-          onBuildProgress: (ratio) => setLoadProgress((value) => Math.max(value, 0.22 + ratio * 0.28)),
-          onLoadProgress: (ratio) => setLoadProgress((value) => Math.max(value, 0.5 + ratio * 0.5)),
+          onLoadProgress: () => {},
           onReady: () => setPhase((value) => (value === "loading" ? "reveal" : value)),
           onHover: (section) => {
             setHovered(section);
@@ -262,9 +257,9 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
   if (mode === "sheet" || mode === "detecting") {
     return (
       <>
-        {/* Until the device is known, keep the same leader the server showed instead of flashing the sheet. */}
-        {mode === "detecting" ? <RouteLeader /> : null}
-        <div className={styles.homeList} ref={listRef}>
+        {/* Until the device is known, show the site's loading screen rather than flashing the list. */}
+        {mode === "detecting" ? <div className={styles.siteLoader}><SiteLoading /></div> : null}
+        <div className={styles.homeList} hidden={mode === "detecting"} ref={listRef}>
           {listView}
         </div>
         {walkSlot && mode === "sheet" ? createPortal(<ListWalk rooms={data.rooms} rootRef={listRef} />, walkSlot) : null}
@@ -338,8 +333,12 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
       {walkSlot && phase !== "loading" ? createPortal(walk, walkSlot) : null}
       {panel ? <LotPanel data={data} onClose={close} onSelect={select} screen={{ active: screenSlides[panel] ?? 0, onActiveChange: (index) => showSlide(panel, index), onHold: (held) => engineRef.current?.holdScreen(panel, held), onVideo: (video) => engineRef.current?.shareVideo(panel, video) }} section={panel} /> : null}
       {selected && !panel ? <div aria-live="polite" className={styles.srOnly}>Moving to {data.rooms.find((room) => room.id === selected)?.title}</div> : null}
-
-      <LotLoader phase={phase} progress={loadProgress} reducedMotion={Boolean(capabilities?.reducedMotion)} />
+      {/* Lifts during the reveal, so the gallery fades up from under it. */}
+      {phase !== "live" ? (
+        <div className={styles.siteLoader} data-phase={phase} data-reduced={capabilities?.reducedMotion || undefined}>
+          <SiteLoading />
+        </div>
+      ) : null}
     </section>
   );
 }

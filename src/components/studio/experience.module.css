@@ -768,3 +768,20 @@
   background: transparent;
   backdrop-filter: none;
 }
+
+/* The site's own loading screen (app/(site)/loading.tsx), held over the gallery until it is ready. */
+.siteLoader {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  transition: opacity 1400ms var(--ease);
+}
+
+.siteLoader[data-phase="reveal"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.siteLoader[data-reduced] {
+  transition-duration: 200ms;
+}

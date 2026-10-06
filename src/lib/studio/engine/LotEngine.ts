@@ -603,8 +603,8 @@ export class LotEngine {
     this.loadingManager.onProgress = (_url, loaded, total) => this.options.onLoadProgress(total ? loaded / total : 1);
     this.loadingManager.onLoad = () => this.markReady();
     if (pending === 0) queueMicrotask(() => this.markReady());
-    // Never hold the curtain for a slow image.
-    window.setTimeout(() => this.markReady(), 9000);
+    // Never hold the curtain long for a slow image; it fills in once it lands.
+    window.setTimeout(() => this.markReady(), 3000);
   }
 
   private async markReady() {

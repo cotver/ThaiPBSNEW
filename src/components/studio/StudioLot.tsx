@@ -6,21 +6,21 @@ import { marketEventGroupHref, marketEventImage } from "@/lib/market-events";
 import { marketCompanyLogo, marketLogoFrame } from "@/lib/market-logos";
 import { lotBase, toLotProgram, type LotLinkItem, type LotRoom } from "@/lib/studio/data";
 import { plexThai } from "@/lib/studio/font";
+import styles from "@/components/studio/experience.module.css";
 import { LotChrome } from "./LotChrome";
 import { LotExperience } from "./LotExperience";
-import { RouteLeader } from "./LotLoader";
+import SiteLoading from "@/app/(site)/loading";
 // Hides the site's own navigation around the gallery on /home?view=… (see the file).
 import "./studio-shell.css";
 
 /**
  * The Studio Lot, as /home renders it for ?view=studio (the 3D walk) and ?view=list (its list view).
  * LotExperience reads the view from the URL, so both share this one server render.
- * The leader is the first frame of the gallery either way, so it doubles as the streaming fallback.
  */
 export function StudioLot() {
   return (
     <LotChrome>
-      <Suspense fallback={<RouteLeader />}>
+      <Suspense fallback={<div className={styles.siteLoader}><SiteLoading /></div>}>
         <StudioLotRooms />
       </Suspense>
     </LotChrome>
