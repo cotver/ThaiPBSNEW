@@ -339,6 +339,7 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
       <div className={styles.hud}>
         <div className={styles.hint} aria-hidden={selected ? true : undefined}>
           <span>Scroll to walk</span>
+          <span>Move the mouse to look around</span>
           <span>Click a room to step in</span>
           <span>1–{Math.min(9, data.rooms.length)} · Esc</span>
         </div>

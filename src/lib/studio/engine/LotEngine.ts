@@ -64,11 +64,10 @@ const LAMP_LEVEL = 0.38;
 const APPROACH_LEAD = 10;
 /** How close (metres along the walk) to a room's approach point counts as "at" that room. */
 const AT_ROOM_RANGE = 4.5;
-/**
- * How far the walking camera turns toward an approaching room's work (fraction of the way).
- * 0.12 ≈ a 9–10° glance at the peak — close to the path's own gentle weave (3–6°), just well-timed.
- */
-const GAZE_STRENGTH = 0.12;
+/** Touch: a sideways swipe across the full width of the view turns the head 180°, within the rig's 55° limit each way. */
+const LOOK_SWIPE_TURN = Math.PI;
+/** Touch: how far (px) a swipe travels before it is decided as a walk (up/down) or a look (sideways). */
+const SWIPE_THRESHOLD = 6;
 const ACCENTS = ["#c9a24a", "#2f6f86", "#b5462f", "#5d7a3a", "#7a4a8c", "#b07a3a"];
 
 /** Rooms alternate left and right down the nave, one per /home section, in the same order. */
@@ -258,7 +257,6 @@ export class LotEngine {
   /** One LED screen per screen room (Featured, ThaiPBS Journal), and the slide each last reported. */
   private readonly screens = new Map<LotSectionId, { wall: LedWall; reported: number }>();
   private readonly raycaster = new THREE.Raycaster();
-  private readonly gazePoint = new THREE.Vector3();
   private trackLength = 1;
   private readonly pointer = new THREE.Vector2(9, 9);
   private readonly clock = new THREE.Timer();
@@ -286,7 +284,8 @@ export class LotEngine {
   private lastAtRoom = false;
   private lastProgressReport = -1;
   private hoverClock = 0;
-  private touchY: number | null = null;
+  /** A one-finger swipe: up/down walks, sideways looks around — decided by its first few pixels. */
+  private touch: { x: number; y: number; startX: number; startY: number; mode: "walk" | "look" | null } | null = null;
   private time = 0;
 
   constructor(options: LotEngineOptions) {
@@ -803,30 +802,6 @@ export class LotEngine {
    * before you are level with it: anchor it APPROACH_LEAD metres earlier on the path (toward the
    * entrance, +z). The current room, the top-bar highlight and "walk to" all use this anchor.
    */
-  /**
-   * Turn the walking camera toward the room you are approaching. The pull peaks at the room's anchor
-   * (APPROACH_LEAD metres before it, while it is ahead of you) and falls to zero halfway to the next
-   * anchor — so the look leads into each room early and hands over to the next one without a jump.
-   */
-  private updateGaze() {
-    const progress = this.rig.trackProgress;
-    let closest: Room | undefined;
-    let closestDistance = Infinity;
-    for (const room of this.rooms.values()) {
-      const distance = Math.abs(room.trackT - progress);
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closest = room;
-      }
-    }
-    if (!closest) return this.rig.setGaze(null, 0);
-    const halfSpacing = (ROOM_SPACING / 2) / Math.max(1, this.trackLength);
-    const t = THREE.MathUtils.clamp(1 - closestDistance / halfSpacing, 0, 1);
-    const weight = t * t * (3 - 2 * t) * GAZE_STRENGTH; // smoothstep
-    const [artX, artY] = closest.config.art;
-    this.rig.setGaze(closest.wall.localToWorld(this.gazePoint.set(artX, artY, 0)), weight);
-  }
-
   private computeTrackPositions() {
     const point = new THREE.Vector3();
     for (const room of this.rooms.values()) {
@@ -854,7 +829,6 @@ export class LotEngine {
     const time = this.time;
 
     if (this.pointerDirty) this.pick();
-    this.updateGaze();
     this.rig.update(dt, reducedMotion);
 
     const progress = this.rig.trackProgress;
@@ -1111,12 +1085,14 @@ export class LotEngine {
     const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     this.pointer.set(x, y);
     this.pointerDirty = true;
-    if (event.pointerType === "mouse") this.rig.setLook(x, y);
+    // The head follows the mouse (a pen too); touch has no hover, so it looks with a sideways swipe instead.
+    if (event.pointerType !== "touch") this.rig.setLook(x, y);
   };
 
   private readonly handlePointerLeave = () => {
     this.pointer.set(9, 9);
     this.pointerDirty = true;
+    // Off the view (onto the panel, the header, out of the window): face straight down the hall again.
     this.rig.setLook(0, 0);
   };
 
@@ -1131,15 +1107,29 @@ export class LotEngine {
   };
 
   private readonly handleTouchStart = (event: TouchEvent) => {
-    this.touchY = event.touches[0]?.clientY ?? null;
+    const point = event.touches[0];
+    this.touch = point ? { x: point.clientX, y: point.clientY, startX: point.clientX, startY: point.clientY, mode: null } : null;
   };
 
   private readonly handleTouchMove = (event: TouchEvent) => {
-    const y = event.touches[0]?.clientY;
-    if (y === undefined || this.touchY === null) return;
+    const point = event.touches[0];
+    const touch = this.touch;
+    if (!point || !touch) return;
     event.preventDefault();
-    this.rig.nudge((this.touchY - y) / 1400);
-    this.touchY = y;
+    if (!touch.mode) {
+      const dx = point.clientX - touch.startX;
+      const dy = point.clientY - touch.startY;
+      if (Math.hypot(dx, dy) < SWIPE_THRESHOLD) return;
+      touch.mode = Math.abs(dx) > Math.abs(dy) ? "look" : "walk";
+    }
+    if (touch.mode === "walk") {
+      this.rig.nudge((touch.y - point.clientY) / 1400);
+    } else {
+      const width = this.options.canvas.getBoundingClientRect().width || window.innerWidth;
+      this.rig.turn((-(point.clientX - touch.x) * LOOK_SWIPE_TURN) / width);
+    }
+    touch.x = point.clientX;
+    touch.y = point.clientY;
   };
 
   private readonly handleVisibility = () => {

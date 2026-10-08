@@ -4,14 +4,11 @@ import { clamp01, damp, dampVector, easeInOutCubic } from "./math";
 type Pose = { position: THREE.Vector3; target: THREE.Vector3 };
 
 const TRACK_FOV = 52;
-/** How fast the walking glance turns toward a room, and (slower) back to the hall. */
-const GAZE_EASE_IN = 4;
-const GAZE_EASE_OUT = 1.1;
-/**
- * How fast the previous room's leftover glance clears after the hand-over to the next room —
- * quick enough that it never holds back the turn toward the room ahead.
- */
-const GAZE_HANDOVER_FADE = 2.2;
+/** Free look while walking: at most 55° either way (never back down the hall), and a nod up or down. */
+const MAX_YAW = THREE.MathUtils.degToRad(55);
+const MAX_PITCH = THREE.MathUtils.degToRad(35);
+/** How quickly the head follows a drag or a key turn. */
+const LOOK_EASE = 8;
 /**
  * Lens when framed on a room. The camera faces the wall square-on, so a wider lens adds no skew —
  * it just fits the whole wall (title, work, label) beside the panel within the ~15m nave.
@@ -31,8 +28,11 @@ export class CameraRig {
 
   private progress = 0;
   private progressTarget = 0;
+  /** Head turn while walking, in radians: x = yaw (right +), y = pitch (up +). 0, 0 faces straight down the hall. */
   private readonly look = new THREE.Vector2();
   private readonly lookTarget = new THREE.Vector2();
+  private readonly lookDirection = new THREE.Vector3();
+  private readonly lookRight = new THREE.Vector3();
   private focusBlend = 0;
   private focusDirection: 1 | -1 | 0 = 0;
   private focusDuration = 1.8;
@@ -41,15 +41,6 @@ export class CameraRig {
   private readonly smoothed: Pose = { position: new THREE.Vector3(), target: new THREE.Vector3() };
   private readonly previous = new THREE.Vector3();
   private readonly temp = new THREE.Vector3();
-  /** Where the walking camera's attention is pulled (a room's work), and how strongly (0..1). */
-  private readonly gaze = new THREE.Vector3();
-  private gazeWeight = 0;
-  private gazeWeightTarget = 0;
-  private hasGaze = false;
-  /** The previous room's glance, easing out on its own after the hand-over to the next room. */
-  private readonly fadingGaze = new THREE.Vector3();
-  private fadingWeight = 0;
-  private readonly gazeOffset = new THREE.Vector3();
   private initialised = false;
   onFocusSettled?: (focused: boolean) => void;
 
@@ -60,14 +51,11 @@ export class CameraRig {
     this.endZ = endZ;
     // Far plane out past the hills and the sky dome outside the glass (see Nature, Environment).
     this.camera = new THREE.PerspectiveCamera(TRACK_FOV, aspect, 0.1, 2000);
-    // A visitor at eye height: foyer, through the portal, then weaving gently down the nave.
+    // A visitor at eye height: foyer, through the portal, then straight down the middle of the nave —
+    // no weave, so walking never turns the view; only the visitor's own look does (setLook, turn).
     const points = [new THREE.Vector3(0, 1.75, 25), new THREE.Vector3(0, 1.72, 13)];
     const stop = endZ + 10;
-    let side = 1;
-    for (let z = 1; z > stop; z -= 13) {
-      points.push(new THREE.Vector3(0.7 * side, 1.7, z));
-      side = -side;
-    }
+    for (let z = 1; z > stop; z -= 13) points.push(new THREE.Vector3(0, 1.7, z));
     points.push(new THREE.Vector3(0, 1.72, stop));
     this.track = new THREE.CatmullRomCurve3(points, false, "catmullrom", 0.4);
   }
@@ -91,9 +79,29 @@ export class CameraRig {
     if (immediate) this.progress = this.progressTarget;
   }
 
-  /** Pointer in NDC (-1..1); the head turns a few degrees toward it. */
+  /**
+   * Look toward the mouse: `x`, `y` are the pointer in NDC (-1..1). The centre of the screen faces straight
+   * down the hall; the left or right edge turns the full MAX_YAW (55°) toward that wall, never further;
+   * the top or bottom edge nods up or down. Ignored while framed on a room.
+   */
   setLook(x: number, y: number) {
-    this.lookTarget.set(x, y);
+    if (this.focusDirection === 1) return;
+    this.lookTarget.set(THREE.MathUtils.clamp(x, -1, 1) * MAX_YAW, THREE.MathUtils.clamp(y, -1, 1) * MAX_PITCH);
+  }
+
+  /**
+   * Turn the head by (yaw, pitch) radians — a touch swipe, where there is no mouse to follow. Free, but held within MAX_YAW (55°)
+   * left or right of the walk, so you can look at the walls but never turn round. Ignored while framed on a room.
+   */
+  turn(yaw: number, pitch = 0) {
+    if (this.focusDirection === 1) return;
+    this.lookTarget.x = THREE.MathUtils.clamp(this.lookTarget.x + yaw, -MAX_YAW, MAX_YAW);
+    this.lookTarget.y = THREE.MathUtils.clamp(this.lookTarget.y + pitch, -MAX_PITCH, MAX_PITCH);
+  }
+
+  /** Face straight down the hall again. */
+  resetLook() {
+    this.lookTarget.set(0, 0);
   }
 
   focus(pose: Pose | null, trackT: number | null, reducedMotion: boolean) {
@@ -103,27 +111,11 @@ export class CameraRig {
       this.focusPose.target.copy(pose.target);
       if (trackT !== null) this.progressTarget = trackT;
       this.focusDirection = 1;
+      // Stepping back out of the room, you face down the hall again.
+      this.resetLook();
     } else {
       this.focusDirection = -1;
     }
-  }
-
-  /**
-   * While walking, turn the head toward an approaching room instead of always staring down the hall.
-   * `weight` 0..1 is how far to turn (the rig eases toward it); pass null to look straight ahead.
-   */
-  setGaze(point: THREE.Vector3 | null, weight: number) {
-    if (point && (!this.hasGaze || point.distanceToSquared(this.gaze) > 0.01)) {
-      // A new room: let the current glance ease out by itself instead of jumping to the new point.
-      if (this.hasGaze && this.gazeWeight > this.fadingWeight) {
-        this.fadingGaze.copy(this.gaze);
-        this.fadingWeight = this.gazeWeight;
-      }
-      this.gaze.copy(point);
-      this.gazeWeight = 0;
-      this.hasGaze = true;
-    }
-    this.gazeWeightTarget = point ? clamp01(weight) : 0;
   }
 
   /** Re-aim a focused (or focusing) camera without restarting the move — e.g. after a resize. */
@@ -149,19 +141,11 @@ export class CameraRig {
   update(dt: number, reducedMotion: boolean) {
     if (!Number.isFinite(this.progress)) this.progress = this.progressTarget = 0;
     this.progress = reducedMotion ? this.progressTarget : damp(this.progress, this.progressTarget, 2.6, dt);
-    this.look.x = damp(this.look.x, this.lookTarget.x, 3, dt);
-    this.look.y = damp(this.look.y, this.lookTarget.y, 3, dt);
+    this.look.x = reducedMotion ? this.lookTarget.x : damp(this.look.x, this.lookTarget.x, LOOK_EASE, dt);
+    this.look.y = reducedMotion ? this.lookTarget.y : damp(this.look.y, this.lookTarget.y, LOOK_EASE, dt);
 
+    // Facing straight down the hall, along the walk, unless the visitor turns their head (see turn()).
     this.sampleTrack(this.progress, this.trackPose);
-    // Lead the eye into the room you are approaching; eased so it never snaps.
-    // Turning toward a room keeps its pace; turning back to the hall is eased about three times slower,
-    // so passing a room glides the head back to centre instead of snapping it.
-    const easing = this.gazeWeightTarget > this.gazeWeight ? GAZE_EASE_IN : GAZE_EASE_OUT;
-    this.gazeWeight = reducedMotion ? this.gazeWeightTarget : damp(this.gazeWeight, this.gazeWeightTarget, easing, dt);
-    this.fadingWeight = reducedMotion ? 0 : damp(this.fadingWeight, 0, GAZE_HANDOVER_FADE, dt);
-    const base = this.gazeOffset.copy(this.trackPose.target);
-    if (this.gazeWeight > 0.001) this.trackPose.target.addScaledVector(this.gaze.clone().sub(base), this.gazeWeight);
-    if (this.fadingWeight > 0.001) this.trackPose.target.addScaledVector(this.fadingGaze.clone().sub(base), this.fadingWeight);
 
     if (this.focusDirection !== 0) {
       const before = this.focusBlend;
@@ -179,12 +163,18 @@ export class CameraRig {
     desiredPosition.y += Math.sin(blend * Math.PI) * 0.35;
     const desiredTarget = new THREE.Vector3().copy(this.trackPose.target).lerp(this.focusPose.target, blend);
 
-    // Head turn from the pointer; none once framed on a room, so the wall stays square-on.
+    // The visitor's head turn, swung around the eye: yaw about the vertical, then pitch about the
+    // sideways axis. None once framed on a room, so the wall stays square-on.
     const lookStrength = 1 - blend;
-    const forward = desiredTarget.clone().sub(desiredPosition).normalize();
-    const right = new THREE.Vector3().crossVectors(forward, this.camera.up).normalize();
-    desiredTarget.addScaledVector(right, this.look.x * 1.6 * lookStrength);
-    desiredTarget.y += this.look.y * 0.8 * lookStrength;
+    if (lookStrength > 0.001 && (this.look.x !== 0 || this.look.y !== 0)) {
+      const toTarget = desiredTarget.sub(desiredPosition);
+      const distance = toTarget.length();
+      const direction = this.lookDirection.copy(toTarget).normalize();
+      direction.applyAxisAngle(this.camera.up, -this.look.x * lookStrength);
+      const right = this.lookRight.crossVectors(direction, this.camera.up).normalize();
+      direction.applyAxisAngle(right, this.look.y * lookStrength);
+      desiredTarget.copy(desiredPosition).addScaledVector(direction, distance);
+    }
 
     if (!this.initialised || reducedMotion) {
       this.smoothed.position.copy(desiredPosition);
