@@ -23,6 +23,8 @@ export type RoomConfig = {
   label?: { title: string; meta: string; note: string };
   /** Where the ON AIR box hangs: the top-right corner, or under the title when the work fills that corner. */
   onAir?: "corner" | "underTitle";
+  /** Title further left, level with the corner ON AIR box, without the accent rule under it. */
+  titleLevelWithOnAir?: boolean;
   focusDistance?: number;
 };
 
@@ -84,7 +86,7 @@ export class Room {
   private readonly spot: THREE.SpotLight;
   private readonly spotBase: number;
   private readonly cone: THREE.ShaderMaterial;
-  private readonly underline: THREE.Mesh;
+  private readonly underline?: THREE.Mesh;
   /** The room's accent: tints its spotlight and lights the band on the floor in front of it. */
   private readonly spotWarm = new THREE.Color("#ffe8d0");
   private readonly spotAccent: THREE.Color;
@@ -112,21 +114,28 @@ export class Room {
 
     // Room title in cut vinyl, top-left of the wall — the typography is part of the room.
     const titleWidth = Math.min(3.2, width * 0.25);
-    const titleX = -width / 2 + 0.55 + titleWidth / 2;
+    const titleHeight = titleWidth * 0.375;
+    const levelWithOnAir = config.titleLevelWithOnAir === true;
+    const titleX = -width / 2 + (levelWithOnAir ? 0.3 : 0.55) + titleWidth / 2;
     const title = new THREE.Mesh(
       new THREE.PlaneGeometry(titleWidth, titleWidth * 0.375),
       sunOrSpotlight(new THREE.MeshStandardMaterial({ map: vinylTexture({ kicker: config.kicker, title: config.title, sub: config.sub, font }), transparent: true, depthWrite: false, roughness: 0.7 })),
     );
-    title.position.set(titleX, height - 0.55 - titleWidth * 0.1875, 0.01);
+    // Level with ON AIR: the title's lettering (about 140px down the 384px vinyl sheet) centred on the
+    // corner box's centre, height - 0.42 (see Exhibits). The sheet's empty top edge may overhang the wall.
+    const titleY = levelWithOnAir ? height - 0.42 + (140 / 384) * titleHeight - titleHeight / 2 : height - 0.55 - titleHeight / 2;
+    title.position.set(titleX, titleY, 0.01);
     this.wall.add(title);
 
     // Accent rule under the title; it draws itself out when the room is looked at.
-    const ruleGeometry = new THREE.PlaneGeometry(titleWidth * 0.9, 0.035);
-    ruleGeometry.translate((titleWidth * 0.9) / 2, 0, 0);
-    this.underline = new THREE.Mesh(ruleGeometry, new THREE.MeshBasicMaterial({ color: config.accent }));
-    this.underline.position.set(titleX - titleWidth / 2, height - 0.7 - titleWidth * 0.375, 0.012);
-    this.underline.scale.x = 0.12;
-    this.wall.add(this.underline);
+    if (!levelWithOnAir) {
+      const ruleGeometry = new THREE.PlaneGeometry(titleWidth * 0.9, 0.035);
+      ruleGeometry.translate((titleWidth * 0.9) / 2, 0, 0);
+      this.underline = new THREE.Mesh(ruleGeometry, new THREE.MeshBasicMaterial({ color: config.accent }));
+      this.underline.position.set(titleX - titleWidth / 2, height - 0.7 - titleHeight, 0.012);
+      this.underline.scale.x = 0.12;
+      this.wall.add(this.underline);
+    }
 
     // Museum label beside the work.
     const [artX] = config.art;
@@ -245,6 +254,6 @@ export class Room {
     this.spot.color.lerpColors(this.spotWarm, this.spotAccent, 0.15 + this.active * 0.2 + this.hover * 0.35);
     this.band.emissiveIntensity = 0.12 + this.active * 0.25 + this.hover * 0.6;
     this.cone.uniforms.uOpacity.value = 0.01 + this.hover * 0.008;
-    this.underline.scale.x = 0.12 + this.hover * 0.88;
+    if (this.underline) this.underline.scale.x = 0.12 + this.hover * 0.88;
   }
 }

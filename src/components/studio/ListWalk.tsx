@@ -14,10 +14,8 @@ function findSection(root: HTMLElement, room: LotRoom): HTMLElement | null {
       return root.querySelector<HTMLElement>("[data-responsive-hero]") ?? root.querySelector<HTMLElement>(".app-shell-content > *");
     case "studios-journal":
       return root.querySelector<HTMLElement>("[data-studios-showcase]");
-    case "studios-catalog":
-      return root.querySelector<HTMLElement>("#catalog");
-    case "studios-more":
-      return root.querySelector<HTMLElement>('[aria-label="More Studios categories"]');
+    case "studios-categories":
+      return root.querySelector<HTMLElement>("#catalog") ?? root.querySelector<HTMLElement>('[aria-label="More Studios categories"]');
     case "market-events":
       return root.querySelector<HTMLElement>("#market-events");
     case "press-releases":

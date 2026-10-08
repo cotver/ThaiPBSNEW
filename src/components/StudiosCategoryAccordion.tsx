@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import styles from "./StudiosCategoryAccordion.module.css";
 
+export type StudiosAccordionCategory = Category;
+
 type Category = {
   id: number;
   name: string;

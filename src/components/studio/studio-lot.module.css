@@ -1394,3 +1394,10 @@
     transition-duration: 1ms !important;
   }
 }
+
+/* The Studios Categories room: /home's catalog and accordion, fitted to the room panel (which pads itself). */
+.studiosCategories { margin: -24px -26px; background: #000; }
+.studiosCategories :global(*) { box-sizing: border-box; }
+.studiosCategories > div,
+.studiosCategories > section { padding: 24px 26px; }
+.studiosCategories > div :global(section) { margin: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }

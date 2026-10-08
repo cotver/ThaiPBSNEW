@@ -2,6 +2,8 @@ import { titleHref, type Title } from "@/lib/content";
 import { getHeroTrailerSource } from "@/lib/trailer-playback";
 import type { MarketLogo } from "@/lib/market-logos";
 import type { FinalArticleCard } from "@/lib/payload-articles";
+import type { StudiosCatalogCategory } from "@/components/StudiosCatalog";
+import type { StudiosAccordionCategory } from "@/components/StudiosCategoryAccordion";
 
 /** The gallery's own pages (programmes, newsroom, shortlist, partner logos) live under /home/studio. */
 export const lotBase = "/home/studio";
@@ -93,12 +95,15 @@ export type LotRoom = {
   /**
    * links rooms, mirroring the /home markup:
    * hero = StudiosHero slider, tile = BrandTiles (16:9, 6 across), landscape = Studios catalog (16:9, 3 across),
-   * press = press cards (square image + text), logo = Content Distribution cards, square = Market & Events.
+   * press = press cards (square image + text), logo = Content Distribution cards, square = Market & Events,
+   * studios = Studios Categories (16:9, 5 across the whole wall).
    */
-  itemShape?: "hero" | "tile" | "landscape" | "press" | "logo" | "square";
+  itemShape?: "hero" | "tile" | "landscape" | "press" | "logo" | "square" | "studios";
   /** row rooms: the ContentRow layout /home uses (poster = 16:9 cards, vertical = 2:3 posters, wide = 16:9 stills). */
   layout?: "poster" | "vertical" | "wide";
   viewAllHref?: string;
+  /** The Studios Categories room: its panel renders /home's Studios catalog, then "More Studios categories". */
+  studios?: { categories: StudiosCatalogCategory[]; otherCategories: StudiosAccordionCategory[] };
 };
 
 export type LotData = { rooms: LotRoom[] };

@@ -2,6 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { lotProgramHref, slateNumber, type LotLinkItem, type LotProgram, type LotRoom } from "@/lib/studio/data";
 import styles from "@/components/studio/studio-lot.module.css";
+import { StudiosCatalog } from "@/components/StudiosCatalog";
+import { StudiosCategoryAccordion } from "@/components/StudiosCategoryAccordion";
+import showcaseStyles from "@/components/StudiosShowcase.module.css";
 import { FeaturedContent, StoryScreenContent, type HallScreen } from "./FeaturedContent";
 
 /** Section content shared by the 3D panels and the 2D call sheet. */
@@ -104,8 +107,27 @@ export function RowContent({ programs, viewAllHref, layout = "vertical" }: { pro
   );
 }
 
+/** The Studios Categories room, shown as /home shows it: the Studios catalog, then "More Studios categories". */
+function StudiosCategoriesContent({ studios }: { studios: NonNullable<LotRoom["studios"]> }) {
+  return (
+    <div className={`${showcaseStyles.showcase} ${styles.studiosCategories}`}>
+      {studios.categories.length ? (
+        <div className={showcaseStyles.catalog}>
+          <StudiosCatalog categories={studios.categories} showArticleSections={false} />
+        </div>
+      ) : null}
+      {studios.otherCategories.length ? (
+        <section aria-label="More Studios categories" className={showcaseStyles.otherCategories}>
+          <StudiosCategoryAccordion categories={studios.otherCategories} />
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
 /** Picks the right content for a room, so the 3D panel and the 2D guide always match. */
 export function RoomContent({ room, screen }: { room: LotRoom; screen?: HallScreen }) {
+  if (room.studios) return <StudiosCategoriesContent studios={room.studios} />;
   if (room.kind === "featured") return <FeaturedContent programs={room.programs} screen={screen} />;
   if (room.kind === "links" && room.itemShape === "hero") return <StoryScreenContent items={room.items} screen={screen} viewAllHref={room.viewAllHref} />;
   if (room.kind === "links") return <LinksContent items={room.items} shape={room.itemShape} viewAllHref={room.viewAllHref} />;

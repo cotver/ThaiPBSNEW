@@ -96,16 +96,73 @@ const HANG = {
 
 type GridSpec = { perRow: number; rows: number; w: number; h: number; gapX: number; gapY: number };
 
-const GRIDS: Record<"poster" | "vertical" | "wide" | "tile" | "landscape" | "logo" | "press" | "square", GridSpec> = {
+type GridShape = "poster" | "vertical" | "wide" | "tile" | "landscape" | "logo" | "press" | "square" | "studios";
+
+/** Grid walls hang their work centred on the wall at this height (wall-local metres). */
+const GRID_CENTER_Y = 2.5;
+/** Width the hang spans on a 13m grid wall, leaving ~0.65m each side, as Studios Categories does. */
+const GRID_SPAN = 11.7;
+/** Height the hang may take: from above the skirting up to just under the title (level with ON AIR). */
+const GRID_HEIGHT = 3.6;
+
+/** The /home proportions of each grid. Square (Market & Events) hangs one row of six; press three across. */
+const HOME_GRIDS: Record<GridShape, GridSpec> = {
   poster: { perRow: 5, rows: 2, w: 1.36, h: 0.765, gapX: 1.5, gapY: 0.95 },
   vertical: { perRow: 7, rows: 1, w: 1.0, h: 1.5, gapX: 1.15, gapY: 0 },
   wide: { perRow: 4, rows: 1, w: 1.75, h: 0.984, gapX: 1.95, gapY: 0 },
   tile: { perRow: 6, rows: 2, w: 1.15, h: 0.647, gapX: 1.28, gapY: 0.85 },
   landscape: { perRow: 3, rows: 2, w: 2.2, h: 1.24, gapX: 2.45, gapY: 1.62 },
-  press: { perRow: 2, rows: 2, w: 3.3, h: 1.3, gapX: 3.6, gapY: 1.6 },
-  square: { perRow: 3, rows: 2, w: 1.4, h: 1.4, gapX: 2.1, gapY: 2.0 },
-  logo: { perRow: 3, rows: 2, w: 2.2, h: 1.24, gapX: 2.45, gapY: 1.62 },
+  press: { perRow: 3, rows: 2, w: 3.3, h: 1.3, gapX: 3.6, gapY: 1.6 },
+  square: { perRow: 6, rows: 1, w: 1.4, h: 1.4, gapX: 2.1, gapY: 2.0 },
+  logo: { perRow: 5, rows: 2, w: 2.2, h: 1.24, gapX: 2.45, gapY: 1.62 },
+  // Studios Categories: only its overall span is used here (artWidth); studiosPositions lays out the rows.
+  studios: { perRow: 6, rows: 2, w: 1.75, h: 0.984, gapX: 2.0, gapY: 1.3 },
 };
+
+/**
+ * A grid scaled up (keeping its proportions) until it spans the wall's full hang width, or until it is as
+ * tall as the wall allows, whichever comes first. `extraHeight` is unscaled space below each row (captions).
+ */
+function fullWidth(spec: GridSpec, extraHeight = 0): GridSpec {
+  const span = (spec.perRow - 1) * spec.gapX + spec.w;
+  const height = (spec.rows - 1) * spec.gapY + spec.h;
+  const scale = Math.min(GRID_SPAN / span, (GRID_HEIGHT - extraHeight * spec.rows) / height);
+  return { perRow: spec.perRow, rows: spec.rows, w: spec.w * scale, h: spec.h * scale, gapX: spec.gapX * scale, gapY: spec.gapY * scale };
+}
+
+/** Every grid wall's hang, centred and as wide as the wall allows. Studios Categories lays out its own rows. */
+const GRIDS = Object.fromEntries(
+  (Object.entries(HOME_GRIDS) as [GridShape, GridSpec][]).map(([shape, spec]) => [
+    shape,
+    shape === "studios" ? spec : fullWidth(spec, shape === "square" ? 0.6 : 0),
+  ]),
+) as Record<GridShape, GridSpec>;
+
+/** Studios Categories rows, as on /home: the Studios catalog (bigger cards) first, then "More Studios categories". */
+const STUDIOS_ROWS = {
+  catalog: { perRow: 5, w: 2.1, h: 1.18, gapX: 2.4 },
+  more: { perRow: 6, w: 1.75, h: 0.984, gapX: 2.0 },
+  /** Clear space between one row's bottom edge and the next row's top edge. */
+  rowGap: 0.3,
+};
+
+/**
+ * Where each Studios Categories piece hangs, centred on (cx, cy): the catalog categories on their own
+ * row(s), then the more categories on the row(s) below. Same order as the room's items.
+ */
+function studiosPositions(catalogCount: number, moreCount: number, cx: number, cy: number) {
+  const rows: { count: number; spec: (typeof STUDIOS_ROWS)["catalog"] }[] = [];
+  for (const [count, spec] of [[catalogCount, STUDIOS_ROWS.catalog], [moreCount, STUDIOS_ROWS.more]] as const) {
+    for (let start = 0; start < count; start += spec.perRow) rows.push({ count: Math.min(spec.perRow, count - start), spec });
+  }
+  const totalHeight = rows.reduce((sum, row) => sum + row.spec.h, 0) + Math.max(0, rows.length - 1) * STUDIOS_ROWS.rowGap;
+  let top = cy + totalHeight / 2;
+  return rows.flatMap(({ count, spec }) => {
+    const y = top - spec.h / 2;
+    top -= spec.h + STUDIOS_ROWS.rowGap;
+    return Array.from({ length: count }, (_, column) => ({ x: cx + (column - (count - 1) / 2) * spec.gapX, y, w: spec.w, h: spec.h }));
+  });
+}
 
 /** Centre positions for `count` pieces laid out like a /home grid, centred on (cx, cy). */
 function gridPositions(count: number, spec: GridSpec, cx: number, cy: number) {
@@ -140,10 +197,13 @@ function roomConfigs(data: LotData): RoomConfig[] {
     }
     const spec = GRIDS[shape];
     const count = room.kind === "row" ? room.programs.length : room.items.length;
+    // Every grid wall: the hang centred across the full wall, the title level with the ON AIR box and
+    // without its rule. (Featured and ThaiPBS Journal, the screen walls above, keep theirs.)
     return {
       ...base,
       width: 13,
-      art: [1.0, shape === "vertical" ? 2.6 : 2.75] as [number, number],
+      art: [0, shape === "studios" ? 2.55 : GRID_CENTER_Y] as [number, number],
+      titleLevelWithOnAir: true,
       artWidth: gridSpan(spec),
       label: { title: room.title, meta: room.kind === "row" ? room.blurb : `${count} ${count === 1 ? "item" : "items"}`, note: room.blurb },
     };
@@ -648,6 +708,18 @@ export class LotEngine {
           );
           caption.position.set(x, y + 0.15 - spec.h / 2 - 0.28, 0.01);
           room.wall.add(caption);
+        });
+        continue;
+      }
+
+      if (shape === "studios") {
+        // Studios Categories — the catalog's row(s), then the more categories' row(s), 16:9 covers.
+        const catalogCount = section.studios?.categories.length ?? section.items.length;
+        studiosPositions(catalogCount, section.items.length - catalogCount, ax, ay).forEach(({ x, y, w, h }, index) => {
+          const item = section.items[index];
+          const material = hang(room, x, y, w, h);
+          if (item.image) loadImage(item.image, item.title, index, (texture) => apply(material, texture), 1080);
+          else apply(material, printTexture({ kicker: section.title, title: item.title, meta: item.meta ?? "", font }));
         });
         continue;
       }

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { getHomePageData, HomePage } from "@/components/home/HomePage";
 import { getStudiosShowcaseData } from "@/components/StudiosShowcase";
+import type { StudiosCatalogCategory } from "@/components/StudiosCatalog";
 import { siteContentClassName, siteShellClassName } from "@/components/site-shell";
 import type { Title } from "@/lib/content";
 import { marketEventGroupHref, marketEventImage } from "@/lib/market-events";
@@ -48,6 +49,26 @@ function links(id: string, title: string, thai: string, blurb: string, items: Lo
 }
 
 /**
+ * /home's Studios catalog and "More Studios categories" as one room, catalog first. The wall hangs both
+ * lists; the panel renders the two /home sections themselves (StudiosCatalog, StudiosCategoryAccordion).
+ */
+function studiosCategoriesRoom(categories: StudiosCatalogCategory[], otherCategories: StudiosCatalogCategory[]): LotRoom {
+  const item = (prefix: string) => (category: StudiosCatalogCategory): LotLinkItem => ({
+    id: `${prefix}-${category.id}`, title: category.name, href: `/studios/${encodeURIComponent(category.slug)}`, image: category.coverImageUrl,
+  });
+  const count = categories.length + otherCategories.length;
+  return {
+    ...links("studios-categories", "Studios Categories", "หมวดหมู่สตูดิโอ", `${count} studio ${count === 1 ? "category" : "categories"}.`,
+      [...categories.map(item("catalog")), ...otherCategories.map(item("more"))], { itemShape: "studios" }),
+    studios: {
+      // The catalog cards only need the cover; leave the article lists (unused with showArticleSections off) behind.
+      categories: categories.map((category) => ({ ...category, articles: { all: [], new: [], newEpisodes: [], comingSoon: [] } })),
+      otherCategories: otherCategories.map(({ id, name, slug, coverAlt, coverImageUrl }) => ({ id, name, slug, coverAlt, coverImageUrl })),
+    },
+  };
+}
+
+/**
  * One gallery room per /home section, in the same order and under the same conditions:
  * - HeroCarousel always renders (with its own empty state), so Featured is always a room.
  * - StudiosShowcase renders each sub-section only when it has content, and nothing at all when all are empty.
@@ -84,10 +105,7 @@ async function StudioLotRooms() {
         video: article.videoUrl ? { url: article.videoUrl, mimeType: article.videoMimeType } : undefined,
       })),
       { itemShape: "hero" }),
-    links("studios-catalog", "Studios Catalog", "แคตตาล็อกสตูดิโอ", `${studios.categories.length} studio categories.`,
-      studios.categories.map((category) => ({ id: `catalog-${category.id}`, title: category.name, href: `/studios/${encodeURIComponent(category.slug)}`, image: category.coverImageUrl, meta: category.description }))),
-    links("studios-more", "More Studios Categories", "หมวดหมู่เพิ่มเติม", `${studios.otherCategories.length} more categories.`,
-      studios.otherCategories.map((category) => ({ id: `more-${category.id}`, title: category.name, href: `/studios/${encodeURIComponent(category.slug)}`, image: category.coverImageUrl }))),
+    studiosCategoriesRoom(studios.categories, studios.otherCategories),
     links("press-releases", "Press Releases", "ข่าวประชาสัมพันธ์", "News from Thai PBS Studios.",
       studios.pressReleases.slice(0, 10).map((item) => ({ id: `press-${item.id}`, title: item.title, href: item.href, image: item.imageUrl, meta: item.date })),
       { viewAllHref: "/studios/news/press-releases", itemShape: "press" }),
