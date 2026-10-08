@@ -364,7 +364,7 @@ function ScreenContent({ slides, screen, badge, listLabel, empty }: { slides: Sl
           </span>
         </div>
         {current.href ? (
-          <Link className={styles.premiereCopy} data-cursor={current.cursor} href={current.href}>
+          <Link prefetch={false} className={styles.premiereCopy} data-cursor={current.cursor} href={current.href}>
             {current.copy}
           </Link>
         ) : (
@@ -498,7 +498,7 @@ export function StoryScreenContent({ items, screen, viewAllHref }: { items: LotL
     <div className={styles.shortlist}>
       <ScreenContent badge="On screen" empty="No stories yet." listLabel="All stories" screen={screen} slides={slides} />
       {viewAllHref ? (
-        <Link className={styles.primaryButton} href={viewAllHref}>
+        <Link prefetch={false} className={styles.primaryButton} href={viewAllHref}>
           View all
         </Link>
       ) : null}

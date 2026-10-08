@@ -12,7 +12,7 @@ export default async function MarketEventGroupPage({ params }: { params: Promise
   if (!group) notFound();
   const events = await getMarketEventsInGroup(group.id);
   return <main className={styles.page}><div className={styles.inner}>
-    <Link className={styles.back} href="/studios/events">‹ All Market &amp; Events</Link>
+    <Link prefetch={false} className={styles.back} href="/studios/events">‹ All Market &amp; Events</Link>
     <div className={styles.standalone}><MarketEventGroupDetail events={events} group={group} /></div>
   </div></main>;
 }

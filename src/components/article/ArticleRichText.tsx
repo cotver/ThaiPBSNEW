@@ -111,7 +111,7 @@ function renderLink(node: RichTextNode, key: string): ReactNode {
     : safeHref(typeof fields.url === "string" ? fields.url : node.url);
   const children = renderChildren(node.children);
 
-  if (href.startsWith("/") || href.startsWith("#")) return <Link href={href} key={key}>{children}</Link>;
+  if (href.startsWith("/") || href.startsWith("#")) return <Link prefetch={false} href={href} key={key}>{children}</Link>;
   return <a href={href} key={key} rel="noopener noreferrer" target="_blank">{children}</a>;
 }
 
@@ -130,7 +130,7 @@ function renderRelationship(node: RichTextNode, key: string): ReactNode {
   const href = relationshipHref(node);
   const value = node.value && typeof node.value === "object" ? node.value as Record<string, unknown> : undefined;
   const label = cleanText(value?.titleTh) || cleanText(value?.title) || cleanText(value?.name) || cleanText(value?.slug) || "Related content";
-  return <p className="final-article-relationship" key={key}><Link href={href}>{label} <span>↗</span></Link></p>;
+  return <p className="final-article-relationship" key={key}><Link prefetch={false} href={href}>{label} <span>↗</span></Link></p>;
 }
 
 function renderBlock(node: RichTextNode, key: string): ReactNode {

@@ -22,7 +22,7 @@ export default async function SectionContactPage({ params }: ContactPageProps) {
   return (
     <main className={styles.page}>
       <div className={styles.inner}>
-        <Link className={styles.back} href={section.backHref}>‹ Back</Link>
+        <Link prefetch={false} className={styles.back} href={section.backHref}>‹ Back</Link>
         <SectionContactsPanel label={section.label} people={section.people} />
       </div>
     </main>

@@ -20,7 +20,7 @@ export function Artwork({ src, alt, sizes, priority, tone = 0 }: { src?: string;
 export function SlateCard({ program, index = 0, orientation = "portrait", sizes = "(max-width: 700px) 45vw, 180px" }: { program: LotProgram; index?: number; orientation?: "portrait" | "landscape"; sizes?: string }) {
   const image = orientation === "portrait" ? program.poster || program.hero : program.hero || program.poster;
   return (
-    <Link className={styles.slateCard} data-cursor="Screen it" data-orientation={orientation} href={lotProgramHref(program.slug)}>
+    <Link prefetch={false} className={styles.slateCard} data-cursor="Screen it" data-orientation={orientation} href={lotProgramHref(program.slug)}>
       <span className={styles.slatePoster}>
         <Artwork alt="" sizes={sizes} src={image} tone={index} />
         {program.isNew ? <span className={styles.newTag}>New</span> : null}
@@ -47,7 +47,7 @@ export function LinksContent({ items, shape = "landscape", viewAllHref }: { item
       <ul className={styles.tileGrid} data-shape={shape}>
         {items.map((item, index) => (
           <li key={item.id}>
-            <Link className={styles.tile} data-cursor={`Open ${item.title}`} href={item.href}>
+            <Link prefetch={false} className={styles.tile} data-cursor={`Open ${item.title}`} href={item.href}>
               <span className={styles.tileArt} data-logo={shape === "logo" || undefined}>
                 {shape === "logo" ? <PartnerLogo item={item} /> : <Artwork alt="" sizes={shape === "hero" && index === 0 ? "(max-width: 900px) 100vw, 560px" : "(max-width: 700px) 45vw, 220px"} src={item.image} tone={index} />}
               </span>
@@ -61,7 +61,7 @@ export function LinksContent({ items, shape = "landscape", viewAllHref }: { item
         ))}
       </ul>
       {viewAllHref ? (
-        <Link className={styles.primaryButton} href={viewAllHref}>
+        <Link prefetch={false} className={styles.primaryButton} href={viewAllHref}>
           View all
         </Link>
       ) : null}
@@ -96,7 +96,7 @@ export function RowContent({ programs, viewAllHref, layout = "vertical" }: { pro
         ))}
       </div>
       {viewAllHref ? (
-        <Link className={styles.primaryButton} href={viewAllHref}>
+        <Link prefetch={false} className={styles.primaryButton} href={viewAllHref}>
           View all
         </Link>
       ) : null}

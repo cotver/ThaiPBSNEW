@@ -25,7 +25,7 @@ export default async function LotNewsPage() {
       </header>
 
       {lead ? (
-        <Link className={pages.leadStory} data-cursor="Read story" href={lotArticleHref(lead.slug)}>
+        <Link prefetch={false} className={pages.leadStory} data-cursor="Read story" href={lotArticleHref(lead.slug)}>
           <span className={pages.leadArt}>{lead.imageUrl ? <Image alt={lead.imageAlt || ""} className={pages.cover} fill priority sizes="(max-width: 900px) 100vw, 60vw" src={lead.imageUrl} /> : null}</span>
           <span className={pages.leadCopy}>
             <span className={pages.kicker}>

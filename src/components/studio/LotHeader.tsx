@@ -26,7 +26,7 @@ export function LotHeader() {
 
   return (
     <header className={styles.header} data-lot-header data-scrolled={scrolled || undefined}>
-      <Link aria-label="ThaiPBS Studio gallery home" className={styles.brand} data-cursor="Back to the gallery" href={lotGalleryHref}>
+      <Link prefetch={false} aria-label="ThaiPBS Studio gallery home" className={styles.brand} data-cursor="Back to the gallery" href={lotGalleryHref}>
         <span aria-hidden="true" className={styles.tally} />
         <span className={styles.brandText}>
           <strong>ThaiPBS</strong>
@@ -39,7 +39,7 @@ export function LotHeader() {
       {/* Search, as in the site's navigation; from the gallery it opens over it as a modal (@lotModal). */}
       <div className={styles.headerTools}>
         {search ? (
-          <Link aria-label={search.label} className={styles.searchLink} data-cursor={search.label} href={search.href}>
+          <Link prefetch={false} aria-label={search.label} className={styles.searchLink} data-cursor={search.label} href={search.href}>
             <Icon active={pathname.startsWith(search.href)} name={search.icon} />
           </Link>
         ) : null}

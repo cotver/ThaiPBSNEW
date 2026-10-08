@@ -49,7 +49,7 @@ export function PreviewSlate({ program, index = 0, sizes }: { program: LotProgra
   };
 
   return (
-    <Link className={styles.slateCard} data-cursor={playable(program) ? "Rolling · open" : "Screen it"} href={lotProgramHref(program.slug)} onBlur={release} onFocus={intent} onMouseEnter={intent} onMouseLeave={release}>
+    <Link prefetch={false} className={styles.slateCard} data-cursor={playable(program) ? "Rolling · open" : "Screen it"} href={lotProgramHref(program.slug)} onBlur={release} onFocus={intent} onMouseEnter={intent} onMouseLeave={release}>
       <span className={styles.slatePoster}>
         <Artwork alt="" sizes={sizes ?? "(max-width: 700px) 45vw, (max-width: 1200px) 22vw, 220px"} src={program.poster} tone={index} />
         {rolling ? <video aria-hidden="true" autoPlay className={styles.slateVideo} loop muted playsInline poster={program.hero} preload="auto" src={program.trailerUrl} /> : null}

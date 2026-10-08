@@ -517,7 +517,7 @@ export function TitlePageExperience({ title }: { title: Title }) {
               {title.showHeroActions !== false ? (
                 <div className="pointer-events-auto mt-8 flex flex-wrap items-center gap-3">
                   {ENABLE_TITLE_PLAYBACK ? (
-                    <Link
+                    <Link prefetch={false}
                       className="inline-flex h-12 items-center gap-2 rounded-[6px] bg-white px-7 text-sm font-black uppercase text-[#030714] transition hover:bg-cyan-100"
                       href={titleHref(title.slug)}
                     >

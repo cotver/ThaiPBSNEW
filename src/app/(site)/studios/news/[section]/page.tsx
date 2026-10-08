@@ -23,7 +23,7 @@ export default async function StudiosNewsPage({ params }: { params: Promise<{ se
   return (
     <main className={`${styles.lightSection} ${styles.newsArchive}`}>
       <div className={styles.newsArchiveHeading}>
-        <Link href="/home#news">‹ Back to Studios</Link>
+        <Link prefetch={false} href="/home#news">‹ Back to Studios</Link>
         <h1>{title}</h1>
         <p>{itemCount} {isPress ? `article${itemCount === 1 ? "" : "s"}` : `market partner${itemCount === 1 ? "" : "s"}`}</p>
       </div>

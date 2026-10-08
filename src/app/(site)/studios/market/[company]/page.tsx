@@ -96,7 +96,7 @@ function ProgramCard({ program }: { program: MarketCompanyProgram }) {
   );
 
   return canOpenTitle && title ? (
-    <Link className="block h-full text-inherit no-underline" href={titleHref(title.slug)}>{content}</Link>
+    <Link prefetch={false} className="block h-full text-inherit no-underline" href={titleHref(title.slug)}>{content}</Link>
   ) : content;
 }
 

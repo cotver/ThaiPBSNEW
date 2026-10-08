@@ -66,9 +66,9 @@ export default async function LotProgramPage({ params }: Props) {
   return (
     <main className={pages.page}>
       <nav aria-label="Breadcrumb" className={pages.breadcrumb}>
-        <Link href={lotGalleryHref}>Gallery</Link>
+        <Link prefetch={false} href={lotGalleryHref}>Gallery</Link>
         <span aria-hidden="true">/</span>
-        <Link href={`${lotBase}/programs`}>Archive Vault</Link>
+        <Link prefetch={false} href={`${lotBase}/programs`}>Archive Vault</Link>
         <span aria-hidden="true">/</span>
         <span aria-current="page">Screening room</span>
       </nav>
@@ -93,7 +93,7 @@ export default async function LotProgramPage({ params }: Props) {
           <p className={pages.synopsis}>{title.description}</p>
           <div className={pages.actions}>
             <ShortlistButton initiallySaved={saved} slug={title.slug} title={program.title} />
-            <Link className={pages.ghostAction} data-cursor="Licensing & screeners" href="/studios/events">
+            <Link prefetch={false} className={pages.ghostAction} data-cursor="Licensing & screeners" href="/studios/events">
               Licensing & market events
             </Link>
           </div>

@@ -55,7 +55,7 @@ export default async function LotShortlistPage() {
       ) : (
         <div className={pages.narrow}>
           <EmptyNote>Your shortlist is empty. Open any program and choose “Add to shortlist” to keep it here.</EmptyNote>
-          <Link className={pages.ghostAction} href={`${lotBase}/programs`}>
+          <Link prefetch={false} className={pages.ghostAction} href={`${lotBase}/programs`}>
             Browse the Archive Vault
           </Link>
         </div>

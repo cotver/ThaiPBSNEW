@@ -9,7 +9,7 @@ export function StoryList({ articles }: { articles: FinalArticleCard[] }) {
     <ol className={pages.storyList}>
       {articles.map((article) => (
         <li key={article.slug}>
-          <Link data-cursor="Read story" href={lotArticleHref(article.slug)}>
+          <Link prefetch={false} data-cursor="Read story" href={lotArticleHref(article.slug)}>
             <span className={pages.storyThumb}>{article.imageUrl ? <Image alt="" className={pages.cover} fill sizes="200px" src={article.imageUrl} /> : null}</span>
             <span className={pages.storyCopy}>
               <strong>{article.title}</strong>

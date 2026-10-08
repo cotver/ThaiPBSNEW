@@ -33,7 +33,7 @@ export default async function StudiosCategoryPage({
   return (
     <section className={styles.browsePage}>
       <div className={styles.browseHeading}>
-        <Link href="/home#catalog">‹ Back to Studios</Link>
+        <Link prefetch={false} href="/home#catalog">‹ Back to Studios</Link>
         <h1>{category.name}</h1>
         <p>{filterLabels[filter]} · {articles.length} article{articles.length === 1 ? "" : "s"}</p>
       </div>

@@ -192,7 +192,7 @@ function PostRoomGroupGrid({
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {groups.map((group) => (
-          <Link
+          <Link prefetch={false}
             className="group block overflow-hidden rounded-[8px] border border-white/10 bg-white/6 shadow-xl shadow-black/20 outline-none transition hover:border-white/35 focus-visible:ring-2 focus-visible:ring-cyan-200"
             href={`/category/${encodeURIComponent(categorySlug)}?postRoomGroup=${encodeURIComponent(group.id)}`}
             key={group.id}
@@ -246,7 +246,7 @@ function PostRoomGallery({
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-200">Post Room</p>
           <h2 className="mt-1 text-lg font-black md:text-xl">{group.title}</h2>
         </div>
-        <Link
+        <Link prefetch={false}
           className="text-xs font-black uppercase text-white/58 transition hover:text-white"
           href={`/category/${encodeURIComponent(categorySlug)}`}
         >

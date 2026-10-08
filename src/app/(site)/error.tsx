@@ -30,7 +30,7 @@ export default function SiteError({
           >
             Try again
           </button>
-          <Link
+          <Link prefetch={false}
             className="rounded-full border border-white/20 px-6 py-3 text-sm font-black text-white transition hover:bg-white/10"
             href="/home"
           >

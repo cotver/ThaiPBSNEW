@@ -69,7 +69,7 @@ async function RelatedStoriesRail({ article }: { article: ColumnArticleDetail })
       {recommendations.length ? (
         <div className={styles.relatedList}>
           {recommendations.map((item) => (
-            <Link className={styles.relatedCard} href={item.href} key={item.href}>
+            <Link prefetch={false} className={styles.relatedCard} href={item.href} key={item.href}>
               <span className={styles.relatedImage}>
                 {item.heroUrl ? <Image alt="" fill sizes="(min-width: 3840px) 144px, (min-width: 1920px) 3.75vw, (max-width: 850px) 105px, 72px" src={item.heroUrl} /> : null}
               </span>

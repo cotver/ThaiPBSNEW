@@ -20,7 +20,7 @@ export function LandingEntrance({ items }: { items: LandingItem[] }) {
           <span className="relative mb-3 block aspect-[1641/691] w-[min(72vw,430px)]">
 
           </span>
-          <Link
+          <Link prefetch={false}
             aria-label="Enter website"
             className="pointer-events-auto group relative grid size-[min(44vw,168px)] -translate-y-1 place-items-center rounded-[30px] outline-none transition duration-300 hover:-translate-y-3 focus-visible:ring-2 focus-visible:ring-orange-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black sm:size-[min(28vw,196px)] sm:-translate-y-2 sm:hover:-translate-y-4"
             href="/home"

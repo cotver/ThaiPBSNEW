@@ -32,9 +32,9 @@ export default async function LotArticlePage({ params }: Props) {
       <article>
         <header className={pages.articleHeader}>
           <nav aria-label="Breadcrumb" className={pages.breadcrumb}>
-            <Link href={lotGalleryHref}>Gallery</Link>
+            <Link prefetch={false} href={lotGalleryHref}>Gallery</Link>
             <span aria-hidden="true">/</span>
-            <Link href={`${lotBase}/news`}>Newsroom</Link>
+            <Link prefetch={false} href={`${lotBase}/news`}>Newsroom</Link>
           </nav>
           <p className={pages.kicker}>
             {article.categoryNames[0] ?? "Story"}
@@ -45,7 +45,7 @@ export default async function LotArticlePage({ params }: Props) {
           <p className={pages.byline}>
             <span>{article.author || "Thai PBS editorial"}</span>
             {programSlug ? (
-              <Link data-cursor="Screen the program" href={lotProgramHref(programSlug)}>
+              <Link prefetch={false} data-cursor="Screen the program" href={lotProgramHref(programSlug)}>
                 On {article.programTitle} →
               </Link>
             ) : null}

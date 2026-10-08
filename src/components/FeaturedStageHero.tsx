@@ -68,7 +68,7 @@ export function FeaturedStageHero({ titles }: { titles: Title[] }) {
           <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.54)_0%,rgba(0,0,0,0.05)_18%,rgba(0,0,0,0.04)_70%,rgba(3,7,20,0.55)_100%)]" />
         </div>
       ) : (
-        <Link
+        <Link prefetch={false}
           aria-label={`Open ${current.title}`}
           className="relative block aspect-video w-full"
           href={titleHref(current.slug)}
