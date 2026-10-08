@@ -110,7 +110,9 @@ const HOME_GRIDS: Record<GridShape, GridSpec> = {
   poster: { perRow: 5, rows: 2, w: 1.36, h: 0.765, gapX: 1.5, gapY: 0.95 },
   vertical: { perRow: 7, rows: 1, w: 1.0, h: 1.5, gapX: 1.15, gapY: 0 },
   wide: { perRow: 4, rows: 1, w: 1.75, h: 0.984, gapX: 1.95, gapY: 0 },
-  tile: { perRow: 6, rows: 2, w: 1.15, h: 0.647, gapX: 1.28, gapY: 0.85 },
+  // Categories (BrandTiles): five across instead of /home's six, so its tiles match the other walls' covers
+  // (the Studios catalog row's 2.1m) rather than coming out smaller.
+  tile: { perRow: 5, rows: 2, w: 2.1, h: 1.18, gapX: 2.4, gapY: 1.5 },
   landscape: { perRow: 3, rows: 2, w: 2.2, h: 1.24, gapX: 2.45, gapY: 1.62 },
   press: { perRow: 3, rows: 2, w: 3.3, h: 1.3, gapX: 3.6, gapY: 1.6 },
   square: { perRow: 6, rows: 1, w: 1.4, h: 1.4, gapX: 2.1, gapY: 2.0 },
@@ -730,7 +732,7 @@ export class LotEngine {
         const item = section.items[index];
         const material = hang(room, x, y, spec.w, spec.h);
         if (shape === "logo") apply(material, item.logo ? partnerLogoTexture(item.logo, font) : printTexture({ kicker: section.title, title: item.title, meta: item.meta ?? "", font }));
-        else if (item.image) loadImage(item.image, item.title, index, (texture) => apply(material, texture), shape === "tile" ? 640 : 1080);
+        else if (item.image) loadImage(item.image, item.title, index, (texture) => apply(material, texture), 1080);
         else apply(material, printTexture({ kicker: section.title, title: item.title, meta: item.meta ?? "", font }));
       });
     }

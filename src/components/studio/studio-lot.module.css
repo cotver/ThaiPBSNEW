@@ -1021,31 +1021,17 @@
   color: var(--tungsten);
 }
 
+/* A programme row's cards, wrapping into rows so the panel scrolls down through them (not sideways). */
 .shelfRow {
   display: grid;
-  grid-auto-columns: clamp(118px, 28%, 168px);
-  grid-auto-flow: column;
-  gap: 14px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: thin;
-}
-
-.shelfRow > * {
-  scroll-snap-align: start;
-}
-
-@container (min-width: 900px) {
-  .shelfRow {
-    grid-auto-columns: clamp(150px, 16%, 200px);
-  }
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 18px 14px;
 }
 
 /* /home row layouts: vertical = 2:3 posters, poster and wide = 16:9 cards. */
 .shelfRow[data-layout="poster"],
 .shelfRow[data-layout="wide"] {
-  grid-auto-columns: clamp(200px, 46%, 280px);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 
 .slateCard[data-orientation="landscape"] .slatePoster {
@@ -1064,11 +1050,7 @@
   container-type: inline-size;
 }
 
-/* BrandTiles: dense 16:9 tiles (6 across on a wide screen). */
-.tileGrid[data-shape="tile"] {
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 12px;
-}
+/* BrandTiles: 16:9 tiles at the same size as the other rooms' cards (the .tileGrid default), as on the wall. */
 
 /* StudiosHero: the first story leads at full width. */
 .tileGrid[data-shape="hero"] > li:first-child {
