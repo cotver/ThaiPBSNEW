@@ -20,7 +20,7 @@ export function StudioModal({ children, title, variant = "lot" }: { children: Re
           <div className={siteContentClassName}>{children}</div>
         </div>
       ) : (
-        <div className={`${plexThai.variable} ${lot.root}`}>{children}</div>
+        <div className={`${plexThai.variable} ${lot.root} ${styles.lotPage}`}>{children}</div>
       )}
     </MarketEventModalShell>
   );

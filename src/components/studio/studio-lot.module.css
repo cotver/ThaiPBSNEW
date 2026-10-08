@@ -52,12 +52,35 @@
   cursor: none;
 }
 
+/*
+ * Big screens: the lot's interface (header, room panel, captions, controls, its own pages) scales up in
+ * steps, so on QHD, ultrawide and 4K it is the same physical size as on a 1920px screen instead of shrinking.
+ * Applied with `zoom: var(--lot-ui)` on each overlay — never on the 3D canvas, which already renders at
+ * the screen's full resolution. LotEngine's focusView() mirrors these steps (lotUiScale).
+ */
+.root {
+  --lot-ui: 1;
+}
+
+@media (min-width: 2200px) {
+  .root { --lot-ui: 1.25; }
+}
+
+@media (min-width: 2800px) {
+  .root { --lot-ui: 1.5; }
+}
+
+@media (min-width: 3400px) {
+  .root { --lot-ui: 2; }
+}
+
 /* ——— Header ——— */
 
 .header {
   position: fixed;
   inset: 0 0 auto;
   z-index: 60;
+  zoom: var(--lot-ui, 1);
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;

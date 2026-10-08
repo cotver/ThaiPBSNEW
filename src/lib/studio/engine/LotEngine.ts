@@ -212,6 +212,14 @@ function roomConfigs(data: LotData): RoomConfig[] {
   });
 }
 
+/** The lot interface's big-screen scale — mirrors --lot-ui in studio-lot.module.css. */
+function lotUiScale(width: number) {
+  if (width >= 3400) return 2;
+  if (width >= 2800) return 1.5;
+  if (width >= 2200) return 1.25;
+  return 1;
+}
+
 /**
  * Owns renderer, scene, camera rig and interaction. React talks to it only through the
  * public methods and the event callbacks, so the 3D layer can be swapped or removed freely.
@@ -511,22 +519,26 @@ export class LotEngine {
    */
   private focusView(): FocusView {
     const { width: W, height: H } = this.size();
-    const gutter = THREE.MathUtils.clamp(W * 0.03, 16, 40);
-    const headerHeight = W <= 860 ? 104 : 64;
+    // The header and panel are zoomed by --lot-ui on big screens, so their sizes (and the gutter) scale with it.
+    const ui = lotUiScale(W);
+    const gutter = THREE.MathUtils.clamp(W * 0.03, 16, 40) * ui;
+    const headerHeight = (W <= 860 ? 104 : 64) * ui;
     let x0: number;
     let x1: number;
     let y0: number;
     let y1: number;
     if (W > 760) {
       // Desktop: the panel is a column on the right.
-      const panelWidth = Math.min(620, W - 2 * gutter);
+      const panelWidth = Math.min(Math.min(620, Math.max(380, W * 0.48)) * ui, W - 2 * gutter);
       x0 = gutter;
       x1 = W - gutter - panelWidth - gutter;
-      y0 = headerHeight + 12;
-      y1 = H - THREE.MathUtils.clamp(H * 0.03, 16, 32);
+      y0 = headerHeight + 12 * ui;
+      y1 = H - THREE.MathUtils.clamp(H * 0.03, 16, 32) * ui;
     } else {
       // Phones: the panel is a sheet along the bottom; frame the room above it.
-      const panelHeight = Math.min(H * 0.78, 680);
+      // Capped to the space under the header, as the sheet is (experience.module.css).
+      const bottomGap = THREE.MathUtils.clamp(H * 0.03, 16, 32);
+      const panelHeight = Math.min(H * 0.78, 680, H - headerHeight - 12 - bottomGap);
       x0 = 12;
       x1 = W - 12;
       y0 = headerHeight + 8;

@@ -24,6 +24,11 @@
   animation: modal-in 420ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
+/* The lot's own pages scale with the rest of its interface on big screens (--lot-ui, studio-lot.module.css). */
+.lotPage {
+  zoom: var(--lot-ui, 1);
+}
+
 /* The close button stays above the page's own layers (heroes, sticky bars). */
 .dialog.dialog > button:first-child {
   z-index: 60;

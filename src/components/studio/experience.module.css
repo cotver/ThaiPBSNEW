@@ -69,6 +69,7 @@
 /* ——— Caption: big type that names the stage you are passing ——— */
 
 .caption {
+  zoom: var(--lot-ui, 1);
   position: absolute;
   left: var(--gutter);
   top: calc(var(--header-h, 64px) + clamp(12px, 5vh, 56px));
@@ -131,6 +132,7 @@
 /* ——— HUD: reel progress + stage markers ——— */
 
 .hud {
+  zoom: var(--lot-ui, 1);
   position: absolute;
   inset: auto var(--gutter) clamp(16px, 3vh, 32px);
   display: grid;
@@ -348,7 +350,9 @@
   z-index: 10;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  width: min(620px, calc(100vw - 2 * var(--gutter)));
+  /* 620px on laptops and up; narrower on tablets and small laptops (down to 380px) so the wall stays in view. */
+  width: min(620px, max(380px, 48vw), calc(100vw - 2 * var(--gutter)));
+  zoom: var(--lot-ui, 1);
   overflow: hidden;
   border: 1px solid rgb(242 237 228 / 16%);
   border-radius: 10px;
@@ -498,7 +502,9 @@
     left: 12px;
     right: 12px;
     width: auto;
-    height: min(78vh, 680px);
+    /* Never taller than the visible space under the header (dvh: with the browser's bars showing), so the
+       sheet's top, and its Esc button, stays clear of the top nav. */
+    height: min(78dvh, 680px, calc(100dvh - var(--header-h, 104px) - 12px - clamp(16px, 3vh, 32px)));
   }
 }
 
