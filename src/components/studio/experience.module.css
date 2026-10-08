@@ -264,6 +264,29 @@
   bottom: calc(100% + 16px);
 }
 
+/* The weather and the time of day outside the glass, beside "2D". */
+.weatherToggle,
+.timeToggle {
+  position: absolute;
+  right: 66px;
+  bottom: calc(100% + 16px);
+  align-content: center;
+  gap: 1px;
+}
+
+.timeToggle {
+  right: 132px;
+}
+
+.weatherAuto {
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
 @media (max-width: 900px) {
   .hud {
     grid-template-columns: 1fr;

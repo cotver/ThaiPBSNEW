@@ -29,6 +29,36 @@ export type RoomConfig = {
 /** Furthest the camera may stand from a wall — the nave is about 15m across. */
 const MAX_FOCUS_DISTANCE = 14.4;
 
+const SPOT_LIGHTS = "#if ( NUM_SPOT_LIGHTS > 0 ) && defined( RE_Direct )";
+const SUN_LIGHTS = "#if ( NUM_SUN_LIGHTS > 0 ) && defined( RE_Direct )";
+const AREA_LIGHTS = "#if ( NUM_RECT_AREA_LIGHTS > 0 ) && defined( RE_Direct_RectArea )";
+
+/**
+ * Sun or spotlight, not both: where the sun falls on a spotlit wall, the wall takes whichever light is
+ * stronger instead of their sum, so a patch of sunlight doesn't glare out of the wall's spotlit wash.
+ * (Patches three's light loop: the spot lights' share and the sun's share are set aside, then the
+ * larger of the two is added back.)
+ */
+function sunOrSpotlight<T extends THREE.MeshStandardMaterial>(material: T) {
+  material.onBeforeCompile = (shader) => {
+    const lights = THREE.ShaderChunk.lights_fragment_begin
+      .replace(SPOT_LIGHTS, `vec3 lotBefore = reflectedLight.directDiffuse;
+vec3 lotBeforeSpecular = reflectedLight.directSpecular;
+${SPOT_LIGHTS}`)
+      .replace(SUN_LIGHTS, `vec3 lotSpot = reflectedLight.directDiffuse - lotBefore;
+vec3 lotSpotSpecular = reflectedLight.directSpecular - lotBeforeSpecular;
+reflectedLight.directDiffuse = lotBefore;
+reflectedLight.directSpecular = lotBeforeSpecular;
+${SUN_LIGHTS}`)
+      .replace(AREA_LIGHTS, `reflectedLight.directDiffuse = lotBefore + max(lotSpot, reflectedLight.directDiffuse - lotBefore);
+reflectedLight.directSpecular = lotBeforeSpecular + max(lotSpotSpecular, reflectedLight.directSpecular - lotBeforeSpecular);
+${AREA_LIGHTS}`);
+    shader.fragmentShader = shader.fragmentShader.replace("#include <lights_fragment_begin>", lights);
+  };
+  material.customProgramCacheKey = () => "sun-or-spotlight";
+  return material;
+}
+
 /**
  * The focused camera's lens and the part of the screen left free by the room panel.
  * `usableX/Y` are fractions of the viewport; `centerX/Y` are that area's centre in NDC (-1..1).
@@ -65,7 +95,7 @@ export class Room {
 
     const plaster = plasterTexture(width * 31 + height);
     plaster.repeat.set(width / 4, height / 4);
-    const body = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.4), new THREE.MeshStandardMaterial({ color: "#f3eee4", map: plaster, roughness: 0.94 }));
+    const body = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.4), sunOrSpotlight(new THREE.MeshStandardMaterial({ color: "#e9e3d7", map: plaster, roughness: 0.94 })));
     body.position.y = height / 2;
     this.group.add(body);
 
@@ -81,7 +111,7 @@ export class Room {
     const titleX = -width / 2 + 0.55 + titleWidth / 2;
     const title = new THREE.Mesh(
       new THREE.PlaneGeometry(titleWidth, titleWidth * 0.375),
-      new THREE.MeshStandardMaterial({ map: vinylTexture({ kicker: config.kicker, title: config.title, sub: config.sub, font }), transparent: true, depthWrite: false, roughness: 0.7 }),
+      sunOrSpotlight(new THREE.MeshStandardMaterial({ map: vinylTexture({ kicker: config.kicker, title: config.title, sub: config.sub, font }), transparent: true, depthWrite: false, roughness: 0.7 })),
     );
     title.position.set(titleX, height - 0.55 - titleWidth * 0.1875, 0.01);
     this.wall.add(title);
@@ -95,22 +125,28 @@ export class Room {
     this.wall.add(this.underline);
 
     // Museum label beside the work.
-    const [artX, artY] = config.art;
+    const [artX] = config.art;
     if (config.label) {
       const label = new THREE.Mesh(
         new THREE.PlaneGeometry(0.42, 0.28),
-        new THREE.MeshStandardMaterial({ map: labelTexture({ ...config.label, font }), roughness: 0.8 }),
+        sunOrSpotlight(new THREE.MeshStandardMaterial({ map: labelTexture({ ...config.label, font }), roughness: 0.8 })),
       );
       label.position.set(Math.min(width / 2 - 0.4, artX + config.artWidth / 2 + 0.42), 1.3, 0.015);
       this.wall.add(label);
     }
 
-    // Ceiling spot washing the work, plus a faint visible beam through the haze.
-    const fixture = new THREE.Vector3(artX, 6.75, 3.6);
-    const target = new THREE.Vector3(artX, artY, 0);
-    // Kept soft: a hot spot blows out the work and the label it is meant to show.
-    this.spotBase = 2.6 + config.artWidth * 0.4;
-    this.spot = new THREE.SpotLight("#ffe8d0", this.spotBase, 16, Math.min(0.78, 0.3 + config.artWidth * 0.048), 1, 1.4);
+    // A ceiling wall-washer aimed at the middle of the wall, its beam wide enough to take in the whole
+    // feature wall — title, hang, label and all — softening only at the very edges. Plus a faint visible
+    // beam through the haze.
+    const fixture = new THREE.Vector3(0, 6.75, 4.4);
+    const target = new THREE.Vector3(0, height / 2, 0);
+    const reach = fixture.distanceTo(target);
+    const coverAngle = Math.atan(Math.hypot(width / 2, height / 2) / reach) * 1.15;
+    // An even wash, not a hot spot: no fall-off with distance (decay 0), so the near middle of the wall is
+    // barely brighter than its corners, at a level that lifts the wall out of the hall's shadows without
+    // washing out the plaster. (The work itself is unlit, so it keeps its true colour either way.)
+    this.spotBase = 2.6;
+    this.spot = new THREE.SpotLight("#ffe8d0", this.spotBase, 20, Math.min(1.3, coverAngle), 0.3, 0);
     this.spot.position.copy(fixture);
     this.spot.target.position.copy(target);
     this.wall.add(this.spot, this.spot.target);
@@ -119,7 +155,7 @@ export class Room {
     // Tilt the can along the fixture→work line (local space, so no world matrices needed yet).
     housing.rotation.x = Math.atan2(fixture.z - target.z, fixture.y - target.y);
     this.wall.add(housing);
-    const beam = lightCone(fixture, target.clone().setZ(0.3), Math.max(1.2, config.artWidth * 0.5), "#ffdcb0", 0.025);
+    const beam = lightCone(fixture, target.clone().setZ(0.3), width * 0.42, "#ffdcb0", 0.02);
     this.cone = beam.material;
     this.wall.add(beam.mesh);
 

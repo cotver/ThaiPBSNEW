@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { damp } from "./math";
 import type { Room } from "./Room";
-import { bannerTexture, brandPlateTexture, muralTexture, onAirTexture, radialTexture, testCardTexture } from "./signage";
+import { bannerTexture, brandPlateTexture, onAirTexture, radialTexture, testCardTexture } from "./signage";
 
 const PLASTER = new THREE.MeshStandardMaterial({ color: "#f1ede6", roughness: 0.85 });
 const GRAPHITE = new THREE.MeshStandardMaterial({ color: "#2b2d33", roughness: 0.45, metalness: 0.55 });
@@ -13,8 +13,8 @@ type Banner = { mesh: THREE.Mesh; phase: number };
 
 /**
  * Broadcast-house furnishings that make the gallery feel like Thai PBS rather than any museum:
- * a studio prop per room, an ON AIR box that lights when the room is looked at, super-graphics on
- * the facing nave wall, ceiling banners, and a reception desk in the foyer.
+ * a studio prop per room, an ON AIR box that lights when the room is looked at,
+ * ceiling banners, and a reception desk in the foyer.
  */
 export class Exhibits {
   readonly group = new THREE.Group();
@@ -65,15 +65,6 @@ export class Exhibits {
       prop.position.copy(propPosition);
       prop.lookAt(index % 4 === 0 ? artTarget : pathTarget);
       this.group.add(prop);
-
-      // Super-graphic on the nave wall facing the room.
-      const mural = new THREE.Mesh(
-        new THREE.PlaneGeometry(9.5, 3.8),
-        new THREE.MeshStandardMaterial({ map: muralTexture(index, font, accent), transparent: true, depthWrite: false, roughness: 0.85 }),
-      );
-      mural.position.set(-side * 7.78, 3.4, z);
-      mural.rotation.y = side * (Math.PI / 2);
-      this.group.add(mural);
 
       // A cloth banner between this room and the next, hanging from the ceiling — past the wall's end, never in front of it.
       const bannerZ = z - Math.max(6.5, width / 2 + 0.6);

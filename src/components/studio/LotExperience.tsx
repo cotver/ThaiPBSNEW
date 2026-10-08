@@ -3,7 +3,7 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import type { LotEngine, LotQuality } from "@/lib/studio/engine/LotEngine";
+import type { EnvironmentState, LotEngine, LotQuality, TimeOfDay, Weather } from "@/lib/studio/engine/LotEngine";
 import { lotGalleryHref, lotListHref, type LotData, type LotSectionId } from "@/lib/studio/data";
 import { cue } from "@/lib/studio/sound";
 import styles from "@/components/studio/experience.module.css";
@@ -12,6 +12,8 @@ import { setCursorLabel } from "./LotCursor";
 import { walkSlotId } from "./LotHeader";
 import { LotPanel } from "./LotPanel";
 import { WalkNav } from "./WalkNav";
+import { TimeButton } from "./TimeButton";
+import { WeatherButton } from "./WeatherButton";
 import SiteLoading from "@/app/(site)/loading";
 
 type Mode = "detecting" | "lot" | "sheet";
@@ -70,6 +72,8 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
   /** Which slide each room's hall screen is showing (Featured, ThaiPBS Journal); its panel follows and steers it. */
   const [screenSlides, setScreenSlides] = useState<Record<LotSectionId, number>>({});
   const [failed, setFailed] = useState(false);
+  /** The weather and light outside the glass, for the weather button. */
+  const [outdoors, setOutdoors] = useState<EnvironmentState | null>(null);
   const mode: Mode = !capabilities ? "detecting" : failed ? "sheet" : override ?? (!capabilities.webgl || capabilities.compact || wantsList ? "sheet" : "lot");
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -151,6 +155,7 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
             }
           },
           onScreenChange: (section, index) => setScreenSlides((slides) => ({ ...slides, [section]: index })),
+          onEnvironmentChange: setOutdoors,
           onTravel: (progress, near, atRoom) => {
             setNearest(near);
             setAtRoom(atRoom);
@@ -162,6 +167,7 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
         engine = building;
         engineRef.current = building;
         await building.init();
+        setOutdoors(building.environmentState);
       } catch (error) {
         if (cancelled) return; // disposed on purpose while building
         engineRef.current = null;
@@ -335,6 +341,9 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
           <span>Click a room to step in</span>
           <span>1–{Math.min(9, data.rooms.length)} · Esc</span>
         </div>
+
+        {outdoors ? <TimeButton onChange={(time: TimeOfDay | "auto") => engineRef.current?.setTime(time)} state={outdoors} /> : null}
+        {outdoors ? <WeatherButton onChange={(weather: Weather | "auto") => engineRef.current?.setWeather(weather)} state={outdoors} /> : null}
 
         <button aria-label="Switch to the list view" className={`${styles.roundButton} ${styles.listToggle}`} data-cursor="Switch to 2D" onClick={switchToSheet} title="Switch to the list view" type="button">
           2D

@@ -140,15 +140,16 @@ export function concreteTexture() {
   const size = 512;
   const random = seeded(77);
   const [element, context] = canvas(size, size);
-  context.fillStyle = "#4a4743";
+  // Pale, polished concrete: light enough that the floor reads bright by day.
+  context.fillStyle = "#d6d1c8";
   context.fillRect(0, 0, size, size);
   for (let i = 0; i < 16000; i += 1) {
-    const shade = 60 + random() * 30;
+    const shade = 195 + random() * 30;
     context.fillStyle = `rgba(${shade},${shade - 2},${shade - 5},0.5)`;
     context.fillRect(random() * size, random() * size, 1.5, 1.5);
   }
   for (let i = 0; i < 30; i += 1) {
-    context.fillStyle = `rgba(30,28,26,${random() * 0.18})`;
+    context.fillStyle = `rgba(150,144,135,${random() * 0.15})`;
     context.beginPath();
     context.ellipse(random() * size, random() * size, 40 + random() * 120, 20 + random() * 60, random() * Math.PI, 0, Math.PI * 2);
     context.fill();
@@ -276,7 +277,7 @@ export function partnerLogoTexture(logo: MarketLogo & { frame: { width: number; 
  * The "ThaiPBS Studio" lettering for the portal beside the doorway: paper-white on transparent, "ThaiPBS"
  * bold and "Studio" regular (the Lot font's 700 and 400), sized to fill the canvas width.
  */
-export function studioSignTexture(font: string) {
+export function studioSignTexture(font: string, ink = "#f2ede4") {
   const [element, context] = canvas(2048, 512);
   const bold = "ThaiPBS";
   const light = " Studio";
@@ -286,7 +287,7 @@ export function studioSignTexture(font: string) {
   context.font = `400 ${size}px ${font}`;
   const total = boldWidth + context.measureText(light).width;
   const x = (2048 - total) / 2;
-  context.fillStyle = "#f2ede4";
+  context.fillStyle = ink;
   context.textBaseline = "middle";
   context.font = `700 ${size}px ${font}`;
   context.fillText(bold, x, 256);

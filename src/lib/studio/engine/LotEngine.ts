@@ -6,15 +6,18 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { trailerKind } from "@/lib/trailer-playback";
 import type { LotData, LotSectionId } from "@/lib/studio/data";
 import { Atmosphere } from "./Atmosphere";
+import { Environment, type EnvironmentState, type TimeOfDay, type Weather } from "./Environment";
 import { Exhibits } from "./Exhibits";
 import { CameraRig, FOCUS_FOV } from "./CameraRig";
-import { Hall } from "./Hall";
+import { FRONT, Hall, NAVE_HALF_WIDTH } from "./Hall";
 import { LedWall } from "./LedWall";
 import { disposeTree } from "./math";
+import { Nature } from "./Nature";
 import { Room, type FocusView, type RoomConfig } from "./Room";
 import { captionTexture, partnerLogoTexture, posterFallback, printTexture, testCardTexture } from "./signage";
 
 export type LotQuality = "high" | "low";
+export type { EnvironmentState, TimeOfDay, Weather };
 
 export type LotEngineEvents = {
   /** Building the scene (0..1), before artwork starts loading. */
@@ -31,6 +34,8 @@ export type LotEngineEvents = {
   onScreenChange?: (section: LotSectionId, index: number) => void;
   /** `atRoom`: you are within AT_ROOM_RANGE of the nearest room's approach point (not in the foyer or between rooms). */
   onTravel: (progress: number, nearest: LotSectionId, atRoom: boolean) => void;
+  /** The weather outside changed (on its own or by setWeather), or night fell or the day broke. */
+  onEnvironmentChange?: (state: EnvironmentState) => void;
 };
 
 export type LotEngineOptions = LotEngineEvents & {
@@ -48,6 +53,8 @@ function yieldToBrowser() {
 }
 
 const ROOM_SPACING = 13;
+/** How bright the hall's lamps run when they are on (a fraction of full), by night and on dull days alike. */
+const LAMP_LEVEL = 0.38;
 /**
  * How far before a room (along the walk) it becomes the current room. At ~10m the room is clearly in
  * the forward view; the switch to it then happens about midway from the previous room's anchor.
@@ -155,6 +162,14 @@ export class LotEngine {
   private healthClock = 0;
   private readonly probe = new Uint8Array(4);
   private hall!: Hall;
+  private environment!: Environment;
+  private readonly lampAmbient: THREE.HemisphereLight;
+  /**
+   * The strips' light thrown back up off the pale floor: lights only what faces down — the ceiling and
+   * the beams — which the strips themselves, shining down, can never reach.
+   */
+  private readonly lampBounce = new THREE.HemisphereLight("#000000", "#ffe2bf", 0);
+  private nature!: Nature;
   private atmosphere!: Atmosphere;
   private exhibits!: Exhibits;
   private built = false;
@@ -203,6 +218,9 @@ export class LotEngine {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, high ? 1.75 : 1.25));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.5;
+    // Sun shadows (high quality): daylight falls into the hall only through the glass.
+    this.renderer.shadowMap.enabled = high;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
 
     const { width, height } = this.size();
     this.renderer.setSize(width, height, false);
@@ -210,19 +228,16 @@ export class LotEngine {
     this.rig.resize(width / height);
     this.rig.onFocusSettled = (focused) => this.handleFocusSettled(focused);
 
-    // After-hours gallery: warm dark air, the work lit by its own spots.
-    // A lit gallery, warm and open — the haze only softens the far end of the hall.
+    // A lit gallery, warm and open — the haze only softens the far end of the hall. The background and
+    // the haze's colour follow the sky outside the glass (Environment), which draws over the background.
     this.scene.background = new THREE.Color("#2b2620");
     // Thin enough that the end wall still reads from the foyer (~78% clear), however long the hall is.
     const walkLength = 25 - hallEnd(options.data.rooms.length);
     this.scene.fog = new THREE.FogExp2("#2e2822", Math.min(0.011, 0.5 / walkLength));
-    this.scene.add(new THREE.HemisphereLight("#fff3e4", "#5a5048", 1.5));
-    // Ceiling fill every 18m down the whole hall, however many rooms it holds.
-    for (let z = 6; z > hallEnd(options.data.rooms.length); z -= 18) {
-      const fill = new THREE.PointLight("#ffe9cf", 40, 30, 1.2);
-      fill.position.set(0, 6.3, z);
-      this.scene.add(fill);
-    }
+    // The hall's own lamps are the two ceiling strips (Hall), switched by Environment: on at night and in
+    // dull weather, off on a clear day. This is only the faint bounce they leave in the shadows.
+    this.lampAmbient = new THREE.HemisphereLight("#fff3e4", "#5a5048", 1.5);
+    this.scene.add(this.lampAmbient, this.lampBounce);
 
   }
 
@@ -236,7 +251,7 @@ export class LotEngine {
     const high = options.quality === "high";
     const { width, height } = this.size();
     const configs = roomConfigs(options.data);
-    const steps = configs.length + 3;
+    const steps = configs.length + 4;
     let step = 0;
     const advance = async () => {
       step += 1;
@@ -245,12 +260,23 @@ export class LotEngine {
       if (this.disposed) throw new Error("Gallery disposed while building");
     };
     const benches = options.data.rooms.map((_, index): [number, number] => [roomLayout(index).side * 3.4, roomLayout(index).z]);
-    this.hall = new Hall({ reflections: high, benches, back: hallEnd(options.data.rooms.length), font: options.font });
+    const back = hallEnd(options.data.rooms.length);
+    this.environment = new Environment({ quality: options.quality, hallHalfWidth: NAVE_HALF_WIDTH });
+    this.environment.onChange = (state) => options.onEnvironmentChange?.(state);
+    this.environment.uniforms.uHallBounds.value.set(NAVE_HALF_WIDTH, FRONT, back);
+    this.environment.setHallBox(new THREE.Box3(new THREE.Vector3(-NAVE_HALF_WIDTH - 0.5, -0.5, back - 0.5), new THREE.Vector3(NAVE_HALF_WIDTH + 0.5, 7.5, FRONT + 0.5)));
+    this.scene.add(this.environment.group);
+    this.hall = new Hall({ benches, back, font: options.font, outdoor: this.environment.uniforms });
     this.scene.add(this.hall.group);
     this.atmosphere = new Atmosphere({ particles: high ? 600 : 220 });
     this.scene.add(this.atmosphere.group);
     this.exhibits = new Exhibits(options.font);
     this.scene.add(this.exhibits.group);
+    await advance();
+
+    // The land outside the glass.
+    this.nature = new Nature({ uniforms: this.environment.uniforms, hall: { halfWidth: NAVE_HALF_WIDTH + 0.4, front: FRONT, back: back - 0.4 }, quality: options.quality });
+    this.scene.add(this.nature.group);
     await advance();
 
     // One room (and its furnishings) per step.
@@ -267,6 +293,7 @@ export class LotEngine {
     // From here on everything is synchronous, so the image loaders' callbacks always find a finished scene.
     this.hangWork();
 
+    if (high) this.castShadows();
     this.scene.updateMatrixWorld(true);
     this.computeTrackPositions();
     this.trackLength = this.rig.track.getLength();
@@ -350,6 +377,20 @@ export class LotEngine {
     wall.setOverride({ texture, aspect: (video.videoWidth || 16) / (video.videoHeight || 9) });
   }
 
+  /** Pick the weather outside, or hand it back to the sky ("auto"). */
+  setWeather(weather: Weather | "auto") {
+    this.environment?.setWeather(weather);
+  }
+
+  /** Run the sky to a time of day, or back to the visitor's real clock ("auto"). */
+  setTime(time: TimeOfDay | "auto") {
+    this.environment?.setTime(time);
+  }
+
+  get environmentState(): EnvironmentState | null {
+    return this.environment?.state ?? null;
+  }
+
   holdScreen(section: LotSectionId, held: boolean) {
     this.screens.get(section)?.wall.setHeld(held);
   }
@@ -428,7 +469,6 @@ export class LotEngine {
     this.stopVideo();
     this.sharedVideo?.texture.dispose();
     this.sharedVideo = null;
-    this.hall?.dispose();
     disposeTree(this.scene);
     this.composer?.dispose();
     this.bloom?.dispose();
@@ -623,6 +663,8 @@ export class LotEngine {
     if (this.disposed) return;
     // Prime post-processing targets and shaders under the curtain, so the first visible frame is not empty.
     this.rig.update(1 / 60, this.options.reducedMotion);
+    this.environment.update(0, this.rig.camera, this.scene, this.options.reducedMotion);
+    this.updateLamps();
     this.draw();
     this.checkFrameHealth();
     this.options.onReady();
@@ -716,6 +758,9 @@ export class LotEngine {
     }
     this.updateTrailer(dt, highlight && this.screens.has(highlight) ? highlight : null);
 
+    this.environment.update(dt, this.rig.camera, this.scene, reducedMotion);
+    this.updateLamps();
+    this.nature.update(dt, reducedMotion, this.environment.conditions);
     this.atmosphere.update(dt, time, this.rig.velocity, reducedMotion);
     this.exhibits.update(dt, time, this.rig.velocity, reducedMotion);
 
@@ -733,6 +778,39 @@ export class LotEngine {
     if (this.healthClock > 3) {
       this.healthClock = 0;
       this.checkFrameHealth();
+    }
+  }
+
+  /**
+   * Lamps follow Environment. The hall is lit from its sources — the two ceiling strips when the
+   * lamps are on, the glass walls and the sun by day — with only a little ambient so nothing goes black.
+   * The lamps always run at the same soft level, night or dull day; the pale floor and ceiling would
+   * otherwise glare.
+   */
+  private updateLamps() {
+    const { lamps, daylight, daylightColour } = this.environment;
+    this.lampAmbient.intensity = 0.2 + lamps * 0.4 * LAMP_LEVEL;
+    this.lampBounce.intensity = lamps * 3.2 * LAMP_LEVEL;
+    this.hall.setLamps(lamps, 0.75 + LAMP_LEVEL * 0.25);
+    this.hall.setDaylight(daylightColour, daylight);
+  }
+
+  /**
+   * Everything solid in the hall throws and catches sun shadows: the roof, the room walls, mullions,
+   * props and benches. Translucent surfaces (the floor's skin, cut-vinyl titles) only catch them; the
+   * glass, the unlit artwork and the outdoors do neither.
+   */
+  private castShadows() {
+    const solids = [this.hall.group, this.exhibits.group, ...[...this.rooms.values()].map((room) => room.group)];
+    for (const root of solids) {
+      root.traverse((object) => {
+        const mesh = object as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+        if (!(material instanceof THREE.MeshStandardMaterial)) return;
+        mesh.receiveShadow = true;
+        mesh.castShadow = !material.transparent;
+      });
     }
   }
 
@@ -857,7 +935,6 @@ export class LotEngine {
     this.renderer.setSize(width, height, false);
     this.composer?.setSize(width, height);
     this.bloom?.resolution.set(width / 2, height / 2);
-    this.hall?.resize(width, height);
     this.rig.resize(width / height);
     // Keep a focused room framed inside the panel's free area at the new size.
     const room = this.focused ? this.rooms.get(this.focused) : undefined;
