@@ -1089,11 +1089,13 @@ export class LotEngine {
     if (event.pointerType !== "touch") this.rig.setLook(x, y);
   };
 
-  private readonly handlePointerLeave = () => {
+  private readonly handlePointerLeave = (event: PointerEvent) => {
     this.pointer.set(9, 9);
     this.pointerDirty = true;
-    // Off the view (onto the panel, the header, out of the window): face straight down the hall again.
-    this.rig.setLook(0, 0);
+    // The mouse off the view (onto the panel, the header, out of the window): face straight down the hall again.
+    // Not for touch: lifting a finger fires pointerleave too, and the view must stay where the swipe turned it
+    // so the visitor can tap what they turned to.
+    if (event.pointerType !== "touch") this.rig.setLook(0, 0);
   };
 
   private readonly handleClick = () => {
