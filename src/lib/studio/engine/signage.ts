@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { MarketLogo } from "@/lib/market-logos";
 import { seeded } from "./math";
+import { THAI_PBS_LOGO } from "./thaipbsLogo";
 
 /** Canvas-drawn textures: every letter in the gallery is real typography, not baked art. */
 
@@ -21,6 +22,59 @@ function toTexture(element: HTMLCanvasElement, srgb = true) {
   if (srgb) texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
   return texture;
+}
+
+/** Thai PBS brand colours, as in public/LOGO/thaipbs-logo.png. */
+export const THAI_PBS_ORANGE = "#f05423";
+export const THAI_PBS_GREY = "#737473";
+
+/**
+ * A Thai PBS kite face, for a diamond kite spanning x -0.65..0.65 and y -1.2..0.9 (the texture covers
+ * that box): `white` is a white kite with the logo in its own orange and grey, `orange` an orange kite
+ * with the logo in white. A border stripe follows the diamond's edge.
+ */
+export function thaiPbsKiteTexture(variant: "white" | "orange") {
+  const width = 520;
+  const height = 840;
+  const [element, context] = canvas(width, height);
+  const kite = { left: -0.65, right: 0.65, top: 0.9, bottom: -1.2 };
+  const px = (x: number) => ((x - kite.left) / (kite.right - kite.left)) * width;
+  const py = (y: number) => ((kite.top - y) / (kite.top - kite.bottom)) * height;
+  const background = variant === "white" ? "#fbf8f2" : THAI_PBS_ORANGE;
+  context.fillStyle = background;
+  context.fillRect(0, 0, width, height);
+
+  // The edge stripe, inset from the diamond's outline.
+  context.strokeStyle = variant === "white" ? THAI_PBS_ORANGE : "#ffffff";
+  context.lineWidth = 26;
+  context.beginPath();
+  const inset = 0.88;
+  context.moveTo(px(0), py(0.9 * inset));
+  context.lineTo(px(0.65 * inset), py(0));
+  context.lineTo(px(0), py(-1.2 * inset));
+  context.lineTo(px(-0.65 * inset), py(0));
+  context.closePath();
+  context.stroke();
+
+  // The logo (height 1 in its own units), centred a little above the kite's waist.
+  const size = 0.78;
+  const ox = 0;
+  const oy = -0.42;
+  for (const part of THAI_PBS_LOGO) {
+    context.fillStyle = variant === "orange" ? "#ffffff" : part.colour === "orange" ? THAI_PBS_ORANGE : THAI_PBS_GREY;
+    context.beginPath();
+    for (const ring of [part.outer, ...part.holes]) {
+      for (let i = 0; i < ring.length; i += 2) {
+        const x = px(ox + ring[i] * size);
+        const y = py(oy + ring[i + 1] * size);
+        if (i === 0) context.moveTo(x, y);
+        else context.lineTo(x, y);
+      }
+      context.closePath();
+    }
+    context.fill("evenodd");
+  }
+  return toTexture(element);
 }
 
 function fitFont(context: CanvasRenderingContext2D, text: string, family: string, weight: number, maxSize: number, maxWidth: number) {

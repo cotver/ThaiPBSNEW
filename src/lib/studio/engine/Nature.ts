@@ -3,7 +3,7 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import type { Conditions } from "./Environment";
 import { damp, seeded } from "./math";
 import { outdoorMaterial, type OutdoorUniforms } from "./outdoorMaterial";
-import { radialTexture } from "./signage";
+import { radialTexture, THAI_PBS_ORANGE, thaiPbsKiteTexture } from "./signage";
 
 /** The hall's footprint on the ground (metres): nature keeps clear of it. */
 export type HallFootprint = { halfWidth: number; front: number; back: number };
@@ -44,6 +44,30 @@ function fbm2(x: number, y: number, octaves = 4) {
 }
 
 const GROUND_Y = -0.12;
+/** Points along each kite's tail. */
+const KITE_TAIL = 12;
+const LIGHT_WARM = new THREE.Color("#ffc677");
+const LIGHT_OFF = new THREE.Color(0.12, 0.11, 0.09);
+
+/**
+ * Which trees are in flower this month, after the Thai calendar: pink trumpet trees in the cool dry
+ * start of the year, golden shower (ratchaphruek) and jacaranda in the hot season, flame trees and
+ * inthanin as the rains arrive, a mostly green rainy season, and gold and orange in the cool season.
+ * `share` is how many of the trees near the hall are in flower.
+ */
+function seasonBlossoms(month: number) {
+  const seasons: { months: number[]; colours: string[]; share: number }[] = [
+    { months: [0, 1], colours: ["#ff8fc0", "#ff6fb5", "#ffd1e3"], share: 0.45 },
+    { months: [2, 3], colours: ["#ffc93c", "#ffd84d", "#b98cff", "#ff8fc0"], share: 0.6 },
+    { months: [4, 5], colours: ["#ff5a3c", "#ff7a1a", "#c48cff"], share: 0.5 },
+    { months: [6, 7, 8, 9], colours: ["#c48cff", "#ffffff"], share: 0.2 },
+    { months: [10, 11], colours: ["#ffb000", "#ff7a1a", "#ffd23f"], share: 0.35 },
+  ];
+  const season = seasons.find((entry) => entry.months.includes(month)) ?? seasons[0];
+  return { colours: season.colours.map((hex) => new THREE.Color(hex)), share: season.share };
+}
+/** How many ripples the water can show at once. */
+const RIPPLES = 8;
 const WATER_Y = -0.45;
 
 const waterVertex = /* glsl */ `
@@ -64,6 +88,7 @@ const waterFragment = /* glsl */ `
   uniform vec3 uSkyAmbient;
   uniform vec3 uFogColor;
   uniform float uFogDensity;
+  uniform vec4 uRipples[${RIPPLES}];
   varying vec3 vWorldPos;
 
   float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -77,6 +102,15 @@ const waterFragment = /* glsl */ `
     float h = noise(p * 0.45 + vec2(uTime * 0.12, uTime * 0.05)) * (0.4 + uWind);
     h += noise(p * 1.6 - vec2(uTime * 0.3, 0.0)) * 0.35 * (0.3 + uWind);
     h += noise(p * 7.0 + vec2(0.0, uTime * 2.5)) * 0.25 * uRain;
+    // Rings spreading from a paddling duck or a jumping fish: (x, z, start time, strength).
+    for (int i = 0; i < ${RIPPLES}; i++) {
+      vec4 ripple = uRipples[i];
+      float age = uTime - ripple.z;
+      if (age > 0.0 && age < 4.0) {
+        float dist = length(p - ripple.xy);
+        h += sin(dist * 7.0 - age * 7.0) * exp(-age * 1.1) * exp(-abs(dist - age * 1.4) * 1.8) * ripple.w * 0.6;
+      }
+    }
     return h;
   }
 
@@ -164,6 +198,11 @@ type Walker = {
 type Rabbit = { root: THREE.Group; home: THREE.Vector2; den: THREE.Vector2; target: THREE.Vector2; heading: number; hop: number; rest: number; gone: boolean };
 type Duck = { root: THREE.Group; angle: number; speed: number; radius: THREE.Vector2; phase: number };
 type Flyer = { phase: number; offset: THREE.Vector3; speed: number };
+/** A loop a flock flies round: centre, radii across (x) and along (z) the land, and how fast. */
+type FlightPath = { centre: THREE.Vector3; rx: number; rz: number; speed: number; scale: number };
+type Bird = Flyer & { path: FlightPath };
+type Butterfly = Flyer & { meadow: number; rest: THREE.Vector3; cycle: number };
+type Petal = { tree: number; x: number; y: number; z: number; fall: number; drift: number };
 
 /**
  * Everything beyond the glass: rolling meadows, a lake, a forest that thickens with distance, ranges of
@@ -188,8 +227,20 @@ export class Nature {
   private started = false;
   private readonly rabbits: Rabbit[] = [];
   private readonly ducks: Duck[] = [];
-  private birds?: { bodies: THREE.InstancedMesh; wings: THREE.InstancedMesh; flock: Flyer[]; centre: THREE.Vector3 };
-  private butterflies?: { wings: THREE.InstancedMesh; flock: (Flyer & { meadow: number; colour: THREE.Color })[] };
+  private birds?: { bodies: THREE.InstancedMesh; wings: THREE.InstancedMesh; flock: Bird[] };
+  private butterflies?: { wings: THREE.InstancedMesh; flock: Butterfly[] };
+  /** Flowering trees near the glass, which shed petals (see buildPetals). */
+  private readonly blossomTrees: { x: number; z: number; scale: number; colour: THREE.Color }[] = [];
+  private petals?: { points: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>; drops: Petal[] };
+  /** Ripples on the water, as (x, z, start time, strength), reused round-robin. */
+  private readonly ripples = Array.from({ length: RIPPLES }, () => new THREE.Vector4(0, 0, -100, 0));
+  private nextRipple = 0;
+  private duckRipple = 0;
+  private fish?: { mesh: THREE.Mesh; from: THREE.Vector2; to: THREE.Vector2; t: number; wait: number };
+  private readonly kites: { body: THREE.Group; tail: THREE.Line; string: THREE.Line; anchor: THREE.Vector3; phase: number }[] = [];
+  private kitePresence = 0;
+  private gardenLights?: { caps: THREE.InstancedMesh; pools: THREE.InstancedMesh; thresholds: number[]; level: number };
+  private readonly lightColour = new THREE.Color();
   private fireflies?: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>;
   private readonly matrix = new THREE.Matrix4();
   private readonly quaternion = new THREE.Quaternion();
@@ -211,7 +262,7 @@ export class Nature {
     // The clearing's own meadow comes first, so butterflies and fireflies always visit it.
     this.meadows.push({ x: -9, z: back - 16, radius: 4.5 });
 
-    this.planMeadows(high ? 18 : 12);
+    this.planMeadows(high ? 24 : 14);
     this.buildGround(high ? 260 : 170);
     this.buildLake();
     this.buildMountains();
@@ -223,8 +274,12 @@ export class Nature {
     this.buildRabbits();
     this.buildDucks();
     this.buildBirds();
-    this.buildButterflies();
+    this.buildButterflies(high ? 26 : 14);
     this.buildFireflies(high ? 150 : 70);
+    this.buildPetals(high ? 240 : 110);
+    this.buildKites();
+    this.buildGardenLights();
+    this.buildFish();
   }
 
   // ————————————————————————————————————————— the land
@@ -325,6 +380,7 @@ export class Nature {
           uSkyAmbient: this.uniforms.uSkyAmbient,
           uFogColor: this.uniforms.uFogColor,
           uFogDensity: this.uniforms.uFogDensity,
+          uRipples: { value: this.ripples },
         },
         vertexShader: waterVertex,
         fragmentShader: waterFragment,
@@ -450,7 +506,7 @@ export class Nature {
     const palm = this.palmGeometry();
 
     const bark = outdoorMaterial(this.uniforms, { color: "#5a4433", flat: true, sway: 0.008 });
-    const leaves = outdoorMaterial(this.uniforms, { flat: true, sway: 0.03 });
+    const leaves = outdoorMaterial(this.uniforms, { flat: true, sway: 0.045 });
     const needles = outdoorMaterial(this.uniforms, { flat: true, sway: 0.025 });
     const palms = outdoorMaterial(this.uniforms, { flat: true, sway: 0.03, vertexColors: true, side: THREE.DoubleSide });
 
@@ -476,8 +532,8 @@ export class Nature {
     const broad = spots.filter((_, i) => i % 3 !== 2);
     const pines = spots.filter((_, i) => i % 3 === 2);
     const greens = ["#4f7d34", "#5d8e3b", "#406d2f", "#6b9440", "#3a6331"].map((hex) => new THREE.Color(hex));
-    // The odd golden shower (ratchaphruek) and pink trumpet tree among the green, near the hall.
-    const blossoms = [new THREE.Color("#e9c43f"), new THREE.Color("#ea94b4")];
+    // Flowering trees among the green near the hall, in whatever is in bloom this month.
+    const { colours: blossoms, share: blossomShare } = seasonBlossoms(new Date().getMonth());
 
     const broadTrunks = new THREE.InstancedMesh(broadTrunk, bark, broad.length);
     const broadCanopies = new THREE.InstancedMesh(broadCanopy, leaves, broad.length);
@@ -487,8 +543,10 @@ export class Nature {
       const y = this.groundHeight(x, z) - 0.2;
       this.place(broadTrunks, i, x, y, z, s);
       broadCanopies.setMatrixAt(i, this.matrix);
-      const blossom = d < 45 && random() < 0.28;
-      broadCanopies.setColorAt(i, blossom ? blossoms[Math.floor(random() * 2)] : greens[Math.floor(random() * greens.length)]);
+      const blossom = d < 50 && random() < blossomShare;
+      const colour = blossom ? blossoms[Math.floor(random() * blossoms.length)] : greens[Math.floor(random() * greens.length)];
+      broadCanopies.setColorAt(i, colour);
+      if (blossom && d < 35) this.blossomTrees.push({ x, z, scale: s, colour });
     });
     const pineTrunks = new THREE.InstancedMesh(pineTrunk, bark, pines.length);
     const pineCanopies = new THREE.InstancedMesh(pineCanopy, needles, pines.length);
@@ -560,6 +618,8 @@ export class Nature {
     const bushCount = high ? 170 : 90;
     const bushes = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.8, 0).scale(1.2, 0.75, 1).translate(0, 0.35, 0), outdoorMaterial(this.uniforms, { flat: true, sway: 0.04 }), bushCount);
     const bushGreens = ["#4d7a33", "#5a8a3a", "#44702f"].map((hex) => new THREE.Color(hex));
+    // Bougainvillea: a quarter of the bushes in flower, magenta and orange.
+    const bushFlowers = ["#d6267a", "#ff7a1a", "#e8459b"].map((hex) => new THREE.Color(hex));
     let placed = 0;
     for (let tries = 0; placed < bushCount && tries < bushCount * 30; tries += 1) {
       const x = (random() - 0.5) * 260;
@@ -570,7 +630,7 @@ export class Nature {
       if (this.meadows.some((meadow) => Math.hypot(meadow.x - x, meadow.z - z) < meadow.radius + 1)) continue;
       if (!this.claim(x, z, 3)) continue;
       this.place(bushes, placed, x, this.groundHeight(x, z) - 0.1, z, 0.6 + random() * 0.9);
-      bushes.setColorAt(placed, bushGreens[Math.floor(random() * bushGreens.length)]);
+      bushes.setColorAt(placed, random() < 0.25 ? bushFlowers[Math.floor(random() * bushFlowers.length)] : bushGreens[Math.floor(random() * bushGreens.length)]);
       placed += 1;
     }
     bushes.count = placed;
@@ -616,15 +676,17 @@ export class Nature {
   /** Flowers grow in meadows of two or three colours, never scattered everywhere. */
   private buildFlowers(high: boolean) {
     const { random } = this;
+    // Vivid, saturated meadows: each in two or three colours, so they read as bold patches of colour.
     const palettes = [
-      ["#e2483c", "#f2c641"],
-      ["#f4f1ea", "#f2c641"],
-      ["#9a6bd0", "#f4f1ea"],
-      ["#ef8fb4", "#e2483c", "#f4f1ea"],
-      ["#f08a3a", "#f2c641"],
-      ["#6f8fe0", "#f4f1ea"],
+      ["#ff2d55", "#ffcc00"],
+      ["#ffffff", "#ffcc00", "#ff8a00"],
+      ["#9b5cff", "#ff6ec7"],
+      ["#ff6ec7", "#ff2d55", "#ffffff"],
+      ["#ff8a00", "#ffd400"],
+      ["#00b4ff", "#ffffff", "#9b5cff"],
+      ["#ff3d7f", "#ffd400"],
     ].map((palette) => palette.map((hex) => new THREE.Color(hex)));
-    const perMeadow = high ? 46 : 26;
+    const perMeadow = high ? 72 : 40;
     const total = this.meadows.length * perMeadow;
     const stems = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.012, 0.016, 0.42, 3).translate(0, 0.21, 0), outdoorMaterial(this.uniforms, { color: "#4f7f30", sway: 0.25 }), total);
     const head = mergeGeometries([new THREE.IcosahedronGeometry(0.1, 0).scale(1, 0.55, 1), new THREE.IcosahedronGeometry(0.04, 0).translate(0, 0.03, 0)]).translate(0, 0.43, 0);
@@ -992,52 +1054,278 @@ export class Nature {
     }
   }
 
+  /**
+   * Two flocks: dark swifts wheeling high over the land, and a colourful low flock — kingfisher blue,
+   * bee-eater green, oriole gold — that swings past close to the glass.
+   */
   private buildBirds() {
-    const count = 7;
-    const material = outdoorMaterial(this.uniforms, { color: "#2c2b30", side: THREE.DoubleSide });
-    const bodies = new THREE.InstancedMesh(new THREE.ConeGeometry(0.12, 0.6, 4).rotateX(Math.PI / 2), material, count);
+    const high: FlightPath = { centre: new THREE.Vector3(-30, 32, this.centreZ - 20), rx: 70, rz: 95, speed: 0.06, scale: 1.6 };
+    const low: FlightPath = {
+      centre: new THREE.Vector3(0, 9, this.centreZ),
+      rx: this.hall.halfWidth + 17,
+      rz: (this.hall.front - this.hall.back) * 0.45,
+      speed: 0.035,
+      scale: 1.0,
+    };
+    const flock: Bird[] = [];
+    for (let i = 0; i < 7; i += 1) {
+      flock.push({ phase: this.random() * Math.PI * 2, offset: new THREE.Vector3((this.random() - 0.5) * 9, (this.random() - 0.5) * 4, (i - 3.5) * 1.6), speed: 1, path: high });
+    }
+    for (let i = 0; i < 9; i += 1) {
+      flock.push({ phase: this.random() * Math.PI * 2, offset: new THREE.Vector3((this.random() - 0.5) * 3, (this.random() - 0.5) * 2.5, (i - 4.5) * 2.2), speed: 1, path: low });
+    }
+    const material = outdoorMaterial(this.uniforms, { side: THREE.DoubleSide });
+    const bodies = new THREE.InstancedMesh(new THREE.ConeGeometry(0.12, 0.6, 4).rotateX(Math.PI / 2), material, flock.length);
     const wing = new THREE.BufferGeometry();
     // A swept triangle, hinged at the body (x = 0).
     wing.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0.18, 0, 0, -0.14, 0.75, 0, -0.3], 3));
     wing.computeVertexNormals();
-    const wings = new THREE.InstancedMesh(wing, material, count * 2);
-    const flock: Flyer[] = Array.from({ length: count }, (_, i) => ({
-      phase: this.random() * Math.PI * 2,
-      offset: new THREE.Vector3((this.random() - 0.5) * 9, (this.random() - 0.5) * 4, (i - count / 2) * 1.6),
-      speed: 9 + this.random() * 2,
-    }));
+    const wings = new THREE.InstancedMesh(wing, material, flock.length * 2);
+    const dark = new THREE.Color("#2c2b30");
+    const bright = ["#1e88e5", "#2fbf71", "#ffc928", "#ff7a1a", "#00a6d6"].map((hex) => new THREE.Color(hex));
+    flock.forEach((bird, i) => {
+      const colour = bird.path === high ? dark : bright[i % bright.length];
+      bodies.setColorAt(i, colour);
+      wings.setColorAt(i * 2, colour);
+      wings.setColorAt(i * 2 + 1, colour);
+    });
     for (const mesh of [bodies, wings]) {
       mesh.frustumCulled = false;
       mesh.raycast = () => {};
       this.group.add(mesh);
     }
-    this.birds = { bodies, wings, flock, centre: new THREE.Vector3(-30, 32, this.centreZ - 20) };
+    this.birds = { bodies, wings, flock };
   }
 
-  private buildButterflies() {
+  /** Butterflies in bright colours over the meadows; every so often one settles on a flower. */
+  private buildButterflies(count: number) {
     if (!this.meadows.length) return;
-    const count = 12;
     const wing = new THREE.BufferGeometry();
     wing.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0.05, 0.11, 0, 0.09, 0.13, 0, -0.02, 0, 0, -0.06, 0.08, 0, -0.08], 3));
     wing.setIndex([0, 1, 2, 0, 2, 3, 3, 2, 4]);
     wing.computeVertexNormals();
     const wings = new THREE.InstancedMesh(wing, outdoorMaterial(this.uniforms, { side: THREE.DoubleSide }), count * 2);
-    const colours = ["#f2a23a", "#f4f1ea", "#6fa3e8", "#f2d34a"].map((hex) => new THREE.Color(hex));
-    const flock = Array.from({ length: count }, (_, i) => ({
-      phase: this.random() * 100,
-      offset: new THREE.Vector3(),
-      speed: 0.6 + this.random() * 0.6,
-      meadow: i % this.meadows.length,
-      colour: colours[i % colours.length],
-    }));
-    flock.forEach((butterfly, i) => {
-      wings.setColorAt(i * 2, butterfly.colour);
-      wings.setColorAt(i * 2 + 1, butterfly.colour);
+    const colours = ["#ff8a00", "#ffd400", "#00b4ff", "#ff3d7f", "#b04dff", "#ffffff", "#3ddc84"].map((hex) => new THREE.Color(hex));
+    const flock: Butterfly[] = Array.from({ length: count }, (_, i) => {
+      const meadow = this.meadows[i % this.meadows.length];
+      const a = this.random() * Math.PI * 2;
+      const r = Math.sqrt(this.random()) * meadow.radius * 0.6;
+      const x = meadow.x + Math.cos(a) * r;
+      const z = meadow.z + Math.sin(a) * r;
+      return {
+        phase: this.random() * 100,
+        offset: new THREE.Vector3(),
+        speed: 0.6 + this.random() * 0.6,
+        meadow: i % this.meadows.length,
+        // Where it lands: on the flower heads (~0.45m up).
+        rest: new THREE.Vector3(x, this.groundHeight(x, z) + 0.5, z),
+        cycle: 9 + this.random() * 7,
+      };
+    });
+    flock.forEach((_, i) => {
+      const colour = colours[i % colours.length];
+      wings.setColorAt(i * 2, colour);
+      wings.setColorAt(i * 2 + 1, colour);
     });
     wings.frustumCulled = false;
     wings.raycast = () => {};
     this.group.add(wings);
     this.butterflies = { wings, flock };
+  }
+
+  /** Petals drifting down from the flowering trees nearest the glass, in each tree's own colour. */
+  private buildPetals(count: number) {
+    if (!this.blossomTrees.length) return;
+    const drops: Petal[] = [];
+    const positions = new Float32Array(count * 3);
+    const colours = new Float32Array(count * 3);
+    for (let i = 0; i < count; i += 1) {
+      const tree = i % this.blossomTrees.length;
+      const drop: Petal = { tree, x: 0, y: 0, z: 0, fall: 0.35 + this.random() * 0.4, drift: this.random() * 10 };
+      this.respawnPetal(drop, true);
+      drops.push(drop);
+      this.blossomTrees[tree].colour.toArray(colours, i * 3);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new THREE.BufferAttribute(colours, 3));
+    const points = new THREE.Points(geometry, new THREE.PointsMaterial({ size: 0.11, vertexColors: true, sizeAttenuation: true }));
+    points.frustumCulled = false;
+    points.raycast = () => {};
+    this.group.add(points);
+    this.petals = { points, drops };
+  }
+
+  /** A petal starts again somewhere in its tree's canopy (`anywhere`: at any height on the way down). */
+  private respawnPetal(drop: Petal, anywhere = false) {
+    const tree = this.blossomTrees[drop.tree];
+    const a = this.random() * Math.PI * 2;
+    const r = this.random() * 2.2 * tree.scale;
+    drop.x = tree.x + Math.cos(a) * r;
+    drop.z = tree.z + Math.sin(a) * r;
+    const ground = this.groundHeight(drop.x, drop.z);
+    drop.y = anywhere ? ground + this.random() * 3.4 * tree.scale : ground + 3.4 * tree.scale;
+  }
+
+  /** A fish that leaps from the lake now and then (see updateFish). */
+  private buildFish() {
+    const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 0).scale(0.6, 0.7, 1.8), outdoorMaterial(this.uniforms, { color: "#c9d6dc", flat: true }));
+    mesh.visible = false;
+    mesh.raycast = () => {};
+    this.group.add(mesh);
+    this.fish = { mesh, from: new THREE.Vector2(), to: new THREE.Vector2(), t: 1, wait: 3 };
+  }
+
+  /**
+   * Thai PBS kites — pakpao-style diamonds in the brand's colours, white with the orange-and-grey logo or
+   * orange with a white one — flying high over the land on breezy dry days, each on a long string from
+   * somewhere out in the fields, with an orange or white tail streaming downwind.
+   */
+  private buildKites() {
+    const faces = { white: thaiPbsKiteTexture("white"), orange: thaiPbsKiteTexture("orange") };
+    const geometry = new THREE.BufferGeometry();
+    // The diamond: tip, right, bottom, left (x -0.65..0.65, y -1.2..0.9), its texture spanning that box.
+    const corners = [
+      [0, 0.9],
+      [0.65, 0],
+      [0, -1.2],
+      [-0.65, 0],
+    ];
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(corners.flatMap(([x, y]) => [x, y, 0]), 3));
+    geometry.setAttribute("uv", new THREE.Float32BufferAttribute(corners.flatMap(([x, y]) => [(x + 0.65) / 1.3, (y + 1.2) / 2.1]), 2));
+    geometry.setIndex([0, 3, 1, 1, 3, 2]);
+    geometry.computeVertexNormals();
+    for (let i = 0; i < 5; i += 1) {
+      const variant = i % 2 === 0 ? "white" : "orange";
+      // Shown in true brand colours (kites only fly by day), whichever side faces the sun.
+      const material = new THREE.MeshBasicMaterial({ map: faces[variant], color: new THREE.Color(0.92, 0.92, 0.92) });
+      // Two faces back to back, so the logo reads the right way round from either side.
+      const body = new THREE.Group();
+      const front = new THREE.Mesh(geometry, material);
+      const back = new THREE.Mesh(geometry, material);
+      back.rotation.y = Math.PI;
+      body.add(front, back);
+      body.scale.setScalar(3);
+      const tailColour = variant === "white" ? THAI_PBS_ORANGE : "#ffffff";
+      const tail = new THREE.Line(new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(new Float32Array(KITE_TAIL * 3), 3)), new THREE.LineBasicMaterial({ color: tailColour }));
+      const string = new THREE.Line(new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3)), new THREE.LineBasicMaterial({ color: "#d8d4cc", transparent: true, opacity: 0.55 }));
+      for (const object of [body, tail, string]) {
+        object.frustumCulled = false;
+        object.traverse((child) => (child.raycast = () => {}));
+        this.group.add(object);
+      }
+      const side = i % 2 === 0 ? -1 : 1;
+      const x = side * (this.hall.halfWidth + 45 + this.random() * 30);
+      const z = THREE.MathUtils.lerp(this.hall.back + 10, this.hall.front - 5, (i + 0.5) / 5);
+      this.kites.push({ body, tail, string, anchor: new THREE.Vector3(x, this.groundHeight(x, z), z), phase: this.random() * 10 });
+    }
+  }
+
+  /**
+   * Garden lights: low bollards along both lawns, round the clearing's pond and meadow, and along the near
+   * lake shore. Each switches on at dusk, a moment apart, and casts a warm pool on the grass.
+   */
+  private buildGardenLights() {
+    const spots: THREE.Vector2[] = [];
+    const along = this.hall.halfWidth + 5.5;
+    for (let z = this.hall.front + 6; z > this.hall.back - 6; z -= 7) {
+      for (const side of [-1, 1]) {
+        if (this.lakeDistance(side * along, z, 1) > 1) spots.push(new THREE.Vector2(side * along, z));
+      }
+    }
+    const ring = (x: number, z: number, rx: number, rz: number, count: number, from = 0, to = Math.PI * 2) => {
+      for (let i = 0; i < count; i += 1) {
+        const a = from + ((i + 0.5) / count) * (to - from);
+        spots.push(new THREE.Vector2(x + Math.cos(a) * rx, z + Math.sin(a) * rz));
+      }
+    };
+    ring(this.pond.x, this.pond.z, this.pond.rx + 2.2, this.pond.rz + 2.2, 9);
+    const meadow = this.meadows[0];
+    if (meadow) ring(meadow.x, meadow.z, meadow.radius + 1.6, meadow.radius + 1.6, 7);
+    ring(this.lake.x, this.lake.z, this.lake.rx * 1.2, this.lake.rz * 1.2, 9, Math.PI * 0.6, Math.PI * 1.4);
+
+    const count = spots.length;
+    const posts = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.06, 0.08, 0.6, 6).translate(0, 0.3, 0), outdoorMaterial(this.uniforms, { color: "#2b2a28", flat: true }), count);
+    const caps = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.1, 0.1, 0.12, 8).translate(0, 0.64, 0), new THREE.MeshBasicMaterial({ toneMapped: false }), count);
+    const pools = new THREE.InstancedMesh(
+      new THREE.PlaneGeometry(4, 4).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ map: radialTexture(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }),
+      count,
+    );
+    const thresholds: number[] = [];
+    spots.forEach((spot, i) => {
+      const y = this.groundHeight(spot.x, spot.y);
+      this.matrix.makeTranslation(spot.x, y, spot.y);
+      posts.setMatrixAt(i, this.matrix);
+      caps.setMatrixAt(i, this.matrix);
+      this.matrix.makeTranslation(spot.x, y + 0.03, spot.y);
+      pools.setMatrixAt(i, this.matrix);
+      caps.setColorAt(i, LIGHT_OFF);
+      pools.setColorAt(i, LIGHT_OFF);
+      thresholds.push(this.random() * 0.2);
+    });
+    for (const mesh of [posts, caps, pools]) {
+      mesh.computeBoundingSphere();
+      mesh.raycast = () => {};
+      this.group.add(mesh);
+    }
+    this.gardenLights = { caps, pools, thresholds, level: -1 };
+  }
+
+  private updateKites(dt: number, time: number) {
+    // Up on breezy, dry days; down in rain, still air, and at night.
+    const wind = this.uniforms.uWind.value;
+    this.kitePresence = damp(this.kitePresence, this.daylife > 0.3 && wind > 0.18 ? 1 : 0, 0.6, dt);
+    const visible = this.kitePresence > 0.02;
+    const gust = THREE.MathUtils.clamp(wind, 0.2, 1);
+    for (const kite of this.kites) {
+      for (const object of [kite.body, kite.tail, kite.string]) object.visible = visible;
+      if (!visible) continue;
+      const t = time + kite.phase;
+      const body = kite.body;
+      // Downwind of its flyer, riding higher in a stronger wind; climbing up as it launches.
+      body.position.set(
+        kite.anchor.x + 14 + Math.sin(t * 0.6) * 3 * gust,
+        kite.anchor.y + (22 + gust * 16) * this.kitePresence + Math.sin(t * 1.1) * 1.5 * gust,
+        kite.anchor.z - 20 + Math.cos(t * 0.45) * 2.5,
+      );
+      body.lookAt(kite.anchor);
+      body.rotateZ(Math.sin(t * 1.7) * 0.3 * gust);
+      // The string: from the kite down to the flyer.
+      const string = kite.string.geometry.getAttribute("position") as THREE.BufferAttribute;
+      string.setXYZ(0, body.position.x, body.position.y, body.position.z);
+      string.setXYZ(1, kite.anchor.x, kite.anchor.y + 1.2, kite.anchor.z);
+      string.needsUpdate = true;
+      // The tail streams from the kite's bottom tip, snaking in the wind.
+      const tail = kite.tail.geometry.getAttribute("position") as THREE.BufferAttribute;
+      const tip = this.position.set(0, -1.2, 0).applyMatrix4(body.matrixWorld.compose(body.position, body.quaternion, body.scale));
+      for (let k = 0; k < KITE_TAIL; k += 1) {
+        const f = k / (KITE_TAIL - 1);
+        tail.setXYZ(k, tip.x + f * 3 + Math.sin(t * 4 - k * 0.7) * 0.35 * f, tip.y - f * 3.2, tip.z - f * 1.5 + Math.cos(t * 3.4 - k * 0.6) * 0.3 * f);
+      }
+      tail.needsUpdate = true;
+    }
+  }
+
+  /** Garden lights come on through dusk, one after another, and go off again as day breaks. */
+  private updateGardenLights(night: number) {
+    const lights = this.gardenLights;
+    if (!lights) return;
+    if (Math.abs(night - lights.level) < 0.002) return;
+    lights.level = night;
+    lights.thresholds.forEach((threshold, i) => {
+      const on = THREE.MathUtils.smoothstep(night, 0.08 + threshold, 0.18 + threshold);
+      lights.caps.setColorAt(i, this.lightColour.copy(LIGHT_WARM).multiplyScalar(0.12 + on * 2.2));
+      lights.pools.setColorAt(i, this.lightColour.copy(LIGHT_WARM).multiplyScalar(on * 0.55));
+    });
+    if (lights.caps.instanceColor) lights.caps.instanceColor.needsUpdate = true;
+    if (lights.pools.instanceColor) lights.pools.instanceColor.needsUpdate = true;
+  }
+
+  /** Start a ripple ring on the water at (x, z). */
+  private ripple(x: number, z: number, strength: number) {
+    this.ripples[this.nextRipple].set(x, z, this.uniforms.uTime.value, strength);
+    this.nextRipple = (this.nextRipple + 1) % this.ripples.length;
   }
 
   private buildFireflies(count: number) {
@@ -1116,6 +1404,8 @@ export class Nature {
       for (const rabbit of this.rabbits) rabbit.root.visible = this.rabbitHours(conditions);
       this.updateBirds(0, true);
       this.updateButterflies(0, true);
+      this.updatePetals(0, time, night);
+      this.updateGardenLights(night);
       return;
     }
     for (const walker of this.walkers) this.updateWalker(walker, dt, time, conditions);
@@ -1130,6 +1420,10 @@ export class Nature {
     }
     this.updateBirds(time, false);
     this.updateButterflies(time, false);
+    this.updatePetals(dt, time, night);
+    this.updateWater(dt);
+    this.updateKites(dt, time);
+    this.updateGardenLights(night);
   }
 
   private rabbitHours(c: Conditions) {
@@ -1299,24 +1593,25 @@ export class Nature {
     birds.bodies.visible = visible;
     birds.wings.visible = visible;
     if (!visible) return;
-    // The flock loops lazily over the land, climbing away as the light goes.
-    const t = frozen ? 0 : time * 0.06;
+    // Each flock loops lazily round its path, climbing away as the light goes.
     const lift = (1 - this.daylife) * 60;
     birds.flock.forEach((bird, i) => {
-      const angle = t + bird.offset.z * 0.012;
-      const x = birds.centre.x + Math.cos(angle) * 70 + bird.offset.x;
-      const y = birds.centre.y + Math.sin(angle * 2) * 6 + bird.offset.y + lift;
-      const z = birds.centre.z + Math.sin(angle) * 95 + bird.offset.z;
-      const heading = Math.atan2(-Math.sin(angle) * 70, Math.cos(angle) * 95);
-      this.euler.set(0, heading, Math.sin(angle * 2) * 0.2);
+      const { centre, rx, rz, speed, scale } = bird.path;
+      const angle = (frozen ? 0 : time * speed) + bird.offset.z * 0.012;
+      const x = centre.x + Math.cos(angle) * rx + bird.offset.x;
+      const y = centre.y + Math.sin(angle * 2) * (scale > 1.2 ? 6 : 2) + bird.offset.y + lift;
+      const z = centre.z + Math.sin(angle) * rz + bird.offset.z;
+      const heading = Math.atan2(-Math.sin(angle) * rx, Math.cos(angle) * rz);
+      const bank = Math.sin(angle * 2) * 0.2;
+      this.euler.set(0, heading, bank);
       this.quaternion.setFromEuler(this.euler);
-      this.matrix.compose(this.position.set(x, y, z), this.quaternion, this.scale.setScalar(1.6));
+      this.matrix.compose(this.position.set(x, y, z), this.quaternion, this.scale.setScalar(scale));
       birds.bodies.setMatrixAt(i, this.matrix);
-      const flap = frozen ? 0.2 : Math.sin(time * 7 + bird.phase) * 0.6;
+      const flap = frozen ? 0.2 : Math.sin(time * (scale > 1.2 ? 7 : 11) + bird.phase) * 0.6;
       for (const side of [1, -1]) {
-        this.euler.set(0, heading, Math.sin(angle * 2) * 0.2 + side * flap);
+        this.euler.set(0, heading, bank + side * flap);
         this.quaternion.setFromEuler(this.euler);
-        this.matrix.compose(this.position, this.quaternion, this.scale.set(side * 1.6, 1.6, 1.6));
+        this.matrix.compose(this.position, this.quaternion, this.scale.set(side * scale, scale, scale));
         birds.wings.setMatrixAt(i * 2 + (side > 0 ? 0 : 1), this.matrix);
       }
     });
@@ -1333,11 +1628,19 @@ export class Nature {
     butterflies.flock.forEach((butterfly, i) => {
       const meadow = this.meadows[butterfly.meadow];
       const t = time * butterfly.speed + butterfly.phase;
-      const x = meadow.x + Math.sin(t * 0.7) * meadow.radius * 0.8 + Math.sin(t * 2.3) * 0.4;
-      const z = meadow.z + Math.cos(t * 0.53) * meadow.radius * 0.8;
-      const y = this.groundHeight(x, z) + 0.6 + Math.sin(t * 1.9) * 0.3 + Math.sin(t * 5.1) * 0.08;
+      let x = meadow.x + Math.sin(t * 0.7) * meadow.radius * 0.8 + Math.sin(t * 2.3) * 0.4;
+      let z = meadow.z + Math.cos(t * 0.53) * meadow.radius * 0.8;
+      let y = this.groundHeight(x, z) + 0.6 + Math.sin(t * 1.9) * 0.3 + Math.sin(t * 5.1) * 0.08;
       const heading = Math.atan2(Math.cos(t * 0.7) * 0.7, -Math.sin(t * 0.53) * 0.53);
-      const flap = frozen ? 0.6 : 0.25 + Math.abs(Math.sin(time * 14 + butterfly.phase)) * 1.1;
+      // Part of each cycle it settles on a flower, wings opening and closing slowly.
+      const cycle = ((time + butterfly.phase) % butterfly.cycle) / butterfly.cycle;
+      const settle = frozen ? 0 : THREE.MathUtils.smoothstep(cycle, 0.6, 0.66) * (1 - THREE.MathUtils.smoothstep(cycle, 0.86, 0.92));
+      x = THREE.MathUtils.lerp(x, butterfly.rest.x, settle);
+      y = THREE.MathUtils.lerp(y, butterfly.rest.y, settle);
+      z = THREE.MathUtils.lerp(z, butterfly.rest.z, settle);
+      const flying = frozen ? 0.6 : 0.25 + Math.abs(Math.sin(time * 14 + butterfly.phase)) * 1.1;
+      const resting = 0.15 + Math.abs(Math.sin(time * 1.4 + butterfly.phase)) * 0.6;
+      const flap = THREE.MathUtils.lerp(flying, resting, settle);
       for (const side of [1, -1]) {
         this.euler.set(0, heading, side * flap);
         this.quaternion.setFromEuler(this.euler);
@@ -1346,5 +1649,58 @@ export class Nature {
       }
     });
     butterflies.wings.instanceMatrix.needsUpdate = true;
+  }
+
+  /** Petals spiral down from the flowering trees on the breeze, and start again at the top. */
+  private updatePetals(dt: number, time: number, night: number) {
+    const petals = this.petals;
+    if (!petals) return;
+    // Unlit points: dim them with the daylight so they don't glow at night.
+    petals.points.material.color.setScalar(0.18 + (1 - night) * 0.82);
+    const wind = this.uniforms.uWind.value;
+    const position = petals.points.geometry.getAttribute("position") as THREE.BufferAttribute;
+    petals.drops.forEach((drop, i) => {
+      drop.y -= drop.fall * dt;
+      drop.x += (Math.sin(time * 1.3 + drop.drift) * 0.35 + wind * 0.6) * dt;
+      drop.z += Math.cos(time * 1.1 + drop.drift * 1.7) * 0.35 * dt;
+      if (drop.y < this.groundHeight(drop.x, drop.z) + 0.05) this.respawnPetal(drop);
+      position.setXYZ(i, drop.x, drop.y, drop.z);
+    });
+    position.needsUpdate = true;
+  }
+
+  /** Ducks leave small ripples as they paddle; a fish leaps clear of the lake now and then. */
+  private updateWater(dt: number) {
+    this.duckRipple -= dt;
+    if (this.duckRipple <= 0) {
+      this.duckRipple = 0.9;
+      const duck = this.ducks[Math.floor(this.random() * this.ducks.length)];
+      if (duck?.root.visible) this.ripple(duck.root.position.x, duck.root.position.z, 0.35);
+    }
+    const fish = this.fish;
+    if (!fish) return;
+    if (fish.t >= 1) {
+      fish.mesh.visible = false;
+      fish.wait -= dt;
+      if (fish.wait > 0) return;
+      // Somewhere well inside the lake, leaping a metre or two.
+      const { lake } = this;
+      const a = this.random() * Math.PI * 2;
+      const r = Math.sqrt(this.random()) * 0.6;
+      fish.from.set(lake.x + Math.cos(a) * lake.rx * r, lake.z + Math.sin(a) * lake.rz * r);
+      const heading = this.random() * Math.PI * 2;
+      fish.to.set(fish.from.x + Math.cos(heading) * 1.6, fish.from.y + Math.sin(heading) * 1.6);
+      fish.t = 0;
+      fish.wait = 4 + this.random() * 7;
+      fish.mesh.visible = true;
+      this.ripple(fish.from.x, fish.from.y, 1);
+    }
+    fish.t = Math.min(1, fish.t + dt / 0.9);
+    const x = THREE.MathUtils.lerp(fish.from.x, fish.to.x, fish.t);
+    const z = THREE.MathUtils.lerp(fish.from.y, fish.to.y, fish.t);
+    fish.mesh.position.set(x, this.lake.y + Math.sin(fish.t * Math.PI) * 0.9 - 0.1, z);
+    fish.mesh.rotation.set(0, Math.atan2(fish.to.x - fish.from.x, fish.to.y - fish.from.y), 0);
+    fish.mesh.rotateX(-Math.cos(fish.t * Math.PI) * 0.9);
+    if (fish.t >= 1) this.ripple(fish.to.x, fish.to.y, 0.9);
   }
 }

@@ -12,6 +12,7 @@ import { setCursorLabel } from "./LotCursor";
 import { walkSlotId } from "./LotHeader";
 import { LotPanel } from "./LotPanel";
 import { WalkNav } from "./WalkNav";
+import { SoundControl } from "./SoundControl";
 import { TimeButton } from "./TimeButton";
 import { WeatherButton } from "./WeatherButton";
 import SiteLoading from "@/app/(site)/loading";
@@ -342,6 +343,7 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
           <span>1–{Math.min(9, data.rooms.length)} · Esc</span>
         </div>
 
+        <SoundControl />
         {outdoors ? <TimeButton onChange={(time: TimeOfDay | "auto") => engineRef.current?.setTime(time)} state={outdoors} /> : null}
         {outdoors ? <WeatherButton onChange={(weather: Weather | "auto") => engineRef.current?.setWeather(weather)} state={outdoors} /> : null}
 

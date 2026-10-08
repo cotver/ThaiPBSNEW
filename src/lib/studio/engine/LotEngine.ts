@@ -3,18 +3,20 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { Ambience } from "@/lib/studio/ambience";
 import { trailerKind } from "@/lib/trailer-playback";
 import type { LotData, LotSectionId } from "@/lib/studio/data";
 import { Atmosphere } from "./Atmosphere";
 import { Environment, type EnvironmentState, type TimeOfDay, type Weather } from "./Environment";
 import { Exhibits } from "./Exhibits";
 import { CameraRig, FOCUS_FOV } from "./CameraRig";
-import { FRONT, Hall, NAVE_HALF_WIDTH } from "./Hall";
+import { ENTRANCE_Z, FRONT, Hall, NAVE_HALF_WIDTH } from "./Hall";
 import { LedWall } from "./LedWall";
 import { disposeTree } from "./math";
 import { Nature } from "./Nature";
 import { Room, type FocusView, type RoomConfig } from "./Room";
-import { captionTexture, partnerLogoTexture, posterFallback, printTexture, testCardTexture } from "./signage";
+import { captionTexture, partnerLogoTexture, posterFallback, printTexture, radialTexture, testCardTexture } from "./signage";
+import { Trail } from "./Trail";
 
 export type LotQuality = "high" | "low";
 export type { EnvironmentState, TimeOfDay, Weather };
@@ -169,6 +171,14 @@ export class LotEngine {
    * the beams — which the strips themselves, shining down, can never reach.
    */
   private readonly lampBounce = new THREE.HemisphereLight("#000000", "#ffe2bf", 0);
+  /** The accent of the room you are at, eased as you walk: it tints the lamps and the light trail. */
+  private readonly accent = new THREE.Color("#ffffff");
+  private readonly accentTarget = new THREE.Color();
+  private trail?: Trail;
+  /** The foyer's screen, cycling the headline programmes. */
+  private entranceScreen?: LedWall;
+  /** Birdsong, cicadas, frogs and rain, following the world outside (plays only with sound on). */
+  private ambience?: Ambience;
   private nature!: Nature;
   private atmosphere!: Atmosphere;
   private exhibits!: Exhibits;
@@ -259,7 +269,7 @@ export class LotEngine {
       await yieldToBrowser();
       if (this.disposed) throw new Error("Gallery disposed while building");
     };
-    const benches = options.data.rooms.map((_, index): [number, number] => [roomLayout(index).side * 3.4, roomLayout(index).z]);
+    const benches = options.data.rooms.map((_, index): [number, number, string] => [roomLayout(index).side * 3.4, roomLayout(index).z, ACCENTS[index % ACCENTS.length]]);
     const back = hallEnd(options.data.rooms.length);
     this.environment = new Environment({ quality: options.quality, hallHalfWidth: NAVE_HALF_WIDTH });
     this.environment.onChange = (state) => options.onEnvironmentChange?.(state);
@@ -267,9 +277,20 @@ export class LotEngine {
     this.environment.setHallBox(new THREE.Box3(new THREE.Vector3(-NAVE_HALF_WIDTH - 0.5, -0.5, back - 0.5), new THREE.Vector3(NAVE_HALF_WIDTH + 0.5, 7.5, FRONT + 0.5)));
     this.scene.add(this.environment.group);
     this.hall = new Hall({ benches, back, font: options.font, outdoor: this.environment.uniforms });
+    // The floor inlay changes colour halfway between one room and the next.
+    this.hall.addInlays(
+      options.data.rooms.map((_, index) => ({
+        from: roomLayout(index).z + ROOM_SPACING / 2,
+        to: roomLayout(index).z - ROOM_SPACING / 2,
+        colour: ACCENTS[index % ACCENTS.length],
+      })),
+    );
     this.scene.add(this.hall.group);
     this.atmosphere = new Atmosphere({ particles: high ? 600 : 220 });
     this.scene.add(this.atmosphere.group);
+    this.ambience = new Ambience();
+    this.trail = new Trail(radialTexture());
+    this.scene.add(this.trail.mesh);
     this.exhibits = new Exhibits(options.font);
     this.scene.add(this.exhibits.group);
     await advance();
@@ -467,6 +488,7 @@ export class LotEngine {
     if (this.built) this.unbind();
     this.resizeObserver?.disconnect();
     this.stopVideo();
+    this.ambience?.dispose();
     this.sharedVideo?.texture.dispose();
     this.sharedVideo = null;
     disposeTree(this.scene);
@@ -640,6 +662,25 @@ export class LotEngine {
       });
     }
 
+    // The foyer screen, on the right of the entrance: a montage of the headline programmes.
+    const montage = (data.rooms.find((room) => room.kind === "featured")?.programs ?? []).slice(0, 10);
+    if (montage.length) {
+      const width = 3.6;
+      const height = width * (9 / 16);
+      const x = (NAVE_HALF_WIDTH + 2.4) / 2;
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(width + 0.24, height + 0.24, 0.1), frameMaterial);
+      frame.position.set(x, 3.3, ENTRANCE_Z + 0.33);
+      const wall = new LedWall(width, height);
+      wall.mesh.position.set(x, 3.3, ENTRANCE_Z + 0.385);
+      this.scene.add(frame, wall.mesh);
+      wall.setSlides(new Array(montage.length));
+      montage.forEach((program, index) =>
+        loadImage(program.hero, program.title, index, (texture, aspect) =>
+          wall.setSlide(index, { texture, aspect, fit: (texture as THREE.CanvasTexture).isCanvasTexture ? "cover" : "fill" }), 1080),
+      );
+      this.entranceScreen = wall;
+    }
+
     this.loadingManager.onProgress = (_url, loaded, total) => this.options.onLoadProgress(total ? loaded / total : 1);
     this.loadingManager.onLoad = () => this.markReady();
     if (pending === 0) queueMicrotask(() => this.markReady());
@@ -758,9 +799,19 @@ export class LotEngine {
     }
     this.updateTrailer(dt, highlight && this.screens.has(highlight) ? highlight : null);
 
+    // The room you are at colours the lamps and the light trail, easing over a second or two.
+    this.accentTarget.set(this.rooms.get(nearest)?.config.accent ?? "#ffffff");
+    this.accent.lerp(this.accentTarget, 1 - Math.exp(-2 * dt));
+
     this.environment.update(dt, this.rig.camera, this.scene, reducedMotion);
     this.updateLamps();
+    this.hall.update(time, reducedMotion);
+    this.entranceScreen?.update(dt, time, reducedMotion);
+    const camera = this.rig.camera.position;
+    this.trail?.update(time, camera, this.accent, camera.z < ENTRANCE_Z && Math.abs(camera.x) < NAVE_HALF_WIDTH, reducedMotion);
     this.nature.update(dt, reducedMotion, this.environment.conditions);
+    // The soundscape hushes while a room's content is up (or the camera is on its way to it).
+    this.ambience?.update(dt, this.environment.conditions, this.focused !== null || this.pendingFocus !== null);
     this.atmosphere.update(dt, time, this.rig.velocity, reducedMotion);
     this.exhibits.update(dt, time, this.rig.velocity, reducedMotion);
 
@@ -791,7 +842,7 @@ export class LotEngine {
     const { lamps, daylight, daylightColour } = this.environment;
     this.lampAmbient.intensity = 0.2 + lamps * 0.4 * LAMP_LEVEL;
     this.lampBounce.intensity = lamps * 3.2 * LAMP_LEVEL;
-    this.hall.setLamps(lamps, 0.75 + LAMP_LEVEL * 0.25);
+    this.hall.setLamps(lamps, 0.75 + LAMP_LEVEL * 0.25, this.accent);
     this.hall.setDaylight(daylightColour, daylight);
   }
 

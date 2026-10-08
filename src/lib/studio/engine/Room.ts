@@ -85,6 +85,10 @@ export class Room {
   private readonly spotBase: number;
   private readonly cone: THREE.ShaderMaterial;
   private readonly underline: THREE.Mesh;
+  /** The room's accent: tints its spotlight and lights the band on the floor in front of it. */
+  private readonly spotWarm = new THREE.Color("#ffe8d0");
+  private readonly spotAccent: THREE.Color;
+  private readonly band: THREE.MeshStandardMaterial;
 
   constructor(config: RoomConfig, font: string) {
     this.config = config;
@@ -150,6 +154,15 @@ export class Room {
     this.spot.position.copy(fixture);
     this.spot.target.position.copy(target);
     this.wall.add(this.spot, this.spot.target);
+    this.spotAccent = new THREE.Color(config.accent).lerp(new THREE.Color("#ffffff"), 0.35);
+
+    // A band of the room's accent colour on the floor in front of it, glowing up as you approach.
+    this.band = new THREE.MeshStandardMaterial({ color: config.accent, emissive: config.accent, emissiveIntensity: 0.12, roughness: 0.55, polygonOffset: true, polygonOffsetFactor: -2 });
+    const band = new THREE.Mesh(new THREE.PlaneGeometry(width * 0.92, 0.7), this.band);
+    band.rotation.x = -Math.PI / 2;
+    band.position.set(0, 0.004, 0.75);
+    band.raycast = () => {};
+    this.wall.add(band);
     const housing = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 0.32, 12), new THREE.MeshStandardMaterial({ color: "#1d1c1a", roughness: 0.5, metalness: 0.6 }));
     housing.position.copy(fixture);
     // Tilt the can along the fixture→work line (local space, so no world matrices needed yet).
@@ -178,6 +191,11 @@ export class Room {
 
   get hoverAmount() {
     return this.hover;
+  }
+
+  /** 1 while this is the room you are at (nearest along the walk), else 0. */
+  get activeAmount() {
+    return this.active;
   }
 
   /** World-space camera pose at eye height, framing the wall with room for the panel on the right. */
@@ -223,6 +241,9 @@ export class Room {
   update(dt: number) {
     this.hover = damp(this.hover, this.hoverTarget, 6, dt);
     this.spot.intensity = this.spotBase * (0.9 + this.hover * 0.12 + this.active * 0.05);
+    // The wash takes on the room's colour as you near it, more so when you point at it.
+    this.spot.color.lerpColors(this.spotWarm, this.spotAccent, 0.15 + this.active * 0.2 + this.hover * 0.35);
+    this.band.emissiveIntensity = 0.12 + this.active * 0.25 + this.hover * 0.6;
     this.cone.uniforms.uOpacity.value = 0.01 + this.hover * 0.008;
     this.underline.scale.x = 0.12 + this.hover * 0.88;
   }

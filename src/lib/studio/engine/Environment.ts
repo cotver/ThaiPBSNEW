@@ -32,9 +32,11 @@ const WEATHER_PARAMS: Record<Weather, WeatherParams> = {
 const c = (hex: string) => new THREE.Color(hex);
 /** Sky and light colours at night, at sunrise/sunset and at full day. */
 const PALETTE = {
-  zenith: { night: c("#03050d"), dusk: c("#2a3a6e"), day: c("#2a68d4") },
-  horizon: { night: c("#0b1222"), dusk: c("#f0915a"), day: c("#86bff0") },
-  sun: { dusk: c("#ff9b52"), day: c("#fff1dc") },
+  zenith: { night: c("#03050d"), dusk: c("#3a2c78"), day: c("#2a68d4") },
+  horizon: { night: c("#0b1222"), dusk: c("#ff6a35"), day: c("#86bff0") },
+  sun: { dusk: c("#ff8240"), day: c("#fff1dc") },
+  /** The pink band that glows just above the horizon at sunrise and sunset. */
+  afterglow: c("#ff4f8b"),
   skyAmbient: { night: c("#1a2440"), day: c("#9cc0e6") },
   groundAmbient: { night: c("#07090c"), day: c("#55603a") },
   moon: c("#8fa6d8"),
@@ -68,6 +70,8 @@ const skyFragment = /* glsl */ `
   uniform vec3 uCloudShade;
   uniform float uTime;
   uniform float uFlash;
+  uniform vec3 uAfterglow;
+  uniform float uRainbow;
   varying vec3 vDirection;
 
   float hash(vec3 p) {
@@ -128,6 +132,19 @@ const skyFragment = /* glsl */ `
     colour += uSunColor * smoothstep(0.99955, 0.9998, sun) * 7.0 * uSunVisible * (1.0 - cloud * 0.95);
 
     colour += vec3(0.75, 0.8, 1.0) * uFlash * (0.4 + cloud);
+
+    // Sunrise/sunset afterglow: a pink band hugging the horizon, under the cloud.
+    colour += uAfterglow * exp(-abs(h - 0.06) * 14.0) * (1.0 - cloud * 0.6);
+
+    // A rainbow after rain: a ring ~42° round the point opposite the sun, red outside, violet inside.
+    if (uRainbow > 0.001 && h > 0.0) {
+      float fromAntisolar = acos(clamp(dot(d, -uSunDir), -1.0, 1.0));
+      float x = (fromAntisolar - 0.705) / 0.035;
+      if (abs(x) < 1.0) {
+        vec3 bow = 0.5 + 0.5 * cos(6.2831 * (0.5 - x * 0.42) + vec3(0.0, 2.1, 4.2));
+        colour += bow * (1.0 - x * x) * uRainbow * 0.75 * smoothstep(0.0, 0.12, h) * (1.0 - cloud * 0.7);
+      }
+    }
     gl_FragColor = vec4(colour, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -183,7 +200,7 @@ export type EnvironmentState = {
 };
 
 /** What it is like outside right now, 0..1 each — the wildlife reads this to decide who is about. */
-export type Conditions = { day: number; night: number; rain: number; mist: number; cloud: number };
+export type Conditions = { day: number; night: number; rain: number; mist: number; cloud: number; wind: number };
 
 function phaseOf(time: number): TimeOfDay {
   if (time < 0.22 || time >= 0.8) return "night";
@@ -206,7 +223,7 @@ export class Environment {
   /** How much daylight reaches the hall (0..1), and its colour — what the glass walls glow with. */
   daylight = 1;
   readonly daylightColour = new THREE.Color();
-  readonly conditions: Conditions = { day: 1, night: 0, rain: 0, mist: 0, cloud: 0 };
+  readonly conditions: Conditions = { day: 1, night: 0, rain: 0, mist: 0, cloud: 0, wind: 0 };
   /**
    * The hall's ceiling lamps, 0 (off) to 1 (on): off while daylight alone lights the hall (a clear
    * day), on at night and under cloud, rain or mist. They switch, with a short warm-up, not a dimmer.
@@ -233,6 +250,10 @@ export class Environment {
   private flash = 0;
   private nextFlash = 6;
   private wasNight = false;
+  /** A rainbow shows for a while after rain clears in daylight. */
+  private rainbow = 0;
+  private rainbowTimer = 0;
+  private lastRain = 0;
 
   constructor(options: { quality: "high" | "low"; hallHalfWidth: number }) {
     this.phase = phaseOf(this.timeOfDay);
@@ -255,6 +276,8 @@ export class Environment {
           uCloudShade: { value: new THREE.Color() },
           uTime: this.uniforms.uTime,
           uFlash: { value: 0 },
+          uAfterglow: { value: new THREE.Color() },
+          uRainbow: { value: 0 },
         },
         vertexShader: skyVertex,
         fragmentShader: skyFragment,
@@ -424,7 +447,7 @@ export class Environment {
     const sunUp = THREE.MathUtils.smoothstep(elevation, -0.04, 0.06);
     const moonUp = THREE.MathUtils.smoothstep(this.moonDir.y, -0.02, 0.1) * night;
     u.uNight.value = night;
-    Object.assign(this.conditions, { day, night, rain, mist, cloud });
+    Object.assign(this.conditions, { day, night, rain, mist, cloud, wind });
 
     // Sky colours: night → day, warmed at dusk, greyed by cloud, washed by mist.
     const sky = this.sky.material.uniforms;
@@ -464,6 +487,13 @@ export class Environment {
     this.flash = Math.max(0, this.flash - dt * 3.2);
     const flicker = this.flash > 0 ? this.flash * (0.6 + 0.4 * Math.sin(this.flash * 40)) : 0;
     sky.uFlash.value = flicker;
+    (sky.uAfterglow.value as THREE.Color).copy(PALETTE.afterglow).multiplyScalar(dusk * 0.45);
+
+    if (this.lastRain >= 0.5 && rain < 0.5 && day > 0.5 && sunUp > 0.5) this.rainbowTimer = 55;
+    this.lastRain = rain;
+    this.rainbowTimer = Math.max(0, this.rainbowTimer - dt);
+    this.rainbow = damp(this.rainbow, this.rainbowTimer > 0 && rain < 0.45 ? 1 : 0, 0.5, dt);
+    sky.uRainbow.value = this.rainbow * sunUp;
 
     // The outdoor key light: the sun by day, the moon by night, softened by cloud.
     const keyStrength = sunUp > 0.01 ? sunUp * (0.25 + day * 0.85) * sunScale : moonUp * 0.22 * (1 - cloud * 0.7);

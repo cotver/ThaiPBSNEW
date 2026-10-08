@@ -278,6 +278,47 @@
   right: 132px;
 }
 
+/* Sound on/off, with its volume slider rising above it on hover or focus. */
+.soundControl {
+  position: absolute;
+  right: 198px;
+  bottom: calc(100% + 16px);
+}
+
+.soundSlider {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  display: none;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 27px;
+  background: rgb(3 7 20 / 78%);
+  transform: translateX(-50%);
+}
+
+/* Bridges the gap down to the button, so moving the pointer up to the slider keeps it open. */
+.soundSlider::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  height: 12px;
+}
+
+.soundControl:hover .soundSlider,
+.soundControl:focus-within .soundSlider {
+  display: flex;
+}
+
+.soundSlider input {
+  width: 120px;
+  accent-color: #ff650f;
+  cursor: pointer;
+}
+
 .weatherAuto {
   font-family: var(--mono);
   font-size: 8px;

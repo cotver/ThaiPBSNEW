@@ -7,11 +7,13 @@ import { buildThaiPbsLogo } from "./ThaiPbsLogo3D";
 export const NAVE_HALF_WIDTH = 8;
 const CEILING = 7;
 export const FRONT = 28;
-const ENTRANCE_Z = 13;
+export const ENTRANCE_Z = 13;
 /** A lit lightbox: warm and past white, so it blooms. Switched off it is a dull grey diffuser. */
 const LAMP_ON = new THREE.Color("#ffe9c8").multiplyScalar(1.25);
 const LAMP_OFF = new THREE.Color("#6f6d69");
 const lampColour = new THREE.Color();
+const tintScratch = new THREE.Color();
+const LAMP_LIGHT = new THREE.Color("#fff0dc");
 
 const glassVertex = /* glsl */ `
   varying vec3 vWorldPos;
@@ -77,6 +79,7 @@ const glassFragment = /* glsl */ `
 export class Hall {
   readonly group = new THREE.Group();
   private strips?: THREE.MeshBasicMaterial;
+  private sweep?: THREE.SpotLight;
   private readonly stripLights: THREE.RectAreaLight[] = [];
   private readonly windowLights: THREE.RectAreaLight[] = [];
 
@@ -84,7 +87,7 @@ export class Hall {
    * `back` is the end wall z — the hall grows with the number of rooms; `font` letters the portal sign;
    * `outdoor` is the light outside, which the glass reflects.
    */
-  constructor(options: { benches: [number, number][]; back: number; font: string; outdoor: OutdoorUniforms }) {
+  constructor(options: { benches: [number, number, string][]; back: number; font: string; outdoor: OutdoorUniforms }) {
     // Area lights (the ceiling strips, the glass walls) need their lookup tables loaded once.
     RectAreaLightUniformsLib.init();
     const BACK = options.back;
@@ -157,11 +160,16 @@ export class Hall {
     }
     this.group.add(beams);
 
-    // Benches facing the rooms — gallery furniture gives the scale.
-    const benchTop = new THREE.MeshStandardMaterial({ color: "#3a2a1e", roughness: 0.55 });
+    // Benches facing the rooms — gallery furniture gives the scale; each seat in its room's accent colour.
     const benchLeg = new THREE.MeshStandardMaterial({ color: "#151412", roughness: 0.4, metalness: 0.6 });
-    for (const [x, z] of options.benches) {
+    const benchTops = new Map<string, THREE.MeshStandardMaterial>();
+    for (const [x, z, accent] of options.benches) {
       const bench = new THREE.Group();
+      let benchTop = benchTops.get(accent);
+      if (!benchTop) {
+        benchTop = new THREE.MeshStandardMaterial({ color: new THREE.Color("#3a2a1e").lerp(new THREE.Color(accent), 0.7), roughness: 0.55 });
+        benchTops.set(accent, benchTop);
+      }
       const top = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.08, 2.2), benchTop);
       top.position.y = 0.44;
       bench.add(top);
@@ -175,6 +183,51 @@ export class Hall {
     }
 
     this.buildEntrance(options.font);
+  }
+
+  /**
+   * A polished terrazzo strip down the middle of the hall, in each room's accent colour as you pass it,
+   * edged in brass with a brass divider where one colour meets the next. `segments` run along z.
+   */
+  addInlays(segments: { from: number; to: number; colour: string }[]) {
+    if (!segments.length) return;
+    const width = 1.1;
+    const speckle = concreteTexture();
+    speckle.repeat.set(0.4, 2);
+    const brass = new THREE.MeshStandardMaterial({ color: "#b08d57", roughness: 0.35, metalness: 0.8 });
+    for (const { from, to, colour } of segments) {
+      const length = from - to;
+      const stone = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(colour).lerp(new THREE.Color("#f4f0e8"), 0.3),
+        map: speckle,
+        roughness: 0.3,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+      });
+      const strip = new THREE.Mesh(new THREE.PlaneGeometry(width, length).rotateX(-Math.PI / 2), stone);
+      strip.position.set(0, 0.003, (from + to) / 2);
+      const divider = new THREE.Mesh(new THREE.BoxGeometry(width + 0.08, 0.008, 0.05), brass);
+      divider.position.set(0, 0.004, to);
+      this.group.add(strip, divider);
+    }
+    const start = segments[0].from;
+    const end = segments[segments.length - 1].to;
+    for (const side of [-1, 1]) {
+      const edge = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.008, start - end), brass);
+      edge.position.set(side * (width / 2 + 0.02), 0.004, (start + end) / 2);
+      this.group.add(edge);
+    }
+  }
+
+  /** Per frame: every so often a beam of light sweeps across the end wall's logo. */
+  update(time: number, reducedMotion: boolean) {
+    if (this.sweep) {
+      // One pass every 9s: across the logo in ~1.8s, fading in and out at the ends.
+      const t = reducedMotion ? 1 : (time % 9) / 1.8;
+      const along = THREE.MathUtils.clamp(t, 0, 1);
+      this.sweep.intensity = t <= 1 ? Math.sin(along * Math.PI) * 26 : 0;
+      this.sweep.target.position.x = -3.4 + along * 6.8;
+    }
   }
 
   /**
@@ -258,6 +311,12 @@ export class Hall {
     wash.position.set(0, 6.8, wallFace + 4.5);
     wash.target.position.set(0, 3.2, wallFace);
     this.group.add(wash, wash.target);
+
+    // A narrow beam that sweeps across the logo now and then (see update), so it catches the eye.
+    this.sweep = new THREE.SpotLight("#fff6e8", 0, 16, 0.13, 0.6, 1.2);
+    this.sweep.position.set(0, 6.6, wallFace + 6);
+    this.sweep.target.position.set(0, 3.2, wallFace);
+    this.group.add(this.sweep, this.sweep.target);
   }
 
   /** The portal: a plaster wall with a doorway, lettering on the left — the first composition the camera sees. */
@@ -297,11 +356,19 @@ export class Hall {
     this.group.add(portal);
   }
 
-  /** The ceiling lightboxes: 1 lit, 0 switched off (a plain diffuser); `brightness` dims them when lit. */
-  setLamps(level: number, brightness = 1) {
-    for (const light of this.stripLights) light.intensity = 9 * level * brightness;
+  /**
+   * The ceiling lightboxes: 1 lit, 0 switched off (a plain diffuser); `brightness` dims them when lit, and
+   * `tint` (the accent of the room you are at) warms their colour a touch.
+   */
+  setLamps(level: number, brightness = 1, tint?: THREE.Color) {
+    for (const light of this.stripLights) {
+      light.intensity = 9 * level * brightness;
+      if (tint) light.color.copy(LAMP_LIGHT).lerp(tint, 0.18);
+    }
     if (!this.strips) return;
-    lampColour.copy(LAMP_ON).multiplyScalar(brightness);
+    lampColour.copy(LAMP_ON);
+    if (tint) lampColour.lerp(tintScratch.copy(tint).multiplyScalar(LAMP_ON.r), 0.15);
+    lampColour.multiplyScalar(brightness);
     this.strips.color.lerpColors(LAMP_OFF, lampColour, level);
   }
 

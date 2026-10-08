@@ -219,7 +219,12 @@ export class Exhibits {
   }
 
   update(dt: number, time: number, cameraVelocity: THREE.Vector3, reducedMotion: boolean) {
-    for (const lamp of this.lamps) lamp.color.copy(lamp.tint).multiplyScalar(lamp.base + lamp.room.hoverAmount * lamp.boost);
+    // ON AIR boxes and tally lights pulse once you are at their room, and blaze when you point at it.
+    const pulse = reducedMotion ? 1 : 0.65 + 0.35 * Math.sin(time * 3.6);
+    for (const lamp of this.lamps) {
+      const engaged = Math.max(lamp.room.hoverAmount, lamp.room.activeAmount * 0.6 * pulse);
+      lamp.color.copy(lamp.tint).multiplyScalar(lamp.base + engaged * lamp.boost);
+    }
     if (reducedMotion) return;
     // Banners stir as the visitor walks past, then settle.
     this.sway.x = damp(this.sway.x, THREE.MathUtils.clamp(-cameraVelocity.z * 0.02, -0.25, 0.25), 2, dt);

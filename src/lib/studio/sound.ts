@@ -9,6 +9,10 @@ export type Cue = "hover" | "select" | "back" | "tick" | "open";
 
 const storageKey = "studio-lot:sound";
 const changeEvent = "studio-lot:sound-change";
+const volumeKey = "studio-lot:volume";
+const volumeEvent = "studio-lot:volume-change";
+/** Volume when the viewer has not set one (0..1). */
+const DEFAULT_VOLUME = 0.5;
 
 const voices: Record<Cue, { frequency: number; to: number; duration: number; type: OscillatorType; gain: number }> = {
   hover: { frequency: 880, to: 990, duration: 0.05, type: "sine", gain: 0.025 },
@@ -38,6 +42,33 @@ export function setSoundEnabled(enabled: boolean) {
   if (enabled) cue("select");
 }
 
+/** The viewer's volume for all gallery sound, 0..1 (remembered in this browser). */
+export function soundVolume() {
+  try {
+    const stored = window.localStorage.getItem(volumeKey);
+    const value = stored === null ? DEFAULT_VOLUME : Number(stored);
+    return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : DEFAULT_VOLUME;
+  } catch {
+    return DEFAULT_VOLUME;
+  }
+}
+
+export function setSoundVolume(volume: number) {
+  const value = Math.min(1, Math.max(0, volume));
+  try {
+    window.localStorage.setItem(volumeKey, String(value));
+  } catch {
+    // Storage blocked: the slider still works for this page view.
+  }
+  window.dispatchEvent(new CustomEvent(volumeEvent, { detail: value }));
+}
+
+export function onVolumeChange(listener: (volume: number) => void) {
+  const handler = (event: Event) => listener(Number((event as CustomEvent<number>).detail));
+  window.addEventListener(volumeEvent, handler);
+  return () => window.removeEventListener(volumeEvent, handler);
+}
+
 export function onSoundChange(listener: (enabled: boolean) => void) {
   const handler = (event: Event) => listener(Boolean((event as CustomEvent<boolean>).detail));
   window.addEventListener(changeEvent, handler);
@@ -57,7 +88,7 @@ export function cue(name: Cue) {
     oscillator.frequency.setValueAtTime(voice.frequency, now);
     oscillator.frequency.exponentialRampToValueAtTime(voice.to, now + voice.duration);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(voice.gain, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, voice.gain * soundVolume() * 3.2), now + 0.008);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + voice.duration);
     oscillator.connect(gain).connect(context.destination);
     oscillator.start(now);
