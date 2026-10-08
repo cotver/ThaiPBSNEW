@@ -1,13 +1,47 @@
+import * as THREE from "three";
 import type { Conditions } from "./engine/Environment";
 import { onSoundChange, onVolumeChange, soundEnabled, soundVolume } from "./sound";
 
+/** A place in the world a sound can come from (metres, the gallery's own coordinates). */
+export type SoundPoint = { x: number; y: number; z: number };
+
 /**
- * The gallery's ambient soundscape, following the world outside: wind always, gusting through the
- * trees now and then; birdsong and the odd koel call by day; cicadas, frogs, an owl and a tokay gecko at
- * night; rain and distant thunder in the wet; and a soft room tone. The occasional sounds are spaced well
- * apart, so the place feels alive without getting busy. Like the interaction cues (see sound.ts) it is
- * synthesised, so no audio ships, and it only plays once the viewer has turned sound on.
+ * Where the soundscape's sources are, taken from the land outside (see Nature.soundMap): trees and
+ * meadows for birds and gusts, the water's edge for frogs and lapping, the owl's tree, the cicadas' patches
+ * of wood, and the hall's glass (for the gecko).
  */
+export type SoundMap = {
+  trees: SoundPoint[];
+  meadows: SoundPoint[];
+  water: SoundPoint[];
+  lake: SoundPoint;
+  owl: SoundPoint;
+  cicadas: SoundPoint[];
+  glass: { halfWidth: number; front: number; back: number };
+};
+
+/** One gust through the trees (see Ambience.rustle): bands of noise, and how they swell, flutter and move. */
+type Gust = {
+  bands: { frequency: number; q: number; gain: number }[];
+  duration: number;
+  /** Fraction of the gust (or of each half, for two swells) spent building up. */
+  attack: number;
+  swells: 1 | 2;
+  /** Leaf-flutter rate in Hz (0 for none). */
+  flutter: number;
+  /** How many dry leaf clicks. */
+  crackle: number;
+  /** 1: rolls past rather than staying put. */
+  sweep: number;
+  peak: number;
+};
+
+/**
+ * Sounds placed in the world are quieter with distance (full within ~10m, a third at 30m), so they are
+ * played this much louder at the source to come through at a natural level.
+ */
+const NEAR = 3;
+
 /**
  * A short, soft echo like a large gallery's: two seconds of decaying noise, slightly different in each ear.
  */
@@ -21,22 +55,17 @@ function hallEcho(context: AudioContext) {
   return impulse;
 }
 
-/** One gust through the trees (see Ambience.rustle): bands of noise, and how they swell, flutter and move. */
-type Gust = {
-  bands: { frequency: number; q: number; gain: number }[];
-  duration: number;
-  /** Fraction of the gust (or of each half, for two swells) spent building up. */
-  attack: number;
-  swells: 1 | 2;
-  /** Leaf-flutter rate in Hz (0 for none). */
-  flutter: number;
-  /** How many dry leaf clicks. */
-  crackle: number;
-  /** 1: rolls across from one side to the other. */
-  sweep: number;
-  peak: number;
-};
-
+/**
+ * The gallery's ambient soundscape, following the world outside: wind always, gusting through the
+ * trees now and then; birdsong and the odd koel call by day; cicadas, frogs, an owl and a tokay gecko at
+ * night; water lapping at the lake; rain and distant thunder in the wet; and a soft room tone. The
+ * occasional sounds are spaced well apart, so the place feels alive without getting busy.
+ *
+ * Sounds come from where they happen: walk toward the lake and its frogs and lapping grow louder; pass a
+ * patch of wood and its cicadas swell then fade; the owl calls from its tree beyond the far glass. Like the
+ * interaction cues (see sound.ts) it is synthesised, so no audio ships, and it only plays once the viewer
+ * has turned sound on.
+ */
 export class Ambience {
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -46,9 +75,15 @@ export class Ambience {
    */
   private outside: AudioNode | null = null;
   private rain: GainNode | null = null;
-  private cicadas: GainNode | null = null;
+  /** The cicada patches' shared level, as a control signal (each patch is its own placed source). */
+  private cicadas: ConstantSourceNode | null = null;
   private wind: GainNode | null = null;
   private noise: AudioBuffer | null = null;
+  private map: SoundMap | null = null;
+  private loopsBuilt = false;
+  /** Where the visitor is (the listener), updated every frame. */
+  private readonly listener = new THREE.Vector3();
+  private readonly forward = new THREE.Vector3();
   /** Seconds until each occasional sound may play again. */
   private readonly timers = { rustle: 12, koel: 25, owl: 15, gecko: 40, thunder: 20 };
   private enabled = soundEnabled();
@@ -58,6 +93,12 @@ export class Ambience {
   /** Hushed while the visitor is looking at a room's content (see update). */
   private quiet = false;
   private frogTimer = 4;
+  /**
+   * The night insects sing in spells, not all night: a chorus of 10–20s, then 45–90s of quiet.
+   * `chorus` is whether one is on, `chorusTimer` how long until it switches.
+   */
+  private chorus = false;
+  private chorusTimer = 20;
   private readonly unsubscribe: () => void;
   private readonly resume = () => void this.context?.resume();
 
@@ -74,13 +115,20 @@ export class Ambience {
     if (this.enabled) this.start();
   }
 
+  /** Where the sources are (call once the land outside is built). */
+  setSoundMap(map: SoundMap) {
+    this.map = map;
+    this.buildLoops();
+  }
+
   /**
-   * Call every frame with the conditions outside. `quiet`: the visitor is focused on a room's content,
-   * so the soundscape fades away until they step back.
+   * Call every frame with the conditions outside and the camera (the listener). `quiet`: the visitor is
+   * focused on a room's content, so the soundscape fades away until they step back.
    */
-  update(dt: number, conditions: Conditions, quiet = false) {
+  update(dt: number, conditions: Conditions, quiet: boolean, camera: THREE.Camera) {
     const context = this.context;
     if (!this.enabled || !context || context.state !== "running" || !this.rain || !this.cicadas) return;
+    this.hear(camera);
     if (quiet !== this.quiet) {
       this.quiet = quiet;
       this.fade(quiet ? 0 : 1);
@@ -88,8 +136,14 @@ export class Ambience {
     if (quiet) return;
     const { day, night, rain, wind } = conditions;
     const now = context.currentTime;
-    this.rain.gain.setTargetAtTime(rain * 0.14, now, 0.8);
-    this.cicadas.gain.setTargetAtTime(night * (1 - rain) * 0.045, now, 1.5);
+    this.rain.gain.setTargetAtTime(rain * 0.06, now, 0.8);
+    this.chorusTimer -= dt;
+    if (this.chorusTimer <= 0) {
+      this.chorus = !this.chorus;
+      this.chorusTimer = this.chorus ? 10 + Math.random() * 10 : 45 + Math.random() * 45;
+    }
+    // Swelling in and dying away slowly, never switching abruptly.
+    this.cicadas.offset.setTargetAtTime(this.chorus ? night * (1 - rain) * 0.03 * NEAR : 0, now, 2.5);
     // Wind: a steady bed that breathes in slow gusts, stronger on a windy day.
     const breath = 0.6 + 0.4 * Math.sin(now * 0.21) * Math.sin(now * 0.067 + 1.3);
     this.wind?.gain.setTargetAtTime((0.012 + wind * 0.05) * breath, now, 1.2);
@@ -106,7 +160,7 @@ export class Ambience {
       t.koel = 40 + Math.random() * 40;
       if (day * (1 - rain) > 0.4) this.koel(day);
     }
-    // After dark: an owl, and now and then a tokay gecko's "to-kay".
+    // After dark: the owl in its tree, and now and then a tokay gecko on the glass.
     if (t.owl <= 0) {
       t.owl = 30 + Math.random() * 30;
       if (night > 0.6) this.hoot(night);
@@ -128,7 +182,7 @@ export class Ambience {
       this.birdTimer = 6 + Math.random() * 9;
       if (birds > 0.3) this.chirp(birds);
     }
-    // Frogs croak after dark, more in the wet.
+    // Frogs croak at the water's edge after dark, more in the wet.
     this.frogTimer -= dt;
     if (this.frogTimer <= 0) {
       this.frogTimer = 3 + Math.random() * 5;
@@ -181,46 +235,128 @@ export class Ambience {
       const samples = noise.getChannelData(0);
       for (let i = 0; i < samples.length; i += 1) samples[i] = Math.random() * 2 - 1;
       this.noise = noise;
-      const source = (filter: BiquadFilterType, frequency: number, q: number, level: number) => {
-        const player = context.createBufferSource();
-        player.buffer = noise;
-        player.loop = true;
-        const shape = context.createBiquadFilter();
-        shape.type = filter;
-        shape.frequency.value = frequency;
-        shape.Q.value = q;
-        const gain = context.createGain();
-        gain.gain.value = level;
-        player.connect(shape).connect(gain);
-        player.start();
-        return gain;
-      };
       // Room tone: a low, steady hush.
-      source("lowpass", 260, 0.7, 0.02).connect(this.master);
-      // Wind: a low, breathy whoosh (its level is set every frame).
-      this.wind = source("lowpass", 520, 0.6, 0);
+      this.loop("lowpass", 260, 0.7, 0.02).connect(this.master);
+      // Wind and rain are all around, not from one place.
+      this.wind = this.loop("lowpass", 520, 0.6, 0);
       this.wind.connect(glass);
-      // Rain: broadband patter, up and down with the weather.
-      this.rain = source("bandpass", 1800, 0.5, 0);
+      this.rain = this.loop("bandpass", 1800, 0.5, 0);
       this.rain.connect(glass);
-      // Cicadas: a high buzz, pulsed by a fast tremolo.
-      const buzz = source("bandpass", 5200, 8, 1);
-      const tremolo = context.createGain();
-      tremolo.gain.value = 0.5;
-      const lfo = context.createOscillator();
-      lfo.frequency.value = 38;
-      const depth = context.createGain();
-      depth.gain.value = 0.5;
-      lfo.connect(depth).connect(tremolo.gain);
-      lfo.start();
-      this.cicadas = context.createGain();
-      this.cicadas.gain.value = 0;
-      buzz.connect(tremolo).connect(this.cicadas).connect(glass);
+      this.cicadas = context.createConstantSource();
+      this.cicadas.offset.value = 0;
+      this.cicadas.start();
+      this.buildLoops();
       this.fade(1);
     } catch {
       // Audio is decoration; never let it break the gallery.
       this.context = null;
     }
+  }
+
+  /** A looping band of noise at a fixed level, started now. */
+  private loop(filter: BiquadFilterType, frequency: number, q: number, level: number) {
+    const context = this.context!;
+    const player = context.createBufferSource();
+    player.buffer = this.noise;
+    player.loop = true;
+    const shape = context.createBiquadFilter();
+    shape.type = filter;
+    shape.frequency.value = frequency;
+    shape.Q.value = q;
+    const gain = context.createGain();
+    gain.gain.value = level;
+    player.connect(shape).connect(gain);
+    player.start(0, Math.random() * 2);
+    return gain;
+  }
+
+  /**
+   * The sources that sound all the time from one place: each patch of cicadas (a high buzz pulsed by a
+   * fast tremolo, each at its own rate) and the water lapping at the lake's near shore.
+   */
+  private buildLoops() {
+    const context = this.context;
+    const map = this.map;
+    if (!context || !map || !this.cicadas || this.loopsBuilt) return;
+    this.loopsBuilt = true;
+    for (const point of map.cicadas) {
+      // Each patch hums at its own pitch, pulsed at its own tremolo rate.
+      const tremolo = context.createGain();
+      tremolo.gain.value = 0.5;
+      const lfo = context.createOscillator();
+      lfo.frequency.value = 32 + Math.random() * 12;
+      const depth = context.createGain();
+      depth.gain.value = 0.5;
+      lfo.connect(depth).connect(tremolo.gain);
+      lfo.start();
+      // Its loudness follows the shared cicada level (night, dry).
+      const level = context.createGain();
+      level.gain.value = 0;
+      this.cicadas.connect(level.gain);
+      this.loop("bandpass", 4600 + Math.random() * 1400, 8, 1).connect(tremolo).connect(level).connect(this.place(point));
+    }
+    // Water: a soft, slow wash at the lake's edge, rising and falling like small waves.
+    const water = this.loop("lowpass", 420, 0.7, 0.04 * NEAR);
+    const waves = context.createGain();
+    waves.gain.value = 0.6;
+    const swell = context.createOscillator();
+    swell.frequency.value = 0.18;
+    const swellDepth = context.createGain();
+    swellDepth.gain.value = 0.4;
+    swell.connect(swellDepth).connect(waves.gain);
+    swell.start();
+    water.connect(waves).connect(this.place(map.lake));
+  }
+
+  /** Move the listener with the camera, so near things are loud and far things quiet. */
+  private hear(camera: THREE.Camera) {
+    const listener = this.context?.listener;
+    if (!listener) return;
+    camera.getWorldPosition(this.listener);
+    camera.getWorldDirection(this.forward);
+    const { x, y, z } = this.listener;
+    const f = this.forward;
+    if (listener.positionX) {
+      const now = this.context!.currentTime;
+      listener.positionX.setTargetAtTime(x, now, 0.05);
+      listener.positionY.setTargetAtTime(y, now, 0.05);
+      listener.positionZ.setTargetAtTime(z, now, 0.05);
+      listener.forwardX.setTargetAtTime(f.x, now, 0.05);
+      listener.forwardY.setTargetAtTime(f.y, now, 0.05);
+      listener.forwardZ.setTargetAtTime(f.z, now, 0.05);
+      listener.upX.value = 0;
+      listener.upY.value = 1;
+      listener.upZ.value = 0;
+    } else {
+      // Older Firefox: the deprecated setters.
+      listener.setPosition(x, y, z);
+      listener.setOrientation(f.x, f.y, f.z, 0, 1, 0);
+    }
+  }
+
+  /** A source at a place in the world, heard through the glass: louder close to, quieter far off. */
+  private place(point: SoundPoint) {
+    const context = this.context!;
+    const panner = new PannerNode(context, {
+      panningModel: "HRTF",
+      distanceModel: "inverse",
+      refDistance: 10,
+      rolloffFactor: 1,
+      maxDistance: 600,
+      positionX: point.x,
+      positionY: point.y,
+      positionZ: point.z,
+    });
+    panner.connect(this.outside!);
+    return panner;
+  }
+
+  /** One of `points`, preferring those within `radius` of the visitor (any, if none are that close). */
+  private near(points: SoundPoint[], radius: number) {
+    if (!points.length) return null;
+    const close = points.filter((p) => Math.hypot(p.x - this.listener.x, p.z - this.listener.z) < radius);
+    const pool = close.length ? close : points;
+    return pool[Math.floor(Math.random() * pool.length)];
   }
 
   /** Fade the whole soundscape toward `to` (0 or 1), at the viewer's volume. */
@@ -229,19 +365,22 @@ export class Ambience {
     this.master.gain.setTargetAtTime(to * this.volume * 3.8, this.context.currentTime, 0.6);
   }
 
-  /** A spot outside for one call: panned somewhere to the left or right, into the glass. */
-  private spot() {
+  /** A source for one sound: at `point` if there is one, else somewhere off to the left or right. */
+  private spot(point?: SoundPoint | null) {
     const context = this.context;
     if (!context || !this.outside) return null;
+    if (point) return this.place(point);
     const panner = context.createStereoPanner();
     panner.pan.value = (Math.random() * 2 - 1) * 0.8;
     panner.connect(this.outside);
     return panner;
   }
 
+  /** A little phrase of rising chirps, from a tree or meadow near the visitor. */
   private chirp(level: number) {
     const context = this.context;
-    const out = this.spot();
+    const map = this.map;
+    const out = this.spot(map ? this.near([...map.trees, ...map.meadows], 45) : null);
     if (!context || !out) return;
     const notes = 2 + Math.floor(Math.random() * 3);
     const base = 2200 + Math.random() * 1400;
@@ -253,7 +392,7 @@ export class Ambience {
       osc.frequency.setValueAtTime(base, start);
       osc.frequency.exponentialRampToValueAtTime(base * (1.25 + Math.random() * 0.3), start + 0.07);
       gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.012 * level, start + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.012 * level * NEAR, start + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.08);
       osc.connect(gain).connect(out);
       osc.start(start);
@@ -261,8 +400,8 @@ export class Ambience {
     }
   }
 
-  /** A burst of filtered noise shaped by an envelope: the base of the rustle and the thunder. */
-  private noiseBurst(filter: BiquadFilterType, frequency: number, q: number, peak: number, attack: number, release: number) {
+  /** A low rumble rolling in from far off (all around, not from one place). */
+  private thunder(level: number) {
     const context = this.context;
     const out = this.spot();
     if (!context || !out || !this.noise) return;
@@ -271,23 +410,22 @@ export class Ambience {
     player.buffer = this.noise;
     player.loop = true;
     const shape = context.createBiquadFilter();
-    shape.type = filter;
-    shape.frequency.value = frequency;
-    shape.Q.value = q;
+    shape.type = "lowpass";
+    shape.frequency.value = 140;
+    shape.Q.value = 0.8;
     const gain = context.createGain();
     gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(peak, start + attack);
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + attack + release);
+    gain.gain.exponentialRampToValueAtTime(0.09 * level, start + 0.6);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 4.4);
     player.connect(shape).connect(gain).connect(out);
     player.start(start, Math.random());
-    player.stop(start + attack + release + 0.1);
-    return shape;
+    player.stop(start + 4.5);
   }
 
   /**
    * A gust through the trees, picked from eight kinds and varied every time, so no two sound alike: a
    * soft breeze in broadleaf trees, a sharp gust, a long whoosh through pines, fluttering leaves, a gust
-   * rolling across from one side to the other, a double gust, dry crackly leaves, and a distant treeline.
+   * rolling past, a double gust, dry crackly leaves, and a distant treeline.
    */
   private rustle(level: number) {
     const vary = (value: number, amount = 0.25) => value * (1 + (Math.random() * 2 - 1) * amount);
@@ -309,22 +447,27 @@ export class Ambience {
       attack: vary(kind.attack),
       flutter: kind.flutter ? vary(kind.flutter) : 0,
       crackle: Math.round(vary(kind.crackle, 0.4)),
-      peak: vary(kind.peak, 0.2) * level,
+      peak: vary(kind.peak, 0.2) * level * NEAR,
     });
   }
 
-  /** Play one gust: bands of noise swelling and fading, with flutter, crackle and drift as asked. */
+  /**
+   * Play one gust, in a tree near the visitor: bands of noise swelling and fading, with flutter, crackle
+   * and (for a rolling gust) the sound travelling past along the treeline.
+   */
   private gust(gust: Gust) {
     const context = this.context;
     if (!context || !this.outside || !this.noise) return;
     const start = context.currentTime;
     const end = start + gust.duration;
-    // Where it comes from, and (for a rolling gust) where it goes.
-    const panner = context.createStereoPanner();
-    const from = (Math.random() * 2 - 1) * 0.8;
-    panner.pan.setValueAtTime(gust.sweep ? -Math.sign(from || 1) * 0.8 : from, start);
-    if (gust.sweep) panner.pan.linearRampToValueAtTime(Math.sign(from || 1) * 0.8, end);
-    panner.connect(this.outside);
+    const tree = this.map ? this.near(this.map.trees, 40) : null;
+    const source = this.spot(tree);
+    if (!source) return;
+    if (tree && gust.sweep && source instanceof PannerNode) {
+      const along = Math.random() > 0.5 ? 1 : -1;
+      source.positionZ.setValueAtTime(tree.z - along * 15, start);
+      source.positionZ.linearRampToValueAtTime(tree.z + along * 15, end);
+    }
 
     // The envelope: one swell, or two with a lull between.
     const envelope = context.createGain();
@@ -354,7 +497,7 @@ export class Ambience {
       envelope.connect(wobble);
       into = wobble;
     }
-    into.connect(panner);
+    into.connect(source);
 
     for (const band of gust.bands) {
       const player = context.createBufferSource();
@@ -386,15 +529,10 @@ export class Ambience {
       gain.gain.setValueAtTime(0.0001, at);
       gain.gain.exponentialRampToValueAtTime(gust.peak * (0.6 + Math.random() * 0.8), at + 0.004);
       gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.02 + Math.random() * 0.03);
-      click.connect(shape).connect(gain).connect(panner);
+      click.connect(shape).connect(gain).connect(source);
       click.start(at, Math.random());
       click.stop(at + 0.06);
     }
-  }
-
-  /** A low rumble rolling in from far off. */
-  private thunder(level: number) {
-    this.noiseBurst("lowpass", 140, 0.8, 0.09 * level, 0.6, 3.8);
   }
 
   /** A pure, falling-then-rising whistle, the building block of the koel, owl and gecko calls. */
@@ -415,42 +553,51 @@ export class Ambience {
     osc.stop(start + duration + 0.05);
   }
 
-  /** The Asian koel: a rising two-note "ka-wao", repeated a few times, each a little higher. */
+  /** The Asian koel: a rising two-note "ka-wao", repeated a few times, from somewhere in the trees. */
   private koel(level: number) {
-    const out = this.spot();
+    const out = this.spot(this.map ? this.near(this.map.trees, 120) : null);
     if (!out) return;
     const repeats = 2 + Math.floor(Math.random() * 3);
     for (let i = 0; i < repeats; i += 1) {
       const lift = 1 + i * 0.06;
-      this.tone(out, "sine", 700 * lift, 820 * lift, i * 0.9, 0.18, 0.016 * level);
-      this.tone(out, "sine", 900 * lift, 1250 * lift, i * 0.9 + 0.22, 0.32, 0.018 * level);
+      this.tone(out, "sine", 700 * lift, 820 * lift, i * 0.9, 0.18, 0.016 * level * NEAR);
+      this.tone(out, "sine", 900 * lift, 1250 * lift, i * 0.9 + 0.22, 0.32, 0.018 * level * NEAR);
     }
   }
 
-  /** An owl: a soft "hoo ... hoo-hoo". */
+  /** The owl in its tree in the clearing: a soft "hoo ... hoo-hoo". Louder the nearer the far end you are. */
   private hoot(level: number) {
-    const out = this.spot();
+    const out = this.spot(this.map?.owl);
     if (!out) return;
-    this.tone(out, "sine", 410, 380, 0, 0.42, 0.02 * level);
-    this.tone(out, "sine", 400, 370, 0.85, 0.28, 0.016 * level);
-    this.tone(out, "sine", 400, 360, 1.2, 0.36, 0.016 * level);
+    const loud = level * NEAR * 1.6;
+    this.tone(out, "sine", 410, 380, 0, 0.42, 0.02 * loud);
+    this.tone(out, "sine", 400, 370, 0.85, 0.28, 0.016 * loud);
+    this.tone(out, "sine", 400, 360, 1.2, 0.36, 0.016 * loud);
   }
 
-  /** A tokay gecko: a croaking "to-kay", a few times, slowing down. */
+  /** A tokay gecko on the glass beside the visitor: a croaking "to-kay", a few times, slowing down. */
   private gecko(level: number) {
-    const out = this.spot();
+    const map = this.map;
+    let point: SoundPoint | null = null;
+    if (map) {
+      const side = Math.random() > 0.5 ? 1 : -1;
+      const z = THREE.MathUtils.clamp(this.listener.z + (Math.random() * 2 - 1) * 12, map.glass.back, map.glass.front);
+      point = { x: side * map.glass.halfWidth, y: 2.5, z };
+    }
+    const out = this.spot(point);
     if (!out) return;
     const repeats = 3 + Math.floor(Math.random() * 3);
     for (let i = 0; i < repeats; i += 1) {
       const at = i * (0.75 + i * 0.12);
-      this.tone(out, "square", 330, 300, at, 0.12, 0.008 * level);
-      this.tone(out, "square", 260, 200, at + 0.18, 0.22, 0.008 * level);
+      this.tone(out, "square", 330, 300, at, 0.12, 0.008 * level * NEAR);
+      this.tone(out, "square", 260, 200, at + 0.18, 0.22, 0.008 * level * NEAR);
     }
   }
 
+  /** A frog at the water's edge: the nearer the lake or pond, the louder. */
   private croak(level: number) {
     const context = this.context;
-    const out = this.spot();
+    const out = this.spot(this.map ? this.near(this.map.water, 90) : null);
     if (!context || !out) return;
     const start = context.currentTime;
     const osc = context.createOscillator();
@@ -462,7 +609,7 @@ export class Ambience {
     shape.type = "lowpass";
     shape.frequency.value = 650;
     gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(0.03 * level, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.03 * level * NEAR, start + 0.02);
     gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.2);
     osc.connect(shape).connect(gain).connect(out);
     osc.start(start);

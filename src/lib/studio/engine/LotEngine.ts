@@ -298,6 +298,7 @@ export class LotEngine {
     // The land outside the glass.
     this.nature = new Nature({ uniforms: this.environment.uniforms, hall: { halfWidth: NAVE_HALF_WIDTH + 0.4, front: FRONT, back: back - 0.4 }, quality: options.quality });
     this.scene.add(this.nature.group);
+    this.ambience?.setSoundMap(this.nature.soundMap);
     await advance();
 
     // One room (and its furnishings) per step.
@@ -811,7 +812,7 @@ export class LotEngine {
     this.trail?.update(time, camera, this.accent, camera.z < ENTRANCE_Z && Math.abs(camera.x) < NAVE_HALF_WIDTH, reducedMotion);
     this.nature.update(dt, reducedMotion, this.environment.conditions);
     // The soundscape hushes while a room's content is up (or the camera is on its way to it).
-    this.ambience?.update(dt, this.environment.conditions, this.focused !== null || this.pendingFocus !== null);
+    this.ambience?.update(dt, this.environment.conditions, this.focused !== null || this.pendingFocus !== null, this.rig.camera);
     this.atmosphere.update(dt, time, this.rig.velocity, reducedMotion);
     this.exhibits.update(dt, time, this.rig.velocity, reducedMotion);
 

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+import type { SoundMap, SoundPoint } from "@/lib/studio/ambience";
 import type { Conditions } from "./Environment";
 import { damp, seeded } from "./math";
 import { outdoorMaterial, type OutdoorUniforms } from "./outdoorMaterial";
@@ -230,6 +231,8 @@ export class Nature {
   private birds?: { bodies: THREE.InstancedMesh; wings: THREE.InstancedMesh; flock: Bird[] };
   private butterflies?: { wings: THREE.InstancedMesh; flock: Butterfly[] };
   /** Flowering trees near the glass, which shed petals (see buildPetals). */
+  /** Trees within earshot of the hall, where birds sing and gusts rustle (see soundMap). */
+  private readonly soundTrees: { x: number; z: number }[] = [];
   private readonly blossomTrees: { x: number; z: number; scale: number; colour: THREE.Color }[] = [];
   private petals?: { points: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>; drops: Petal[] };
   /** Ripples on the water, as (x, z, start time, strength), reused round-robin. */
@@ -280,6 +283,31 @@ export class Nature {
     this.buildKites();
     this.buildGardenLights();
     this.buildFish();
+  }
+
+  /** Where the soundscape's sources are (see Ambience): trees, meadows, water, the owl, the cicadas. */
+  get soundMap(): SoundMap {
+    const at = (x: number, z: number, lift: number): SoundPoint => ({ x, y: this.groundHeight(x, z) + lift, z });
+    const { lake, pond, hall } = this;
+    const water: SoundPoint[] = [];
+    for (let i = 0; i < 12; i += 1) {
+      const a = (i / 12) * Math.PI * 2;
+      water.push(at(lake.x + Math.cos(a) * lake.rx * 1.02, lake.z + Math.sin(a) * lake.rz * 1.02, 0.3));
+    }
+    water.push(at(pond.x - pond.rx, pond.z, 0.3), at(pond.x + pond.rx, pond.z, 0.3));
+    const length = hall.front - hall.back;
+    const owl = this.owl?.root.position;
+    return {
+      trees: this.soundTrees.map((tree) => at(tree.x, tree.z, 6)),
+      meadows: this.meadows.map((meadow) => at(meadow.x, meadow.z, 0.6)),
+      water,
+      // The lake's near shore, where the water laps.
+      lake: at(lake.x - lake.rx, lake.z, 0.3),
+      owl: owl ? { x: owl.x, y: owl.y, z: owl.z } : at(this.clearing.x, this.clearing.z, 4),
+      // Two patches of wood on each side of the hall.
+      cicadas: [-1, 1].flatMap((side) => [0.25, 0.75].map((f) => at(side * (hall.halfWidth + 30), hall.back + length * f, 4))),
+      glass: { halfWidth: hall.halfWidth, front: hall.front, back: hall.back },
+    };
   }
 
   // ————————————————————————————————————————— the land
@@ -527,6 +555,7 @@ export class Nature {
       if (random() > chance) continue;
       if (!this.claim(x, z, d < 50 ? 11 : 7)) continue;
       spots.push({ x, z, d });
+      if (d < 80) this.soundTrees.push({ x, z });
     }
 
     const broad = spots.filter((_, i) => i % 3 !== 2);
