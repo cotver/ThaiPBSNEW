@@ -4,6 +4,7 @@ import type { MarketLogo } from "@/lib/market-logos";
 import type { FinalArticleCard } from "@/lib/payload-articles";
 import type { StudiosCatalogCategory } from "@/components/StudiosCatalog";
 import type { StudiosAccordionCategory } from "@/components/StudiosCategoryAccordion";
+import type { CategoryTile } from "@/lib/payload-content";
 
 /** The gallery's own pages (programmes, newsroom, shortlist, partner logos) live under /home/studio. */
 export const lotBase = "/home/studio";
@@ -104,6 +105,8 @@ export type LotRoom = {
   viewAllHref?: string;
   /** The Studios Categories room: its panel renders /home's Studios catalog, then "More Studios categories". */
   studios?: { categories: StudiosCatalogCategory[]; otherCategories: StudiosAccordionCategory[] };
+  /** The Categories room: its panel renders /home's BrandTiles, hover video and all. */
+  brandTiles?: CategoryTile[];
 };
 
 export type LotData = { rooms: LotRoom[] };

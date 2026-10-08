@@ -1383,3 +1383,6 @@
 .studiosCategories > div,
 .studiosCategories > section { padding: 24px 26px; }
 .studiosCategories > div :global(section) { margin: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+
+/* The Categories room: /home's BrandTiles at the panel's card size instead of its 6-across page grid. */
+.brandTiles > [data-brand-rail] { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }

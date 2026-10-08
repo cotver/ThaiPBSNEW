@@ -125,9 +125,12 @@ async function StudioLotRooms() {
 
   // BrandTiles
   const brandTiles: LotRoom[] = categories.length
-    ? [links("categories", "Categories", "หมวดหมู่", `${categories.length} collections to browse.`,
-        categories.map((category) => ({ id: `category-${category.id}`, title: category.name, href: `/category/${encodeURIComponent(category.slug)}`, image: category.imageUrl })),
-        { itemShape: "tile" })]
+    ? [{
+        ...links("categories", "Categories", "หมวดหมู่", `${categories.length} collections to browse.`,
+          categories.map((category) => ({ id: `category-${category.id}`, title: category.name, href: `/category/${encodeURIComponent(category.slug)}`, image: category.imageUrl })),
+          { itemShape: "tile" }),
+        brandTiles: categories,
+      }]
     : [];
 
   // ContentRows, with /home's own "view all" links.

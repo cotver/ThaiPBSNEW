@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { lotProgramHref, slateNumber, type LotLinkItem, type LotProgram, type LotRoom } from "@/lib/studio/data";
 import styles from "@/components/studio/studio-lot.module.css";
+import { BrandTiles } from "@/components/home/BrandTiles";
 import { StudiosCatalog } from "@/components/StudiosCatalog";
 import { StudiosCategoryAccordion } from "@/components/StudiosCategoryAccordion";
 import showcaseStyles from "@/components/StudiosShowcase.module.css";
@@ -128,6 +129,8 @@ function StudiosCategoriesContent({ studios }: { studios: NonNullable<LotRoom["s
 /** Picks the right content for a room, so the 3D panel and the 2D guide always match. */
 export function RoomContent({ room, screen }: { room: LotRoom; screen?: HallScreen }) {
   if (room.studios) return <StudiosCategoriesContent studios={room.studios} />;
+  // Categories: /home's own BrandTiles, so hovering a tile lifts it and plays its video as on /home.
+  if (room.brandTiles) return <div className={styles.brandTiles}><BrandTiles categories={room.brandTiles} /></div>;
   if (room.kind === "featured") return <FeaturedContent programs={room.programs} screen={screen} />;
   if (room.kind === "links" && room.itemShape === "hero") return <StoryScreenContent items={room.items} screen={screen} viewAllHref={room.viewAllHref} />;
   if (room.kind === "links") return <LinksContent items={room.items} shape={room.itemShape} viewAllHref={room.viewAllHref} />;
