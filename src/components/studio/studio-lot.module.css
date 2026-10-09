@@ -273,14 +273,23 @@
 
 /* ——— Viewfinder cursor ——— */
 
-.cursor {
-  --size: 22px;
-  /* Colours follow what the cursor is over (data-tone, data-kind; set by LotCursor). */
-  --cursor-frame: var(--paper);
+/*
+ * Two layers that move together (LotCursor): the viewfinder's frame (.cursor) and, on top, its centre dot
+ * and label (.cursorTag). The frame is drawn in white with mix-blend-mode: difference, so like Windows'
+ * inverting pointer it always shows as the inverse of whatever it is over. The dot (the tally-light red-orange,
+ * a cyan caret over text) and the label keep solid colours, so they sit on a separate, unblended layer whose
+ * colours follow what it is over (data-tone, data-kind; set by LotCursor).
+ */
+.cursorShade,
+.cursor,
+.cursorTag {
+  --size: 28px;
+  /* Bracket arm length and line weight; the shade layer draws each bracket 1px bigger all round. */
+  --arm: 10px;
+  --stroke: 2.5px;
   --cursor-dot: var(--tally);
   --cursor-label-bg: var(--paper);
   --cursor-label-fg: var(--ink);
-  --cursor-halo: rgb(8 9 13 / 55%);
   position: fixed;
   top: 0;
   left: 0;
@@ -290,65 +299,54 @@
   transition: opacity 200ms;
 }
 
+/* On the viewfinder itself: blending only reaches the page behind from the stacking context's own root. */
+.cursor {
+  mix-blend-mode: difference;
+}
+
 /* Not in the list view: it is the /home page, with the site's own cursor. */
-:global(html[data-lot-list]) .cursor {
+:global(html[data-lot-list]) :is(.cursorShade, .cursor, .cursorTag) {
   display: none;
 }
 
-.cursor[data-visible] {
+:is(.cursorShade, .cursor, .cursorTag)[data-visible] {
   opacity: 1;
 }
 
-.cursor[data-active] {
+:is(.cursorShade, .cursor, .cursorTag)[data-active] {
   --size: 58px;
 }
 
-.cursor[data-pressed] {
-  --size: 16px;
+:is(.cursorShade, .cursor, .cursorTag)[data-pressed] {
+  --size: 20px;
 }
 
-/* Light backgrounds: ink instead of paper. */
-.cursor[data-tone="light"] {
-  --cursor-frame: var(--ink);
+/* The label on light backgrounds: ink instead of paper. */
+.cursorTag[data-tone="light"] {
   --cursor-label-bg: var(--ink);
   --cursor-label-fg: var(--paper);
-  --cursor-halo: rgb(242 237 228 / 70%);
 }
 
-/* Links and buttons: tungsten amber, deepened on light backgrounds so it still reads. */
-.cursor[data-kind="action"] {
-  --cursor-frame: var(--tungsten);
+/* Over links and buttons: tungsten amber, deepened on light backgrounds so it still reads. */
+.cursorTag[data-kind="action"] {
   --cursor-label-bg: var(--tungsten);
   --cursor-label-fg: var(--ink);
 }
-.cursor[data-kind="action"][data-tone="light"] {
-  --cursor-frame: #9a4f00;
+.cursorTag[data-kind="action"][data-tone="light"] {
   --cursor-label-bg: #9a4f00;
   --cursor-label-fg: var(--paper);
 }
 
-/* Pictures: a contrasting tint of the picture's own colour; a halo keeps it clear on busy images. */
-.cursor[data-kind="media"] {
-  --cursor-frame: var(--cursor-tint, var(--paper));
-  --cursor-dot: var(--cursor-tint, var(--tally));
-}
-.cursor[data-kind="media"][data-tone="light"] {
-  --cursor-frame: var(--cursor-tint, var(--ink));
-}
-.cursor[data-kind="media"] .cursorFrame {
-  filter: drop-shadow(0 0 1.5px var(--cursor-halo));
-}
-
-/* Text and fields: LED cyan, with the dot drawn as a caret. */
-.cursor:is([data-kind="text"], [data-kind="field"]) {
+/* Text and fields: the dot is drawn as a cyan caret, deepened on light backgrounds. */
+.cursorTag:is([data-kind="text"], [data-kind="field"]) {
   --cursor-dot: var(--led);
 }
-.cursor:is([data-kind="text"], [data-kind="field"])[data-tone="light"] {
+.cursorTag:is([data-kind="text"], [data-kind="field"])[data-tone="light"] {
   --cursor-dot: #00708a;
 }
-.cursor:is([data-kind="text"], [data-kind="field"]) .cursorDot {
-  width: 2px;
-  height: 16px;
+.cursorTag:is([data-kind="text"], [data-kind="field"]) .cursorDot {
+  width: 2.5px;
+  height: 18px;
   border-radius: 1px;
 }
 
@@ -362,10 +360,26 @@
 
 .cursorFrame i {
   position: absolute;
-  width: 7px;
-  height: 7px;
-  border: 1.5px solid var(--cursor-frame);
-  transition: border-color 220ms ease;
+  width: var(--arm);
+  height: var(--arm);
+  /* White, inverted against the page by .cursor's blend; the shade layer swaps both (see below). */
+  border: var(--bracket-line, var(--stroke)) solid var(--bracket-colour, #fff);
+}
+
+/*
+ * The shade under the inverted frame: each bracket again, 1px bigger all round, in half-black. Inverting a
+ * mid-grey (plaster, haze, the floor) gives the same mid-grey, so the frame alone can vanish there; over the
+ * shade it inverts the darkened strip instead and reads as a light line with a dark edge on any background.
+ */
+.cursorShade {
+  --bracket-line: calc(var(--stroke) + 2px);
+  --bracket-colour: rgb(0 0 0 / 50%);
+}
+
+.cursorShade .cursorFrame i {
+  width: calc(var(--arm) + 2px);
+  height: calc(var(--arm) + 2px);
+  margin: -1px;
 }
 
 .cursorFrame i:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; }
@@ -376,10 +390,12 @@
 
 .cursorDot {
   position: absolute;
-  width: 4px;
-  height: 4px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: var(--cursor-dot);
+  background: var(--cursor-dot); /* a solid colour: it lives on the unblended .cursorTag layer */
+  /* A white ring and a soft dark shadow, so the red-orange stands out on red, orange and dark backgrounds too. */
+  box-shadow: 0 0 0 1.5px #fff, 0 0 3px 1.5px rgb(0 0 0 / 45%);
   transform: translate(-50%, -50%);
   transition: background-color 220ms ease, width 260ms var(--ease), height 260ms var(--ease), border-radius 260ms var(--ease);
 }

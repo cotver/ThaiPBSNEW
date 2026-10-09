@@ -74,6 +74,12 @@ const LAMP_LEVEL = 0.38;
  * the forward view; the switch to it then happens about midway from the previous room's anchor.
  */
 const APPROACH_LEAD = 10;
+/**
+ * Rooms face each other in pairs, equally near: the one on the side you are looking toward is "the" room
+ * (caption, nav highlight, lamp colour). Turning further than this either way picks that side; within it,
+ * looking straight down the hall, the last side stays picked so the caption doesn't flicker.
+ */
+const LOOK_SIDE_THRESHOLD = THREE.MathUtils.degToRad(10);
 /** How close (metres along the walk) to a room's approach point counts as "at" that room. */
 const AT_ROOM_RANGE = 4.5;
 /**
@@ -325,6 +331,8 @@ export class LotEngine {
   private disposed = false;
   private ready = false;
   private lastNearest: LotSectionId | null = null;
+  /** The side of the hall the visitor last looked toward: -1 left, +1 right (see LOOK_SIDE_THRESHOLD). */
+  private facingSide: -1 | 1 = -1;
   private lastAtRoom = false;
   private lastProgressReport = -1;
   private hoverClock = 0;
@@ -926,13 +934,21 @@ export class LotEngine {
     this.adaptQuality(dt);
 
     const progress = this.rig.trackProgress;
+    const yaw = this.rig.lookYaw;
+    if (yaw > LOOK_SIDE_THRESHOLD) this.facingSide = 1;
+    else if (yaw < -LOOK_SIDE_THRESHOLD) this.facingSide = -1;
+    // The nearest room along the walk; of a facing pair (equally near), the one on the side being looked at.
     let nearest: LotSectionId = this.options.data.rooms[0]?.id ?? "";
     let nearestDistance = Infinity;
+    let nearestFaced = false;
     for (const room of this.rooms.values()) {
       const distance = Math.abs(room.trackT - progress);
-      if (distance < nearestDistance) {
+      const faced = Math.sign(room.config.position[0]) === this.facingSide;
+      const tie = Math.abs(distance - nearestDistance) < 1e-6;
+      if (tie ? faced && !nearestFaced : distance < nearestDistance) {
         nearestDistance = distance;
         nearest = room.config.id;
+        nearestFaced = faced;
       }
     }
 

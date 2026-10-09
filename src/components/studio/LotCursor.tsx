@@ -13,12 +13,17 @@ export function setCursorLabel(label: string | null) {
 
 /**
  * Viewfinder cursor: frame lines that open up around anything interactive and carry a label.
- * Its colours follow what it is over (see cursor-tone.ts): ink on light backgrounds and paper on dark ones,
- * amber over links and buttons, a contrasting tint of the picture over images, and a cyan caret over text.
- * Only on fine pointers; touch devices keep native behaviour.
+ * The viewfinder's frame inverts whatever it is over, like Windows' inverting pointer (white drawn with
+ * mix-blend-mode: difference), so it always stands out. Its centre dot (red-orange, a cyan caret over text)
+ * and label are a second layer moving with it in solid colours that follow what it is over (see
+ * cursor-tone.ts): ink on light backgrounds, paper on dark ones, amber over links and buttons. Only on fine pointers; touch devices keep native behaviour.
  */
 export function LotCursor() {
   const frameRef = useRef<HTMLDivElement>(null);
+  /** The label's layer: it can't sit inside the inverting viewfinder, or its text would invert too. */
+  const tagRef = useRef<HTMLDivElement>(null);
+  /** Under the viewfinder: a dark edge for its brackets, so they still show where inverting can't (mid-greys). */
+  const shadeRef = useRef<HTMLDivElement>(null);
   const [enabled, setEnabled] = useState(false);
   const [label, setLabel] = useState<string | null>(null);
   const [pressed, setPressed] = useState(false);
@@ -55,11 +60,13 @@ export function LotCursor() {
         const under = document.elementFromPoint(target.x, target.y);
         if (!cursor || !under || (under === sampled && !force)) return;
         sampled = under;
-        const { kind, tint, tone } = sampleUnder(under);
-        cursor.dataset.kind = kind;
-        cursor.dataset.tone = tone;
-        if (tint) cursor.style.setProperty("--cursor-tint", tint);
-        else cursor.style.removeProperty("--cursor-tint");
+        const { kind, tone } = sampleUnder(under);
+        // The viewfinder needs only the kind (a caret over text); the label's colours use both.
+        for (const layer of [cursor, tagRef.current]) {
+          if (!layer) continue;
+          layer.dataset.kind = kind;
+          layer.dataset.tone = tone;
+        }
       });
     };
     // Scrolling moves new content under a still pointer.
@@ -74,7 +81,7 @@ export function LotCursor() {
         visible = true;
         current.x = target.x;
         current.y = target.y;
-        frameRef.current?.setAttribute("data-visible", "");
+        for (const layer of [shadeRef.current, frameRef.current, tagRef.current]) layer?.setAttribute("data-visible", "");
       }
       const element = (event.target as Element | null)?.closest?.("[data-cursor], a, button, [role='button'], input, select, textarea");
       const next = element ? element.getAttribute("data-cursor") ?? element.getAttribute("aria-label") ?? "" : null;
@@ -86,7 +93,7 @@ export function LotCursor() {
     };
     const leave = () => {
       visible = false;
-      frameRef.current?.removeAttribute("data-visible");
+      for (const layer of [shadeRef.current, frameRef.current, tagRef.current]) layer?.removeAttribute("data-visible");
     };
     const down = () => setPressed(true);
     const up = () => setPressed(false);
@@ -101,7 +108,8 @@ export function LotCursor() {
       const k = reduced ? 1 : 1 - Math.exp(-22 * dt);
       current.x += (target.x - current.x) * k;
       current.y += (target.y - current.y) * k;
-      if (frameRef.current) frameRef.current.style.transform = `translate3d(${current.x}px, ${current.y}px, 0)`;
+      const position = `translate3d(${current.x}px, ${current.y}px, 0)`;
+      for (const layer of [shadeRef.current, frameRef.current, tagRef.current]) if (layer) layer.style.transform = position;
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -127,16 +135,28 @@ export function LotCursor() {
 
   if (!enabled) return null;
 
+  const active = label !== null || undefined;
+  const frame = (
+    <span className={styles.cursorFrame}>
+      <i />
+      <i />
+      <i />
+      <i />
+    </span>
+  );
   return (
-    <div aria-hidden="true" className={styles.cursor} data-active={label !== null || undefined} data-pressed={pressed || undefined} ref={frameRef}>
-      <span className={styles.cursorFrame}>
-        <i />
-        <i />
-        <i />
-        <i />
-      </span>
-      <span className={styles.cursorDot} />
-      {label ? <span className={styles.cursorLabel}>{label}</span> : null}
-    </div>
+    <>
+      {/* Bottom to top: the dark edge, the inverting frame, then the solid dot and label. */}
+      <div aria-hidden="true" className={styles.cursorShade} data-active={active} data-pressed={pressed || undefined} ref={shadeRef}>
+        {frame}
+      </div>
+      <div aria-hidden="true" className={styles.cursor} data-active={active} data-pressed={pressed || undefined} ref={frameRef}>
+        {frame}
+      </div>
+      <div aria-hidden="true" className={styles.cursorTag} data-active={active} data-pressed={pressed || undefined} ref={tagRef}>
+        <span className={styles.cursorDot} />
+        {label ? <span className={styles.cursorLabel}>{label}</span> : null}
+      </div>
+    </>
   );
 }

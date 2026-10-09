@@ -99,6 +99,11 @@ export class CameraRig {
     this.lookTarget.y = THREE.MathUtils.clamp(this.lookTarget.y + pitch, -MAX_PITCH, MAX_PITCH);
   }
 
+  /** How far the head is turned right (+) or left (-) of straight down the hall, in radians (eased, as drawn). */
+  get lookYaw() {
+    return this.look.x;
+  }
+
   /** Face straight down the hall again. */
   resetLook() {
     this.lookTarget.set(0, 0);

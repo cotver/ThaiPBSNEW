@@ -2,7 +2,7 @@ import { averageImageColor } from "@/components/cinema/image-color";
 
 export type CursorKind = "none" | "action" | "media" | "text" | "field";
 export type CursorTone = "light" | "dark";
-export type CursorSample = { kind: CursorKind; tone: CursorTone; tint: string | null };
+export type CursorSample = { kind: CursorKind; tone: CursorTone };
 
 type Rgba = [number, number, number, number];
 
@@ -75,32 +75,21 @@ function backdropColor(element: Element): Rgba {
   return [red, green, blue, 1];
 }
 
-/** A version of an image's own colour that stands out against it: deepened on bright images, lifted on dark. */
-function contrastTint([red, green, blue]: [number, number, number], onLight: boolean) {
-  const max = Math.max(red, green, blue);
-  const scale = onLight ? 70 / Math.max(max, 1) : 1;
-  const mix = (value: number) => (onLight ? value * scale : value + (255 - value) * 0.72);
-  return `rgb(${Math.round(mix(red))} ${Math.round(mix(green))} ${Math.round(mix(blue))})`;
-}
-
 function hasOwnText(element: Element) {
   return [...element.childNodes].some((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim());
 }
 
-/** What the cursor is over: the kind of content, whether what's behind it is light or dark, and a tint for media. */
+/** What the cursor is over: the kind of content, and whether what's behind it is light or dark (for its label). */
 export function sampleUnder(target: Element): CursorSample {
   const field = target.closest(fieldSelector);
   const action = field ? null : target.closest(actionSelector);
   const media = target.closest(mediaSelector) ?? (target.matches(actionSelector) ? target.querySelector(mediaSelector) : null);
 
   let tone: CursorTone;
-  let tint: string | null = null;
   if (media instanceof HTMLImageElement || media?.querySelector?.("img")) {
     const image = media instanceof HTMLImageElement ? media : media.querySelector("img");
     const color = averageImageColor(image);
-    const onLight = color ? luminance(color) > lightThreshold : false;
-    tone = onLight ? "light" : "dark";
-    if (color) tint = contrastTint(color, onLight);
+    tone = color && luminance(color) > lightThreshold ? "light" : "dark";
   } else if (media) {
     tone = "dark"; // video and the 3D gallery canvas can't be read; both are dark screens
   } else {
@@ -116,5 +105,5 @@ export function sampleUnder(target: Element): CursorSample {
         : hasOwnText(target)
           ? "text"
           : "none";
-  return { kind, tint, tone };
+  return { kind, tone };
 }
