@@ -255,7 +255,7 @@ export class Environment {
   private rainbowTimer = 0;
   private lastRain = 0;
 
-  constructor(options: { quality: "high" | "low"; hallHalfWidth: number }) {
+  constructor(options: { quality: "high" | "low" | "verylow"; hallHalfWidth: number }) {
     this.phase = phaseOf(this.timeOfDay);
     this.spell = THREE.MathUtils.lerp(WEATHER_SPELL[0], WEATHER_SPELL[1], this.random());
 
@@ -291,7 +291,7 @@ export class Environment {
     this.sky.raycast = () => {};
     this.group.add(this.sky);
 
-    const count = options.quality === "high" ? 2600 : 1100;
+    const count = options.quality === "high" ? 2600 : options.quality === "low" ? 1100 : 400;
     const positions = new Float32Array(count * 6);
     const ends = new Float32Array(count * 2);
     const width = 70;

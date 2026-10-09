@@ -18,7 +18,11 @@ import { Room, type FocusView, type RoomConfig } from "./Room";
 import { captionTexture, partnerLogoTexture, posterFallback, printTexture, radialTexture, testCardTexture } from "./signage";
 import { Trail } from "./Trail";
 
-export type LotQuality = "high" | "low";
+/**
+ * high: a capable desktop. low: integrated graphics, a phone or tablet, or a modest CPU / memory.
+ * verylow: 2 cores or 2 GB — lowest resolution, 30 fps, thinned scenery, smaller images.
+ */
+export type LotQuality = "high" | "low" | "verylow";
 export type { EnvironmentState, TimeOfDay, Weather };
 
 export type LotEngineEvents = {
@@ -64,6 +68,20 @@ const LAMP_LEVEL = 0.38;
 const APPROACH_LEAD = 10;
 /** How close (metres along the walk) to a room's approach point counts as "at" that room. */
 const AT_ROOM_RANGE = 4.5;
+/**
+ * Frame-rate governor: over each sample window, an average frame slower than this steps quality down a notch
+ * (see adaptQuality). 1/40 s ≈ 40 fps — below it, walking starts to judder.
+ */
+const SLOW_FRAME = 1 / 40;
+/** Seconds of frames averaged per decision; the first window after (re)starting is skipped (shaders, textures). */
+const GOVERNOR_WINDOW = 2.5;
+/** The lowest the render resolution may go, as a device pixel ratio: soft, but smooth on the weakest GPUs. */
+const MIN_PIXEL_RATIO = 0.75;
+/** Very low tier: draw at most this many frames a second, halving the CPU and GPU work of a 60 Hz loop. */
+const VERY_LOW_FPS = 30;
+/** Very low tier: wall pictures load at most this wide, to spare memory and texture uploads. */
+const VERY_LOW_IMAGE_WIDTH = 512;
+
 /** Touch: a sideways swipe across the full width of the view turns the head 180°, within the rig's 55° limit each way. */
 const LOOK_SWIPE_TURN = Math.PI;
 /** Touch: how far (px) a swipe travels before it is decided as a walk (up/down) or a look (sideways). */
@@ -287,14 +305,22 @@ export class LotEngine {
   /** A one-finger swipe: up/down walks, sideways looks around — decided by its first few pixels. */
   private touch: { x: number; y: number; startX: number; startY: number; mode: "walk" | "look" | null } | null = null;
   private time = 0;
+  /** Frame-rate governor (adaptQuality): frames and seconds in the current window, and whether to skip it. */
+  private governorFrames = 0;
+  private governorTime = 0;
+  private governorWarmup = true;
+  /** Paused while a page covers the whole gallery (setPaused); not restarted by the tab becoming visible. */
+  private paused = false;
 
   constructor(options: LotEngineOptions) {
     this.options = options;
     const { canvas, quality } = options;
     const high = quality === "high";
 
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !high, powerPreference: "high-performance", stencil: false });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, high ? 1.75 : 1.25));
+    const veryLow = quality === "verylow";
+    // High smooths edges in its bloom pass; low uses the GPU's own antialiasing; very low can't afford either.
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: quality === "low", powerPreference: "high-performance", stencil: false });
+    this.renderer.setPixelRatio(veryLow ? MIN_PIXEL_RATIO : Math.min(window.devicePixelRatio || 1, high ? 1.75 : 1.25));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.5;
     // Sun shadows (high quality): daylight falls into the hall only through the glass.
@@ -355,7 +381,7 @@ export class LotEngine {
       })),
     );
     this.scene.add(this.hall.group);
-    this.atmosphere = new Atmosphere({ particles: high ? 600 : 220 });
+    this.atmosphere = new Atmosphere({ particles: high ? 600 : options.quality === "low" ? 220 : 80 });
     this.scene.add(this.atmosphere.group);
     this.ambience = new Ambience();
     this.trail = new Trail(radialTexture());
@@ -410,15 +436,25 @@ export class LotEngine {
   // ————————————————————————————————————————— public API
 
   start() {
-    if (this.running || this.disposed) return;
+    if (this.running || this.disposed || this.paused) return;
     this.running = true;
     this.clock.reset();
+    // Very low tier: skip rAF callbacks to hold VERY_LOW_FPS; the skipped time is carried into the next frame.
+    const minFrame = this.options.quality === "verylow" ? 1 / VERY_LOW_FPS - 0.002 : 0;
+    let carried = 0;
+    // Frames right after a (re)start are slow for reasons that pass (shaders, uploads); don't judge them.
+    this.governorWarmup = true;
+    this.governorFrames = 0;
+    this.governorTime = 0;
     const tick = (timestamp: number) => {
       if (!this.running) return;
       this.frame = requestAnimationFrame(tick);
       this.clock.update(timestamp);
       // rAF timestamps can precede the reset, giving a negative delta; never step time backwards.
-      this.render(THREE.MathUtils.clamp(this.clock.getDelta(), 0, 1 / 20));
+      carried += Math.max(0, this.clock.getDelta());
+      if (carried < minFrame) return;
+      this.render(THREE.MathUtils.clamp(carried, 0, 1 / 20));
+      carried = 0;
     };
     this.frame = requestAnimationFrame(tick);
   }
@@ -426,6 +462,17 @@ export class LotEngine {
   stop() {
     this.running = false;
     cancelAnimationFrame(this.frame);
+  }
+
+  /**
+   * Stop drawing while a page covers the whole gallery (a programme or article opened over it), and pick up
+   * again when it closes — no GPU work for a view nobody can see.
+   */
+  setPaused(paused: boolean) {
+    if (this.paused === paused) return;
+    this.paused = paused;
+    if (paused) this.stop();
+    else if (this.ready && !document.hidden) this.start();
   }
 
   nudge(delta: number) {
@@ -584,7 +631,8 @@ export class LotEngine {
      * browser cannot draw (the CMS has .tif uploads), serves same-origin (no CORS failures for
      * remote hosts), and sends a size suited to the frame. Falls back to the raw URL, then a placeholder.
      */
-    const loadImage = (url: string | undefined, fallbackTitle: string, index: number, onLoad: (texture: THREE.Texture, aspect: number) => void, width = 640) => {
+    const loadImage = (url: string | undefined, fallbackTitle: string, index: number, onLoad: (texture: THREE.Texture, aspect: number) => void, requestedWidth = 640) => {
+      const width = this.options.quality === "verylow" ? Math.min(requestedWidth, VERY_LOW_IMAGE_WIDTH) : requestedWidth;
       const fallback = () => onLoad(posterFallback(fallbackTitle, font, index), 2 / 3);
       if (!url) return fallback();
       const loaded = (texture: THREE.Texture) => {
@@ -830,6 +878,7 @@ export class LotEngine {
 
     if (this.pointerDirty) this.pick();
     this.rig.update(dt, reducedMotion);
+    this.adaptQuality(dt);
 
     const progress = this.rig.trackProgress;
     let nearest: LotSectionId = this.options.data.rooms[0]?.id ?? "";
@@ -1061,6 +1110,49 @@ export class LotEngine {
   }
 
   /**
+   * Keep the walk smooth on a slow machine: if frames average slower than SLOW_FRAME over a window, turn
+   * off the next most expensive thing — bloom, then sun shadows, then render resolution step by step down
+   * to MIN_PIXEL_RATIO — and judge again. Only ever steps down within a visit, so it never flickers.
+   */
+  private adaptQuality(dt: number) {
+    this.governorFrames += 1;
+    this.governorTime += dt;
+    if (this.governorTime < GOVERNOR_WINDOW) return;
+    const average = this.governorTime / this.governorFrames;
+    const warmup = this.governorWarmup;
+    this.governorWarmup = false;
+    this.governorFrames = 0;
+    this.governorTime = 0;
+    if (warmup || average <= SLOW_FRAME) return;
+
+    if (this.composer) {
+      console.info("Gallery: running slowly; turning off bloom.");
+      this.composer.dispose();
+      this.bloom?.dispose();
+      this.composer = undefined;
+      this.bloom = undefined;
+      this.renderer.setRenderTarget(null);
+      return;
+    }
+    const sun = this.environment.sunlight;
+    if (sun.castShadow) {
+      console.info("Gallery: running slowly; turning off sun shadows.");
+      sun.castShadow = false;
+      sun.shadow.map?.dispose();
+      sun.shadow.map = null;
+      this.renderer.shadowMap.enabled = false;
+      return;
+    }
+    const ratio = this.renderer.getPixelRatio();
+    if (ratio > MIN_PIXEL_RATIO) {
+      const next = Math.max(MIN_PIXEL_RATIO, Math.min(ratio - 0.25, 1));
+      console.info(`Gallery: running slowly; render resolution ${ratio.toFixed(2)}× → ${next.toFixed(2)}×.`);
+      this.renderer.setPixelRatio(next);
+      this.resize();
+    }
+  }
+
+  /**
    * Safety net: the scene background is opaque, so a pixel with alpha 0 means post-processing
    * produced NaN (which bloom smears across the whole frame). Drop bloom and render directly.
    */
@@ -1136,7 +1228,7 @@ export class LotEngine {
 
   private readonly handleVisibility = () => {
     if (document.hidden) this.stop();
-    else if (this.ready) this.start();
+    else if (this.ready) this.start(); // start() stays put while paused (setPaused)
   };
 
   private bind() {

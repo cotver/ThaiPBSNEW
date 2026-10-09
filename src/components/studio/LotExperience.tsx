@@ -15,18 +15,37 @@ import { WalkNav } from "./WalkNav";
 import { SoundControl } from "./SoundControl";
 import { TimeButton } from "./TimeButton";
 import { WeatherButton } from "./WeatherButton";
+import { QualityButton } from "./QualityButton";
+import { QUALITY_PICKER_ENABLED, readQualityChoice, type DeviceInfo, type QualityChoice } from "@/lib/studio/quality";
 import SiteLoading from "@/app/(site)/loading";
 
 type Mode = "detecting" | "lot" | "sheet";
 type Phase = "loading" | "reveal" | "live";
-type Capabilities = { webgl: boolean; quality: LotQuality; reducedMotion: boolean; compact: boolean };
+/** `quality` is what the engine builds: the visitor's choice, or `detectedQuality` on Auto (QualityButton). */
+type Capabilities = { webgl: boolean; quality: LotQuality; detectedQuality: LotQuality; qualityChoice: QualityChoice; device: DeviceInfo; reducedMotion: boolean; compact: boolean };
 
+
+/**
+ * Graphics drawn in software (no GPU, or a blocklisted driver): the 3D walk would crawl, so these get the
+ * list view instead. Names as browsers report them (WEBGL_debug_renderer_info, or ANGLE's wrapper of it).
+ */
+const SOFTWARE_GPU = /swiftshader|llvmpipe|softpipe|lavapipe|microsoft basic render|software/i;
+/**
+ * Integrated graphics — the usual weak link on a low-spec PC, which often still has plenty of cores and
+ * memory: Intel HD/UHD/Iris (not Arc), AMD's "Radeon Graphics"/Vega APUs, and phone/tablet GPUs.
+ */
+const INTEGRATED_GPU = /intel(?!.*\barc\b)|radeon\(tm\) graphics|radeon graphics|vega \d+ graphics|mali|adreno|powervr/i;
 
 function detectCapabilities(): Capabilities {
   let webgl = false;
+  let gpu = "";
   try {
     const probe = document.createElement("canvas").getContext("webgl2");
-    webgl = Boolean(probe);
+    if (probe) {
+      const info = probe.getExtension("WEBGL_debug_renderer_info");
+      gpu = String(probe.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : probe.RENDERER) ?? "");
+    }
+    webgl = Boolean(probe) && !SOFTWARE_GPU.test(gpu);
     // Browsers cap live contexts; hand the probe's back immediately.
     probe?.getExtension("WEBGL_lose_context")?.loseContext();
   } catch {
@@ -34,10 +53,26 @@ function detectCapabilities(): Capabilities {
   }
   const coarse = window.matchMedia("(pointer: coarse)").matches;
   const compact = window.innerWidth < 768;
-  const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
-  const cores = navigator.hardwareConcurrency ?? 8;
-  const quality: LotQuality = !coarse && !compact && memory >= 4 && cores >= 6 ? "high" : "low";
-  return { webgl, quality, compact: compact && coarse, reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches };
+  // Not every browser reports these (Firefox and Safari have no deviceMemory); unknown counts as capable.
+  const reportedMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? null;
+  const reportedCores = navigator.hardwareConcurrency || null;
+  const memory = reportedMemory ?? 8;
+  const cores = reportedCores ?? 8;
+  // High only on a capable desktop with a dedicated (or Apple) GPU; LotEngine also steps down on its own
+  // if the frame rate drops, so a machine that slips through still ends up smooth.
+  const detectedQuality: LotQuality =
+    // A 2-core or 2 GB machine (deviceMemory is rounded down: 2 means under 4 GB): the very low tier.
+    cores <= 2 || memory <= 2 ? "verylow" : !coarse && !compact && memory >= 4 && cores >= 6 && !INTEGRATED_GPU.test(gpu) ? "high" : "low";
+  const qualityChoice = readQualityChoice();
+  return {
+    webgl,
+    quality: qualityChoice === "auto" ? detectedQuality : qualityChoice,
+    detectedQuality,
+    qualityChoice,
+    device: { cores: reportedCores, memory: reportedMemory, gpu: gpu.replace(/^ANGLE \((.*)\)$/, "$1") },
+    compact: compact && coarse,
+    reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  };
 }
 
 // Device capabilities never change during a visit; detect once and serve a stable snapshot.
@@ -184,6 +219,15 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
       setCursorLabel(null);
     };
   }, [mode, capabilities, data, fontFamily, select]);
+
+  // A page opened over the gallery (@lotModal: a programme, an article, search…) changes the URL away from the
+  // one the gallery was loaded on and covers the whole window, so stop drawing the 3D walk until it closes.
+  const [galleryPath] = useState(pathname);
+  const covered = pathname !== galleryPath;
+  useEffect(() => {
+    if (phase === "loading") return;
+    engineRef.current?.setPaused(covered);
+  }, [covered, phase]);
 
   // Curtain: start rendering under the gate, then hand over to the viewer.
   useEffect(() => {
@@ -347,6 +391,10 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
         <SoundControl />
         {outdoors ? <TimeButton onChange={(time: TimeOfDay | "auto") => engineRef.current?.setTime(time)} state={outdoors} /> : null}
         {outdoors ? <WeatherButton onChange={(weather: Weather | "auto") => engineRef.current?.setWeather(weather)} state={outdoors} /> : null}
+
+        {QUALITY_PICKER_ENABLED && capabilities ? (
+          <QualityButton choice={capabilities.qualityChoice} current={capabilities.quality} detected={capabilities.detectedQuality} device={capabilities.device} />
+        ) : null}
 
         <button aria-label="Switch to the list view" className={`${styles.roundButton} ${styles.listToggle}`} data-cursor="Switch to 2D" onClick={switchToSheet} title="Switch to the list view" type="button">
           2D

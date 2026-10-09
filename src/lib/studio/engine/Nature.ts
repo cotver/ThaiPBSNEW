@@ -252,10 +252,13 @@ export class Nature {
   private readonly scale = new THREE.Vector3();
   private daylife = 1;
 
-  constructor(options: { uniforms: OutdoorUniforms; hall: HallFootprint; quality: "high" | "low" }) {
+  constructor(options: { uniforms: OutdoorUniforms; hall: HallFootprint; quality: "high" | "low" | "verylow" }) {
     this.uniforms = options.uniforms;
     this.hall = options.hall;
     const high = options.quality === "high";
+    // How much of the scenery to grow, per quality tier: very low (2 cores / 2 GB) keeps the landscape but thins it.
+    const pick = (onHigh: number, onLow: number, onVeryLow: number) => (high ? onHigh : options.quality === "low" ? onLow : onVeryLow);
+    const density = pick(1, 1, 0.4);
     this.centreZ = (options.hall.front + options.hall.back) / 2;
     this.lake = { x: options.hall.halfWidth + 34, z: this.centreZ - 6, rx: 20, rz: 34, y: WATER_Y, dip: true };
     const back = options.hall.back;
@@ -265,21 +268,21 @@ export class Nature {
     // The clearing's own meadow comes first, so butterflies and fireflies always visit it.
     this.meadows.push({ x: -9, z: back - 16, radius: 4.5 });
 
-    this.planMeadows(high ? 24 : 14);
-    this.buildGround(high ? 260 : 170);
+    this.planMeadows(pick(24, 14, 8));
+    this.buildGround(pick(260, 170, 110));
     this.buildLake();
     this.buildMountains();
-    this.buildTrees(high ? 720 : 360);
-    this.buildUndergrowth(high);
-    this.buildFlowers(high);
+    this.buildTrees(pick(720, 360, 160));
+    this.buildUndergrowth(high, density);
+    this.buildFlowers(high, density);
     this.buildClearing();
     this.buildDeer();
     this.buildRabbits();
     this.buildDucks();
     this.buildBirds();
-    this.buildButterflies(high ? 26 : 14);
-    this.buildFireflies(high ? 150 : 70);
-    this.buildPetals(high ? 240 : 110);
+    this.buildButterflies(pick(26, 14, 6));
+    this.buildFireflies(pick(150, 70, 24));
+    this.buildPetals(pick(240, 110, 40));
     this.buildKites();
     this.buildGardenLights();
     this.buildFish();
@@ -641,10 +644,11 @@ export class Nature {
     return mergeGeometries(parts);
   }
 
-  private buildUndergrowth(high: boolean) {
+  /** `density` (0..1) thins it further on very low-spec machines. */
+  private buildUndergrowth(high: boolean, density = 1) {
     const { random } = this;
     // Bushes at the forest's edge and the odd one on the lawn.
-    const bushCount = high ? 170 : 90;
+    const bushCount = Math.round((high ? 170 : 90) * density);
     const bushes = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.8, 0).scale(1.2, 0.75, 1).translate(0, 0.35, 0), outdoorMaterial(this.uniforms, { flat: true, sway: 0.04 }), bushCount);
     const bushGreens = ["#4d7a33", "#5a8a3a", "#44702f"].map((hex) => new THREE.Color(hex));
     // Bougainvillea: a quarter of the bushes in flower, magenta and orange.
@@ -679,7 +683,7 @@ export class Nature {
     rocks.count = placed;
 
     // Grass tufts break up the lawn by the glass.
-    const tuftCount = high ? 520 : 240;
+    const tuftCount = Math.round((high ? 520 : 240) * density);
     const tuftGeometry = mergeGeometries([0, 1, 2].map((i) => new THREE.ConeGeometry(0.05, 0.42 + i * 0.08, 3, 1).translate(0, 0.21 + i * 0.04, 0).rotateZ((i - 1) * 0.3).rotateY(i * 2.1)));
     const tufts = new THREE.InstancedMesh(tuftGeometry, outdoorMaterial(this.uniforms, { flat: true, sway: 0.3 }), tuftCount);
     const tuftGreens = ["#5f8a38", "#6a9640", "#557f33"].map((hex) => new THREE.Color(hex));
@@ -703,7 +707,7 @@ export class Nature {
   }
 
   /** Flowers grow in meadows of two or three colours, never scattered everywhere. */
-  private buildFlowers(high: boolean) {
+  private buildFlowers(high: boolean, density = 1) {
     const { random } = this;
     // Vivid, saturated meadows: each in two or three colours, so they read as bold patches of colour.
     const palettes = [
@@ -715,7 +719,7 @@ export class Nature {
       ["#00b4ff", "#ffffff", "#9b5cff"],
       ["#ff3d7f", "#ffd400"],
     ].map((palette) => palette.map((hex) => new THREE.Color(hex)));
-    const perMeadow = high ? 72 : 40;
+    const perMeadow = Math.round((high ? 72 : 40) * density);
     const total = this.meadows.length * perMeadow;
     const stems = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.012, 0.016, 0.42, 3).translate(0, 0.21, 0), outdoorMaterial(this.uniforms, { color: "#4f7f30", sway: 0.25 }), total);
     const head = mergeGeometries([new THREE.IcosahedronGeometry(0.1, 0).scale(1, 0.55, 1), new THREE.IcosahedronGeometry(0.04, 0).translate(0, 0.03, 0)]).translate(0, 0.43, 0);

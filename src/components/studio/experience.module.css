@@ -280,6 +280,92 @@
   right: 132px;
 }
 
+/*
+ * Graphics quality (QualityButton), left of sound: its menu opens above it. Optional — remove with
+ * QUALITY_PICKER_ENABLED in lib/studio/quality.ts.
+ */
+.qualityControl {
+  position: absolute;
+  right: 264px;
+  bottom: calc(100% + 16px);
+}
+
+.qualityToggle {
+  align-content: center;
+  gap: 1px;
+}
+
+.qualityShort {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.qualityMenu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  display: grid;
+  gap: 4px;
+  width: 248px;
+  padding: 12px;
+  border: 1px solid rgb(242 237 228 / 16%);
+  border-radius: 10px;
+  background: rgb(8 9 13 / 94%);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 55%);
+  color: var(--paper);
+  backdrop-filter: blur(14px);
+}
+
+.qualityHeading {
+  margin: 0 4px 6px;
+  color: var(--tungsten);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.qualityOption {
+  display: grid;
+  gap: 2px;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  transition: background 200ms var(--ease), border-color 200ms var(--ease);
+}
+
+.qualityOption small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.qualityOption:hover,
+.qualityOption:focus-visible {
+  background: rgb(255 181 71 / 10%);
+}
+
+.qualityOption[aria-pressed="true"] {
+  border-color: rgb(255 181 71 / 55%);
+  background: rgb(255 181 71 / 14%);
+}
+
+.qualityDevice {
+  margin: 6px 4px 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
 /* Sound on/off, with its volume slider rising above it on hover or focus. */
 .soundControl {
   position: absolute;
