@@ -99,20 +99,50 @@ export class Ambience {
    */
   private chorus = false;
   private chorusTimer = 20;
+  /**
+   * The visitor is elsewhere: another tab, or another window in front of this one. The soundscape fades out
+   * and the audio is paused (as the room trailers pause), and picks up again when they come back.
+   */
+  private away = typeof document !== "undefined" && (document.hidden || !document.hasFocus());
+  private suspendTimer = 0;
   private readonly unsubscribe: () => void;
-  private readonly resume = () => void this.context?.resume();
+  private readonly resume = () => {
+    if (!this.away) void this.context?.resume();
+  };
+  private readonly checkAway = () => {
+    const away = document.hidden || !document.hasFocus();
+    if (away === this.away) return;
+    this.away = away;
+    window.clearTimeout(this.suspendTimer);
+    if (away) {
+      this.fade(0);
+      // Let the fade finish, then pause the audio altogether (no sound, no audio work in the background).
+      this.suspendTimer = window.setTimeout(() => void this.context?.suspend(), 1500);
+    } else {
+      void this.context?.resume();
+      this.fade(this.audible() ? 1 : 0);
+    }
+  };
 
   constructor() {
     this.unsubscribe = onSoundChange((enabled) => {
       this.enabled = enabled;
       if (enabled) this.start();
-      this.fade(enabled && !this.quiet ? 1 : 0);
+      this.fade(this.audible() ? 1 : 0);
     });
     this.unsubscribeVolume = onVolumeChange((volume) => {
       this.volume = volume;
-      this.fade(this.enabled && !this.quiet ? 1 : 0);
+      this.fade(this.audible() ? 1 : 0);
     });
+    document.addEventListener("visibilitychange", this.checkAway);
+    window.addEventListener("blur", this.checkAway);
+    window.addEventListener("focus", this.checkAway);
     if (this.enabled) this.start();
+  }
+
+  /** Sound on, the visitor here, and not hushed for a room's content. */
+  private audible() {
+    return this.enabled && !this.quiet && !this.away;
   }
 
   /** Where the sources are (call once the land outside is built). */
@@ -131,7 +161,7 @@ export class Ambience {
     this.hear(camera);
     if (quiet !== this.quiet) {
       this.quiet = quiet;
-      this.fade(quiet ? 0 : 1);
+      this.fade(this.audible() ? 1 : 0);
     }
     if (quiet) return;
     const { day, night, rain, wind } = conditions;
@@ -194,6 +224,10 @@ export class Ambience {
     this.unsubscribe();
     this.unsubscribeVolume();
     window.removeEventListener("pointerdown", this.resume);
+    document.removeEventListener("visibilitychange", this.checkAway);
+    window.removeEventListener("blur", this.checkAway);
+    window.removeEventListener("focus", this.checkAway);
+    window.clearTimeout(this.suspendTimer);
     void this.context?.close();
     this.context = null;
   }
@@ -246,7 +280,9 @@ export class Ambience {
       this.cicadas.offset.value = 0;
       this.cicadas.start();
       this.buildLoops();
-      this.fade(1);
+      this.fade(this.audible() ? 1 : 0);
+      // Opened in a background tab or an unfocused window: stay paused until the visitor comes to it.
+      if (this.away) void context.suspend();
     } catch {
       // Audio is decoration; never let it break the gallery.
       this.context = null;
