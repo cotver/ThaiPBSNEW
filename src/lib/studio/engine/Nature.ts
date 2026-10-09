@@ -1409,31 +1409,85 @@ export class Nature {
     this.whale = { root: hide(whale.root), tail: whale.tail, swim: swim([14, 18], [0.45, 0.55], [1.3, 1.5], [1, 1]) };
   }
 
-  /** A shark, nose along +z, about 4.5m long; `tail` swings side to side. */
+  /**
+   * A shark, nose along +z, about 4m long: a torpedo body (pointed snout, thickest a third of the way back,
+   * tapering to a slim tail stock), slate grey above and white below, a tall swept-back dorsal fin, broad
+   * pectoral fins angled down and back, small second dorsal, anal and pelvic fins, gill slits, dark eyes and
+   * a mouth line. `tail` — the tail stock and a crescent tail with the larger lobe on top — swings side to side.
+   */
   private sharkModel() {
-    const skin = outdoorMaterial(this.uniforms, { color: "#6b7782", flat: true });
-    const belly = outdoorMaterial(this.uniforms, { color: "#d9dee2", flat: true });
+    const back = new THREE.Color("#5f6e7b");
+    const belly = new THREE.Color("#e8ecee");
+    const dark = new THREE.Color("#1a1d21");
+    /** Non-indexed, with uv and a vertex colour per vertex (from its height), so all the parts merge into one. */
+    const paint = (geometry: THREE.BufferGeometry, colour: (y: number) => THREE.Color) => {
+      const flat = geometry.index ? geometry.toNonIndexed() : geometry;
+      const position = flat.attributes.position;
+      const colours = new Float32Array(position.count * 3);
+      for (let i = 0; i < position.count; i += 1) colour(position.getY(i)).toArray(colours, i * 3);
+      flat.setAttribute("color", new THREE.BufferAttribute(colours, 3));
+      if (!flat.attributes.uv) flat.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(position.count * 2), 2));
+      return flat;
+    };
+    // Countershading: a fairly sharp line along the flank between the dark back and the white belly.
+    const countershade = (y: number) => back.clone().lerp(belly, 1 - THREE.MathUtils.smoothstep(y, -0.14, 0.02));
+    /** A flat fin from a fan of points [x, y, z] around its first point. */
+    const fin = (points: number[][]) => {
+      const triangles: number[] = [];
+      for (let i = 1; i < points.length - 1; i += 1) triangles.push(...points[0], ...points[i], ...points[i + 1]);
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.Float32BufferAttribute(triangles, 3));
+      geometry.computeVertexNormals();
+      return geometry;
+    };
+    const mirror = (points: number[][]) => points.map(([x, y, z]) => [-x, y, z]);
+
+    // The body, turned from a profile of (radius, position along it), nose at +z; a little narrower than tall.
+    const profile = [[0, 2.2], [0.1, 2.12], [0.22, 1.92], [0.34, 1.55], [0.43, 1.05], [0.47, 0.55], [0.46, 0.05], [0.4, -0.45], [0.3, -0.95], [0.19, -1.35], [0.12, -1.6]];
+    // Turned tail-to-nose (rising), which is the order that gives the lathe outward-facing normals.
+    const body = new THREE.LatheGeometry([...profile].reverse().map(([r, z]) => new THREE.Vector2(r, z)), 18).rotateX(Math.PI / 2).scale(0.88, 1, 1);
+    const radiusAt = (z: number) => {
+      for (let i = 1; i < profile.length; i += 1) {
+        const [r0, z0] = profile[i - 1];
+        const [r1, z1] = profile[i];
+        if (z <= z0 && z >= z1) return THREE.MathUtils.lerp(r0, r1, (z0 - z) / (z0 - z1));
+      }
+      return 0.1;
+    };
+
+    const parts: THREE.BufferGeometry[] = [paint(body, countershade)];
+    const finColour = () => back;
+    // First dorsal: tall and swept back, its trailing edge notched.
+    parts.push(paint(fin([[0, 0.42, 0.45], [0, 1.15, -0.2], [0, 0.6, -0.18], [0, 0.42, -0.3]]), finColour));
+    // Second dorsal and anal fin: small, near the tail.
+    parts.push(paint(fin([[0, 0.24, -0.95], [0, 0.46, -1.18], [0, 0.22, -1.2]]), finColour));
+    parts.push(paint(fin([[0, -0.22, -0.95], [0, -0.42, -1.2], [0, -0.2, -1.2]]), () => belly));
+    // Pectorals: broad, sickle-shaped, angled down and back; pelvics small, further back.
+    const pectoral = [[0.34, -0.2, 0.85], [1.25, -0.62, 0.05], [0.95, -0.52, 0.12], [0.38, -0.26, 0.4]];
+    parts.push(paint(fin(pectoral), finColour), paint(fin(mirror(pectoral)), finColour));
+    const pelvic = [[0.22, -0.3, -0.55], [0.48, -0.5, -0.85], [0.22, -0.33, -0.8]];
+    parts.push(paint(fin(pelvic), () => belly), paint(fin(mirror(pelvic)), () => belly));
+    // Five gill slits on each side, just behind the head.
+    for (let i = 0; i < 5; i += 1) {
+      const z = 1.25 - i * 0.11;
+      const x = radiusAt(z) * 0.88 + 0.004;
+      for (const side of [-1, 1]) parts.push(paint(new THREE.BoxGeometry(0.012, 0.26 - i * 0.02, 0.018).translate(side * x, -0.02, z), () => dark));
+    }
+    // Dark eyes, and the mouth line under the snout.
+    for (const side of [-1, 1]) parts.push(paint(new THREE.SphereGeometry(0.035, 8, 6).translate(side * radiusAt(1.75) * 0.86, 0.06, 1.75), () => dark));
+    parts.push(paint(new THREE.TorusGeometry(0.16, 0.012, 4, 12, Math.PI).rotateX(Math.PI / 2).translate(0, -0.2, 1.62), () => dark));
+    const skin = outdoorMaterial(this.uniforms, { vertexColors: true, side: THREE.DoubleSide });
     const root = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 8).scale(0.42, 0.5, 2.2), skin);
-    const underside = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 8).scale(0.36, 0.36, 1.9), belly);
-    underside.position.set(0, -0.14, 0.15);
-    const dorsal = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.85, 3).scale(0.25, 1, 1), skin);
-    dorsal.position.set(0, 0.62, -0.1);
-    dorsal.rotation.x = -0.35;
-    const pectorals = new THREE.Mesh(new THREE.BoxGeometry(2, 0.05, 0.45), skin);
-    pectorals.position.set(0, -0.25, 0.55);
-    pectorals.rotation.x = 0.15;
+    root.add(new THREE.Mesh(mergeGeometries(parts), skin));
+
+    // The tail, pivoting where the body ends: the stock, then the crescent tail, larger lobe on top.
+    const stock = new THREE.CylinderGeometry(0.11, 0.06, 0.5, 12).rotateX(Math.PI / 2).scale(0.88, 1.3, 1).translate(0, 0, -0.25);
+    const upper = fin([[0, 0.02, -0.4], [0, 1.0, -1.05], [0, 0.82, -1.0], [0, 0.1, -0.62]]);
+    const lower = fin([[0, -0.02, -0.4], [0, -0.1, -0.62], [0, -0.55, -0.88], [0, -0.48, -0.95]]);
     const tail = new THREE.Group();
-    tail.position.z = -1.9;
-    const stock = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.9, 8).rotateX(-Math.PI / 2).translate(0, 0, -0.4), skin);
-    const upper = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.05, 0.38), skin);
-    upper.position.set(0, 0.42, -0.95);
-    upper.rotation.x = 0.55;
-    const lower = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.6, 0.3), skin);
-    lower.position.set(0, -0.26, -0.9);
-    lower.rotation.x = -0.55;
-    tail.add(stock, upper, lower);
-    root.add(body, underside, dorsal, pectorals, tail);
+    tail.position.z = -1.58;
+    tail.add(new THREE.Mesh(mergeGeometries([paint(stock, countershade), paint(upper, finColour), paint(lower, finColour)]), skin));
+    root.add(tail);
     return { root, tail };
   }
 
