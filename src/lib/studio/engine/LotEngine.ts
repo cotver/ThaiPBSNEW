@@ -1251,8 +1251,19 @@ export class LotEngine {
     if (event.pointerType !== "touch") this.rig.setLook(0, 0);
   };
 
-  private readonly handleClick = () => {
-    if (this.hovered && !this.rig.isFocused) this.options.onSelect(this.hovered);
+  /**
+   * Step into the room under the click — found at the click's own position, not the last hover. A finger tap
+   * has no hover before it (no pointer moves), and lifting the finger fires pointerleave before click, which
+   * clears the hover; relying on it made taps on a wall miss.
+   */
+  private readonly handleClick = (event: MouseEvent) => {
+    if (this.rig.isFocused) return;
+    const rect = this.options.canvas.getBoundingClientRect();
+    if (rect.width && rect.height) {
+      this.pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+      this.pick();
+    }
+    if (this.hovered) this.options.onSelect(this.hovered);
   };
 
   private readonly handleWheel = (event: WheelEvent) => {

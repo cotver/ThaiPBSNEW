@@ -132,6 +132,9 @@
 /* ——— HUD: reel progress + stage markers ——— */
 
 .hud {
+  /* The round buttons sit in a row along the HUD's bottom edge, one step apart from the right. */
+  --hud-button: 54px;
+  --hud-step: 66px;
   zoom: var(--lot-ui, 1);
   position: absolute;
   inset: auto var(--gutter) clamp(16px, 3vh, 32px);
@@ -253,7 +256,7 @@
   display: grid;
   justify-items: end;
   gap: 4px;
-  margin-bottom: 70px; /* a 54px button + 16px gap */
+  margin-bottom: calc(var(--hud-button) + 16px); /* the row of buttons + a gap */
   color: var(--muted);
   font-family: var(--mono);
   font-size: 10px;
@@ -272,14 +275,14 @@
 .weatherToggle,
 .timeToggle {
   position: absolute;
-  right: 66px;
+  right: var(--hud-step);
   bottom: 0;
   align-content: center;
   gap: 1px;
 }
 
 .timeToggle {
-  right: 132px;
+  right: calc(var(--hud-step) * 2);
 }
 
 /*
@@ -288,7 +291,7 @@
  */
 .qualityControl {
   position: absolute;
-  right: 264px;
+  right: calc(var(--hud-step) * 4);
   bottom: 0;
 }
 
@@ -304,13 +307,20 @@
   letter-spacing: 0.08em;
 }
 
+/*
+ * Opens up and to the right, over the other buttons: the quality button is the left-most, so opening
+ * leftward would run off a phone's screen. Never wider than the screen, nor taller than the space above.
+ */
 .qualityMenu {
   position: absolute;
-  right: 0;
+  left: 0;
   bottom: calc(100% + 10px);
   display: grid;
   gap: 4px;
-  width: 248px;
+  width: min(248px, calc(100vw - 2 * var(--gutter)));
+  max-height: calc(100dvh - var(--header-h, 64px) - var(--hud-button) - 64px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 12px;
   border: 1px solid rgb(242 237 228 / 16%);
   border-radius: 10px;
@@ -371,7 +381,7 @@
 /* Sound on/off, with its volume slider rising above it on hover or focus. */
 .soundControl {
   position: absolute;
-  right: 198px;
+  right: calc(var(--hud-step) * 3);
   bottom: 0;
 }
 
@@ -946,4 +956,17 @@
 
 .siteLoader[data-reduced] {
   transition-duration: 200ms;
+}
+
+/* Narrow phones: smaller round buttons, closer together, so all five fit in the row (down to ~320px wide). */
+@media (max-width: 420px) {
+  .hud {
+    --hud-button: 46px;
+    --hud-step: 54px;
+  }
+
+  .hud .roundButton {
+    width: var(--hud-button);
+    height: var(--hud-button);
+  }
 }
