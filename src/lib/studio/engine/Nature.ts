@@ -45,6 +45,93 @@ function fbm2(x: number, y: number, octaves = 4) {
 }
 
 const GROUND_Y = -0.12;
+/**
+ * Floodwater (Conditions.flood, from a visitor's locked-in rain): its surface rises from just under the
+ * lawns to well over the hall's roof (the ceiling is at 7m), so the hall becomes a dry aquarium tunnel —
+ * the water stops at the glass, and outside it is all underwater: fish, sharks and a whale go by.
+ */
+const FLOOD_LOW = GROUND_Y - 0.3;
+const FLOOD_HIGH = GROUND_Y + 12;
+/** Above this the water is over the roof: its surface closes over the hall's footprint too. */
+const ROOF_TOP = 7.6;
+/**
+ * An Easter egg: caught by the flood, the land animals don't flee — they float in the water like astronauts
+ * in space: lifted off the ground to their own height, tumbling slowly head over heels, drifting, legs
+ * swimming, until the water drains and sets them down again. Each floats this far up (metres, a range),
+ * and always at least FLOAT_CLEARANCE under the surface, so they're seen through the glass, in the water.
+ */
+const FLOAT_LIFT: [number, number] = [1.2, 6];
+const FLOAT_CLEARANCE = 1;
+/** Once the flood is this far up (0..1), every animal comes out (rain or not) — so there's someone to float. */
+const FLOOD_CROWD = 0.05;
+/** How many fish and sharks swim round the building in the flood (the whale is one of a kind). */
+const FLOOD_FISH = 40;
+const FLOOD_SHARKS = 3;
+
+/** The underwater tint around the hall: clear, a light blue-green near the surface, a little deeper lower down. */
+const tintVertex = /* glsl */ `
+  varying vec3 vWorldPos;
+  void main() {
+    vec4 world = modelMatrix * vec4(position, 1.0);
+    vWorldPos = world.xyz;
+    gl_Position = projectionMatrix * viewMatrix * world;
+  }
+`;
+const tintFragment = /* glsl */ `
+  uniform float uLevel;
+  uniform float uOpacity;
+  uniform float uDay;
+  varying vec3 vWorldPos;
+  void main() {
+    float depth = clamp((uLevel - vWorldPos.y) / 10.0, 0.0, 1.0);
+    // Clear water: a light wash of blue-green that you see straight through, a touch deeper further down.
+    vec3 colour = mix(vec3(0.36, 0.82, 0.88), vec3(0.08, 0.42, 0.6), depth) * mix(0.3, 1.0, uDay);
+    gl_FragColor = vec4(colour, uOpacity * mix(0.12, 0.35, depth));
+  }
+`;
+
+/**
+ * A fish, nose along +z, about 0.8m long: a tall, side-flattened body darker on the back and pale on the
+ * belly, a forked tail, a dorsal fin, two side fins and dark eyes. One geometry with vertex colours (they
+ * multiply with each fish's own instance colour), so a whole school draws in one call.
+ */
+function fishGeometry() {
+  const shade = (geometry: THREE.BufferGeometry, tone: (y: number) => number) => {
+    const flat = geometry.index ? geometry.toNonIndexed() : geometry;
+    const position = flat.attributes.position;
+    const colours = new Float32Array(position.count * 3);
+    for (let i = 0; i < position.count; i += 1) colours.fill(tone(position.getY(i)), i * 3, i * 3 + 3);
+    flat.setAttribute("color", new THREE.BufferAttribute(colours, 3));
+    if (!flat.attributes.uv) flat.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(position.count * 2), 2));
+    return flat;
+  };
+  /** A flat fin from triangles, given as [x, y, z] corners. */
+  const fin = (...triangles: number[][][]) => {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(triangles.flat(2), 3));
+    geometry.computeVertexNormals();
+    return geometry;
+  };
+  const body = new THREE.SphereGeometry(1, 12, 8).scale(0.07, 0.17, 0.32);
+  const tail = fin(
+    [[0, 0, -0.27], [0, 0.18, -0.5], [0, 0.03, -0.42]],
+    [[0, 0, -0.27], [0, -0.03, -0.42], [0, -0.18, -0.5]],
+    [[0, 0, -0.27], [0, 0.03, -0.42], [0, -0.03, -0.42]],
+  );
+  const dorsal = fin([[0, 0.15, 0.08], [0, 0.28, -0.07], [0, 0.13, -0.17]]);
+  const sides = fin([[0.06, -0.04, 0.1], [0.17, -0.1, -0.03], [0.06, -0.07, -0.04]], [[-0.06, -0.04, 0.1], [-0.06, -0.07, -0.04], [-0.17, -0.1, -0.03]]);
+  const eyes = [-1, 1].map((x) => new THREE.SphereGeometry(0.026, 6, 4).translate(x * 0.058, 0.045, 0.2));
+  return mergeGeometries([
+    shade(body, (y) => THREE.MathUtils.lerp(1, 0.62, THREE.MathUtils.smoothstep(y, -0.12, 0.15))),
+    shade(tail, () => 0.78),
+    shade(dorsal, () => 0.7),
+    shade(sides, () => 0.85),
+    ...eyes.map((eye) => shade(eye, () => 0.05)),
+  ]);
+}
+
+/** One creature on a loop round the hall: `distance` metres along it, `offset` metres out from the glass, at a depth fraction. */
+type Swimmer = { distance: number; offset: number; depth: number; speed: number; phase: number; scale: number };
 /** Points along each kite's tail. */
 const KITE_TAIL = 12;
 const LIGHT_WARM = new THREE.Color("#ffc677");
@@ -256,6 +343,19 @@ export class Nature {
   private nextRipple = 0;
   private duckRipple = 0;
   private fish?: { mesh: THREE.Mesh; from: THREE.Vector2; to: THREE.Vector2; t: number; wait: number };
+  /** The floodwater's surface (see FLOOD_LOW/HIGH), and the fish that swim in it along the glass. */
+  private floodWater?: THREE.Mesh;
+  /** The surface over the hall itself, shown once the water is over the roof; and its underside, seen from below. */
+  private floodCap?: THREE.Mesh;
+  private floodUnderside?: THREE.Group;
+  /** The underwater tint wrapped round the outside of the glass (tintFragment). */
+  private floodTint?: THREE.Mesh;
+  private floodLevel = FLOOD_LOW;
+  private floodFish?: { mesh: THREE.InstancedMesh; swimmers: Swimmer[] };
+  private sharks: { root: THREE.Group; tail: THREE.Object3D; swim: Swimmer }[] = [];
+  private whale?: { root: THREE.Group; tail: THREE.Object3D; swim: Swimmer };
+  /** The lake's water material, shared by the floodwater so both read as one body of water. */
+  private waterMaterial?: THREE.ShaderMaterial;
   private readonly kites: { body: THREE.Group; tail: THREE.Line; string: THREE.Line; anchor: THREE.Vector3; phase: number }[] = [];
   private kitePresence = 0;
   private gardenLights?: { caps: THREE.InstancedMesh; pools: THREE.InstancedMesh; thresholds: number[]; level: number };
@@ -303,6 +403,7 @@ export class Nature {
     this.buildPlane();
     this.buildGardenLights();
     this.buildFish();
+    this.buildFlood();
   }
 
   /** Where the soundscape's sources are (see Ambience): trees, meadows, water, the owl, the cicadas. */
@@ -433,6 +534,7 @@ export class Nature {
         vertexShader: waterVertex,
         fragmentShader: waterFragment,
       });
+    this.waterMaterial = waterMaterial;
     for (const body of this.waters) {
       const water = new THREE.Mesh(new THREE.CircleGeometry(1, 72).rotateX(-Math.PI / 2), waterMaterial);
       // The lake's rim is under the bank; the pond on the flat gets a muddy margin instead.
@@ -1217,6 +1319,276 @@ export class Nature {
     drop.y = anywhere ? ground + this.random() * 3.4 * tree.scale : ground + 3.4 * tree.scale;
   }
 
+  /**
+   * The flood: a sheet of water over the land with the hall's footprint cut out (the hall stays dry behind
+   * its glass), a cap that closes it over the roof once the water is that high, the surface's underside as
+   * seen from inside looking up, an underwater tint round the outside of the glass, and the sea life.
+   * All hidden until the water rises (updateFlood).
+   */
+  private buildFlood() {
+    if (!this.waterMaterial) return;
+    const { hall } = this;
+    const reach = 260;
+    // Shape space is (x, -z): the sheet is laid flat with rotateX(-π/2), which maps shape y to world -z.
+    const rectangle = (x0: number, x1: number, z0: number, z1: number) => [
+      new THREE.Vector2(x0, -z1),
+      new THREE.Vector2(x1, -z1),
+      new THREE.Vector2(x1, -z0),
+      new THREE.Vector2(x0, -z0),
+    ];
+    const outline = new THREE.Shape(rectangle(-reach, reach, hall.back - reach, hall.front + reach));
+    outline.holes.push(new THREE.Path(rectangle(-hall.halfWidth, hall.halfWidth, hall.back, hall.front)));
+    const ring = new THREE.ShapeGeometry(outline).rotateX(-Math.PI / 2);
+    const cap = new THREE.ShapeGeometry(new THREE.Shape(rectangle(-hall.halfWidth, hall.halfWidth, hall.back, hall.front))).rotateX(-Math.PI / 2);
+    const hide = <T extends THREE.Object3D>(object: T) => {
+      object.visible = false;
+      object.traverse((child) => (child.raycast = () => {}));
+      this.group.add(object);
+      return object;
+    };
+    this.floodWater = hide(new THREE.Mesh(ring, this.waterMaterial));
+    this.floodCap = hide(new THREE.Mesh(cap, this.waterMaterial));
+    // From below, the surface is a bright ceiling of light.
+    const underside = new THREE.MeshBasicMaterial({ color: "#8fe1ec", transparent: true, opacity: 0.32, side: THREE.BackSide, depthWrite: false });
+    const below = new THREE.Group();
+    below.add(new THREE.Mesh(ring, underside), new THREE.Mesh(cap, underside));
+    this.floodUnderside = hide(below);
+
+    // The tint: four walls round the hall just outside the glass, seen from inside, so all that's beyond the
+    // glass reads as underwater while the hall itself stays clear. Scaled to the water's depth each frame.
+    // Walls only — no lid: a lid at the water level would span the hall's interior and, seen from below
+    // while the water is between eye height and the ceiling, look like the hall itself was flooded.
+    const walls = mergeGeometries([
+      new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0.5),
+      new THREE.PlaneGeometry(1, 1).rotateY(Math.PI).translate(0, 0.5, -0.5),
+      new THREE.PlaneGeometry(1, 1).rotateY(-Math.PI / 2).translate(0.5, 0.5, 0),
+      new THREE.PlaneGeometry(1, 1).rotateY(Math.PI / 2).translate(-0.5, 0.5, 0),
+    ]);
+    const tint = new THREE.Mesh(
+      walls,
+      new THREE.ShaderMaterial({
+        uniforms: { uLevel: { value: FLOOD_LOW }, uOpacity: { value: 0 }, uDay: { value: 1 } },
+        vertexShader: tintVertex,
+        fragmentShader: tintFragment,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    );
+    tint.scale.set(hall.halfWidth * 2 + 0.6, 1, hall.front - hall.back + 0.6);
+    tint.position.set(0, GROUND_Y - 0.5, (hall.front + hall.back) / 2);
+    tint.renderOrder = 1001; // after the sky, so the sky beyond reads as seen through the water too
+    this.floodTint = hide(tint);
+
+    // A school of fish, silver and gold, all round the building at every depth.
+    const swim = (offset: [number, number], depth: [number, number], speed: [number, number], scale: [number, number]): Swimmer => ({
+      distance: this.random() * 1000, // anywhere round the loop (wrapped to its length in placeSwimmer)
+      offset: THREE.MathUtils.lerp(offset[0], offset[1], this.random()),
+      depth: THREE.MathUtils.lerp(depth[0], depth[1], this.random()),
+      speed: THREE.MathUtils.lerp(speed[0], speed[1], this.random()) * (this.random() < 0.5 ? -1 : 1),
+      phase: this.random() * Math.PI * 2,
+      scale: THREE.MathUtils.lerp(scale[0], scale[1], this.random()),
+    });
+    const fishMesh = new THREE.InstancedMesh(fishGeometry(), outdoorMaterial(this.uniforms, { flat: true, side: THREE.DoubleSide, vertexColors: true }), FLOOD_FISH);
+    // Silver, gold, orange and a few bright reef colours.
+    const colours = ["#c9d6dc", "#f2c230", "#e07a3a", "#3aa0d8", "#f2f2ee", "#9fb4bd"].map((hex) => new THREE.Color(hex));
+    const swimmers = Array.from({ length: FLOOD_FISH }, (_, i) => {
+      fishMesh.setColorAt(i, colours[i % colours.length]);
+      return swim([1, 7], [0.05, 0.9], [0.8, 1.8], [0.6, 1.3]); // about 0.5–1m long
+    });
+    fishMesh.frustumCulled = false;
+    this.floodFish = { mesh: hide(fishMesh), swimmers };
+
+    // Sharks: grey, about 4.5m long, circling close to the glass.
+    for (let i = 0; i < FLOOD_SHARKS; i += 1) {
+      const { root, tail } = this.sharkModel();
+      this.sharks.push({ root: hide(root), tail, swim: swim([3, 9], [0.3, 0.75], [1.8, 2.6], [0.9, 1.15]) });
+    }
+    // The whale: about 14m long, slow, further out, at mid-depth.
+    const whale = this.whaleModel();
+    this.whale = { root: hide(whale.root), tail: whale.tail, swim: swim([14, 18], [0.45, 0.55], [1.3, 1.5], [1, 1]) };
+  }
+
+  /** A shark, nose along +z, about 4.5m long; `tail` swings side to side. */
+  private sharkModel() {
+    const skin = outdoorMaterial(this.uniforms, { color: "#6b7782", flat: true });
+    const belly = outdoorMaterial(this.uniforms, { color: "#d9dee2", flat: true });
+    const root = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 8).scale(0.42, 0.5, 2.2), skin);
+    const underside = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 8).scale(0.36, 0.36, 1.9), belly);
+    underside.position.set(0, -0.14, 0.15);
+    const dorsal = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.85, 3).scale(0.25, 1, 1), skin);
+    dorsal.position.set(0, 0.62, -0.1);
+    dorsal.rotation.x = -0.35;
+    const pectorals = new THREE.Mesh(new THREE.BoxGeometry(2, 0.05, 0.45), skin);
+    pectorals.position.set(0, -0.25, 0.55);
+    pectorals.rotation.x = 0.15;
+    const tail = new THREE.Group();
+    tail.position.z = -1.9;
+    const stock = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.9, 8).rotateX(-Math.PI / 2).translate(0, 0, -0.4), skin);
+    const upper = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.05, 0.38), skin);
+    upper.position.set(0, 0.42, -0.95);
+    upper.rotation.x = 0.55;
+    const lower = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.6, 0.3), skin);
+    lower.position.set(0, -0.26, -0.9);
+    lower.rotation.x = -0.55;
+    tail.add(stock, upper, lower);
+    root.add(body, underside, dorsal, pectorals, tail);
+    return { root, tail };
+  }
+
+  /** A whale, nose along +z, about 14m long, dark blue-grey with a pale belly; `tail` beats up and down. */
+  private whaleModel() {
+    const skin = outdoorMaterial(this.uniforms, { color: "#3d556b", flat: true });
+    const belly = outdoorMaterial(this.uniforms, { color: "#c4cbd0", flat: true });
+    const root = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 10).scale(1.6, 1.45, 6.2), skin);
+    const underside = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 10).scale(1.4, 1.05, 5.6), belly);
+    underside.position.set(0, -0.5, 0.4);
+    const fins = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.14, 1.1), skin);
+    fins.position.set(0, -0.7, 2.2);
+    fins.rotation.x = 0.12;
+    const dorsal = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.7, 3).scale(0.3, 1, 1.6), skin);
+    dorsal.position.set(0, 1.35, -2.6);
+    const tail = new THREE.Group();
+    tail.position.z = -5.4;
+    const stock = new THREE.Mesh(new THREE.ConeGeometry(0.95, 4.2, 12).rotateX(-Math.PI / 2).translate(0, 0, -2), skin);
+    const flukes = new THREE.Mesh(new THREE.BoxGeometry(5, 0.14, 1.5), skin);
+    flukes.position.set(0, 0, -4.2);
+    tail.add(stock, flukes);
+    root.add(body, underside, fins, dorsal, tail);
+    return { root, tail };
+  }
+
+  /**
+   * Put a swimmer on its loop round the hall, at its depth fraction of the water, facing along the loop.
+   * The loop follows the hall's outline `offset` metres out — straight along each wall of glass, round each
+   * corner on a quarter circle — so it never cuts into the hall (an ellipse round a long, thin hall would,
+   * near its corners). Returns false while the water is too shallow for it.
+   */
+  private placeSwimmer(object: THREE.Object3D, swim: Swimmer, dt: number, minDepth: number) {
+    const depth = this.floodLevel - GROUND_Y;
+    if (depth < minDepth) return false;
+    const { hall } = this;
+    const hw = hall.halfWidth;
+    const hl = (hall.front - hall.back) / 2;
+    const cz = (hall.front + hall.back) / 2;
+    const r = swim.offset;
+    const side = 2 * hl;
+    const end = 2 * hw;
+    const arc = (Math.PI / 2) * r;
+    const perimeter = 2 * side + 2 * end + 4 * arc;
+    swim.distance = (((swim.distance + swim.speed * dt) % perimeter) + perimeter) % perimeter;
+    // Walk the outline: right side, corner, front end, corner, left side, corner, back end, corner.
+    let s = swim.distance;
+    let x = 0;
+    let z = 0;
+    let tx = 0;
+    let tz = 0;
+    const corner = (cx: number, czz: number, from: number) => {
+      const a = from + s / r;
+      x = cx + r * Math.cos(a);
+      z = czz + r * Math.sin(a);
+      tx = -Math.sin(a);
+      tz = Math.cos(a);
+    };
+    if (s < side) {
+      x = hw + r;
+      z = cz - hl + s;
+      tz = 1;
+    } else if ((s -= side) < arc) corner(hw, cz + hl, 0);
+    else if ((s -= arc) < end) {
+      x = hw - s;
+      z = cz + hl + r;
+      tx = -1;
+    } else if ((s -= end) < arc) corner(-hw, cz + hl, Math.PI / 2);
+    else if ((s -= arc) < side) {
+      x = -hw - r;
+      z = cz + hl - s;
+      tz = -1;
+    } else if ((s -= side) < arc) corner(-hw, cz - hl, Math.PI);
+    else if ((s -= arc) < end) {
+      x = -hw + s;
+      z = cz - hl - r;
+      tx = 1;
+    } else {
+      s -= end;
+      corner(hw, cz - hl, Math.PI * 1.5);
+    }
+    const direction = Math.sign(swim.speed) || 1;
+    const y = GROUND_Y + 0.6 + swim.depth * Math.max(0, depth - 1.6);
+    object.position.set(x, y, z);
+    object.rotation.set(0, Math.atan2(tx * direction, tz * direction), 0);
+    return true;
+  }
+
+  /** Raise or lower the floodwater with Conditions.flood, and swim the sea life in it once it's deep enough. */
+  private updateFlood(dt: number, time: number, flood: number, day: number) {
+    const water = this.floodWater;
+    if (!water) return;
+    this.floodLevel = THREE.MathUtils.lerp(FLOOD_LOW, FLOOD_HIGH, THREE.MathUtils.smoothstep(flood, 0, 1));
+    const wet = flood > 0.002;
+    const overRoof = this.floodLevel > ROOF_TOP;
+    water.visible = wet;
+    water.position.y = this.floodLevel;
+    if (this.floodCap) {
+      this.floodCap.visible = overRoof;
+      this.floodCap.position.y = this.floodLevel;
+    }
+    if (this.floodUnderside) {
+      // Only once it's above eye height is there an underside to look up at.
+      this.floodUnderside.visible = this.floodLevel > 2.2;
+      this.floodUnderside.position.y = this.floodLevel - 0.01;
+      this.floodUnderside.children[1].visible = overRoof;
+    }
+    const tint = this.floodTint;
+    if (tint) {
+      const height = this.floodLevel - (GROUND_Y - 0.5);
+      tint.visible = wet && height > 0.6;
+      tint.scale.y = Math.max(0.01, height);
+      const material = tint.material as THREE.ShaderMaterial;
+      material.uniforms.uLevel.value = this.floodLevel;
+      material.uniforms.uOpacity.value = THREE.MathUtils.smoothstep(this.floodLevel - GROUND_Y, 0.5, 2.5);
+      material.uniforms.uDay.value = day;
+    }
+
+    // Fish once there's a metre of water; sharks at three; the whale once the water is over the roof.
+    const school = this.floodFish;
+    if (school) {
+      let shown = 0;
+      const hidden = new THREE.Matrix4().makeScale(0, 0, 0);
+      const holder = new THREE.Object3D();
+      school.swimmers.forEach((fish, i) => {
+        if (!this.placeSwimmer(holder, fish, dt, 1)) {
+          school.mesh.setMatrixAt(i, hidden);
+          return;
+        }
+        shown += 1;
+        holder.rotation.y += Math.sin(time * 6 + fish.phase) * 0.12; // the wiggle of a swimming fish
+        holder.scale.setScalar(fish.scale);
+        holder.updateMatrix();
+        school.mesh.setMatrixAt(i, holder.matrix);
+      });
+      school.mesh.visible = shown > 0;
+      school.mesh.instanceMatrix.needsUpdate = true;
+    }
+    for (const shark of this.sharks) {
+      shark.root.visible = this.placeSwimmer(shark.root, shark.swim, dt, 3);
+      if (!shark.root.visible) continue;
+      shark.root.scale.setScalar(shark.swim.scale);
+      shark.tail.rotation.y = Math.sin(time * 3.2 + shark.swim.phase) * 0.45;
+      shark.root.rotation.y += Math.sin(time * 3.2 + shark.swim.phase + 1.2) * 0.06;
+    }
+    const whale = this.whale;
+    if (whale) {
+      whale.root.visible = this.placeSwimmer(whale.root, whale.swim, dt, ROOF_TOP - GROUND_Y + 1);
+      if (whale.root.visible) {
+        whale.tail.rotation.x = Math.sin(time * 0.9) * 0.28;
+        whale.root.rotation.x = Math.sin(time * 0.9 - 1) * 0.04;
+      }
+    }
+  }
+
   /** A fish that leaps from the lake now and then (see updateFish). */
   private buildFish() {
     const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 0).scale(0.6, 0.7, 1.8), outdoorMaterial(this.uniforms, { color: "#c9d6dc", flat: true }));
@@ -1499,7 +1871,8 @@ export class Nature {
   // ————————————————————————————————————————— frame
 
   update(dt: number, reducedMotion: boolean, conditions: Conditions) {
-    const { night, rain } = conditions;
+    const { night, rain, flood } = conditions;
+    this.updateFlood(dt, this.uniforms.uTime.value, flood, 1 - night);
     // Birds and butterflies are about in fair daylight; they shelter from rain and roost at night.
     this.daylife = damp(this.daylife, (1 - night) * (1 - THREE.MathUtils.smoothstep(rain, 0.3, 0.7)), 1.2, dt);
     const time = this.uniforms.uTime.value;
@@ -1533,8 +1906,17 @@ export class Nature {
 
     if (reducedMotion) {
       // Still life: animals keep to whatever suits the hour, without walking there.
-      for (const walker of this.walkers) walker.root.visible = walker.wants(conditions);
-      for (const rabbit of this.rabbits) rabbit.root.visible = this.rabbitHours(conditions);
+      for (const walker of this.walkers) {
+        walker.root.visible = walker.wants(conditions) || flood > FLOOD_CROWD;
+        // Still life, but anyone caught by the flood hangs in the water at its float height.
+        const position = walker.root.position;
+        position.y = this.groundHeight(position.x, position.z) + this.floatLift(position.x, position.z, walker.home.x * 0.37 + walker.home.y * 0.11);
+      }
+      for (const rabbit of this.rabbits) {
+        rabbit.root.visible = this.rabbitHours(conditions) || flood > FLOOD_CROWD;
+        const position = rabbit.root.position;
+        position.y = this.groundHeight(position.x, position.z) + this.floatLift(position.x, position.z, rabbit.home.x * 0.53 + rabbit.home.y * 0.29);
+      }
       this.updateBirds(0, true);
       this.updateButterflies(0, true);
       this.updatePetals(0, time, night);
@@ -1547,7 +1929,8 @@ export class Nature {
       duck.angle += duck.speed * dt;
       const x = this.lake.x + Math.cos(duck.angle) * duck.radius.x;
       const z = this.lake.z + Math.sin(duck.angle) * duck.radius.y;
-      duck.root.position.set(x, WATER_Y + Math.sin(time * 1.6 + duck.phase) * 0.03, z);
+      // Riding up on the floodwater when the lake is under it.
+      duck.root.position.set(x, Math.max(WATER_Y, this.floodLevel) + Math.sin(time * 1.6 + duck.phase) * 0.03, z);
       duck.root.rotation.y = Math.atan2(-Math.sin(duck.angle) * duck.radius.x, Math.cos(duck.angle) * duck.radius.y);
       duck.root.rotation.z = Math.sin(time * 1.3 + duck.phase) * 0.05;
     }
@@ -1592,7 +1975,8 @@ export class Nature {
   }
 
   private updateWalker(walker: Walker, dt: number, time: number, c: Conditions) {
-    const want = walker.wants(c);
+    // A flood brings everyone out (FLOOD_CROWD), even those the rain sent home: the Easter egg needs them.
+    const want = walker.wants(c) || c.flood > FLOOD_CROWD;
     if (walker.gone) {
       if (!want) return;
       // Back out of the trees, toward home.
@@ -1627,6 +2011,15 @@ export class Nature {
     }
 
     const position = walker.root.position;
+    const phase = walker.home.x * 0.37 + walker.home.y * 0.11;
+    if (this.floatAnimal(walker.root, phase, dt, time)) {
+      // Weightless: legs make slow swimming strokes, going nowhere.
+      walker.legs.forEach((leg, i) => {
+        leg.rotation.x = Math.sin(time * 1.8 + phase + (i === 0 || i === 3 ? 0 : Math.PI)) * walker.swing * 1.2;
+      });
+      walker.heading = walker.root.rotation.y;
+      return;
+    }
     let speed = 0;
     // Comings and goings are brisker than wandering about.
     const travelling = walker.state === "arrive" || walker.state === "leave";
@@ -1655,6 +2048,7 @@ export class Nature {
     }
     position.y = this.groundHeight(position.x, position.z);
     walker.root.rotation.y = walker.heading;
+    this.settleAnimal(walker.root, dt);
     const moving = speed > 0.01 ? 1 : 0;
     walker.legs.forEach((leg, i) => {
       const swing = Math.sin(walker.stride + (i === 0 || i === 3 ? 0 : Math.PI)) * walker.swing * moving;
@@ -1675,8 +2069,48 @@ export class Nature {
     });
   }
 
+  /**
+   * How high above the ground an animal floats where it is (0 on dry land): its own height in FLOAT_LIFT,
+   * held FLOAT_CLEARANCE under the surface — so it lifts off gradually as the water rises.
+   */
+  private floatLift(x: number, z: number, phase: number) {
+    const depth = this.floodLevel - this.groundHeight(x, z);
+    const own = THREE.MathUtils.lerp(FLOAT_LIFT[0], FLOAT_LIFT[1], (Math.sin(phase * 12.9898) * 0.5 + 0.5));
+    return THREE.MathUtils.clamp(depth - FLOAT_CLEARANCE, 0, own);
+  }
+
+  /**
+   * If the floodwater is over the ground where `root` stands, float it as if weightless: lifted to its
+   * float height (floatLift), drifting, and tumbling slowly over every axis — the tumble growing as it leaves
+   * the ground, so nothing spins with its feet on the grass. Returns whether it's afloat (then it doesn't
+   * walk or hop).
+   */
+  private floatAnimal(root: THREE.Object3D, phase: number, dt: number, time: number) {
+    const position = root.position;
+    const ground = this.groundHeight(position.x, position.z);
+    if (this.floodLevel - ground <= 0.3) return false;
+    const lift = this.floatLift(position.x, position.z, phase);
+    const weightless = THREE.MathUtils.smoothstep(lift, 0.2, 1.5);
+    position.x += Math.sin(time * 0.17 + phase) * 0.2 * dt;
+    position.z += Math.cos(time * 0.13 + phase * 1.7) * 0.2 * dt;
+    position.y = ground + lift + Math.sin(time * 0.6 + phase) * 0.25 * weightless;
+    // Each turns at its own slow rate about each axis, some one way, some the other.
+    const rate = (k: number) => Math.sin(phase * k) * 0.35;
+    root.rotation.x += rate(3.1) * weightless * dt;
+    root.rotation.y += (rate(5.3) + 0.06) * dt;
+    root.rotation.z += rate(7.7) * weightless * dt;
+    return true;
+  }
+
+  /** Back on dry land: turn upright the short way round, easing out the tumble left from floating. */
+  private settleAnimal(root: THREE.Object3D, dt: number) {
+    const wrap = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
+    root.rotation.z = damp(wrap(root.rotation.z), 0, 3, dt);
+    root.rotation.x = damp(wrap(root.rotation.x), 0, 3, dt);
+  }
+
   private updateRabbit(rabbit: Rabbit, dt: number, c: Conditions) {
-    const out = this.rabbitHours(c);
+    const out = this.rabbitHours(c) || c.flood > FLOOD_CROWD;
     if (rabbit.gone) {
       if (!out) return;
       rabbit.gone = false;
@@ -1687,6 +2121,10 @@ export class Nature {
       rabbit.target.copy(rabbit.den);
     }
     const position = rabbit.root.position;
+    if (!rabbit.gone && this.floatAnimal(rabbit.root, rabbit.home.x * 0.53 + rabbit.home.y * 0.29, dt, this.uniforms.uTime.value)) {
+      rabbit.heading = rabbit.root.rotation.y;
+      return;
+    }
     const toTarget = Math.hypot(rabbit.target.x - position.x, rabbit.target.y - position.z);
     if (!out && toTarget < 0.3) {
       rabbit.gone = true;
@@ -1718,6 +2156,7 @@ export class Nature {
       }
     }
     rabbit.root.rotation.y = rabbit.heading;
+    this.settleAnimal(rabbit.root, dt);
   }
 
   private updateBirds(time: number, frozen: boolean) {

@@ -19,6 +19,12 @@ import { QualityButton } from "./QualityButton";
 import { QUALITY_PICKER_ENABLED, readQualityChoice, type DeviceInfo, type QualityChoice } from "@/lib/studio/quality";
 import SiteLoading from "@/app/(site)/loading";
 
+/**
+ * A button that floods the land at once (and drains it), for testing the flood without locking the weather
+ * to rain for 5 minutes. Development builds only (npm run dev) — never shown on the live site.
+ */
+const FLOOD_TEST_BUTTON = process.env.NODE_ENV === "development";
+
 type Mode = "detecting" | "lot" | "sheet";
 type Phase = "loading" | "reveal" | "live";
 /** `quality` is what the engine builds: the visitor's choice, or `detectedQuality` on Auto (QualityButton). */
@@ -126,6 +132,8 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
   const engineRef = useRef<LotEngine | null>(null);
   const reelFillRef = useRef<HTMLSpanElement>(null);
   const fpsRef = useRef<HTMLSpanElement>(null);
+  /** The development-only flood test button (FLOOD_TEST_BUTTON): whether it has flooded the land. */
+  const [testFlood, setTestFlood] = useState(false);
   const markerRefs = useRef(new Map<LotSectionId, HTMLButtonElement>());
   const selectedRef = useRef<LotSectionId | null>(null);
   const pendingStage = useRef<LotSectionId | null>(initialStage && data.rooms.some((room) => room.id === initialStage) ? initialStage : null);
@@ -409,6 +417,24 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
 
         {QUALITY_PICKER_ENABLED && capabilities ? (
           <QualityButton choice={capabilities.qualityChoice} current={capabilities.quality} detected={capabilities.detectedQuality} device={capabilities.device} />
+        ) : null}
+
+        {FLOOD_TEST_BUTTON ? (
+          <button
+            aria-label={testFlood ? "Test: drain the flood" : "Test: flood now"}
+            aria-pressed={testFlood}
+            className={`${styles.roundButton} ${styles.floodTest}`}
+            data-cursor={testFlood ? "Test: drain" : "Test: flood"}
+            onClick={() => {
+              const next = !testFlood;
+              setTestFlood(next);
+              engineRef.current?.setFlood(next);
+            }}
+            title="Development only: flood the land now, or drain it"
+            type="button"
+          >
+            {testFlood ? "DRAIN" : "FLOOD"}
+          </button>
         ) : null}
 
         <button aria-label="Switch to the list view" className={`${styles.roundButton} ${styles.listToggle}`} data-cursor="Switch to 2D" onClick={switchToSheet} title="Switch to the list view" type="button">

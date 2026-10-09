@@ -18,6 +18,16 @@ function clockTime() {
   const now = new Date();
   return (now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds() + now.getMilliseconds() / 1000) / 86400;
 }
+/**
+ * A flood (Conditions.flood) comes only from a visitor locking the weather to rain with the weather button
+ * and leaving it for this long (seconds). The automatic weather never floods, however long it rains.
+ */
+const FLOOD_AFTER = 5 * 60;
+/** Seconds for the floodwater to rise all the way, and to drain away once the rain is lifted. */
+const FLOOD_RISE = 120;
+/** The development test button (setFlood) floods this much faster, so a test doesn't take two minutes. */
+const FLOOD_TEST_SPEED = 6;
+const FLOOD_DRAIN = 150;
 /** How long the sky keeps one weather before it drifts to another (auto weather), in seconds: 5–10 minutes. */
 const WEATHER_SPELL: [number, number] = [5 * 60, 10 * 60];
 
@@ -200,7 +210,8 @@ export type EnvironmentState = {
 };
 
 /** What it is like outside right now, 0..1 each — the wildlife reads this to decide who is about. */
-export type Conditions = { day: number; night: number; rain: number; mist: number; cloud: number; wind: number };
+/** `flood`: 0 dry, 1 the land outside fully under water (see FLOOD_AFTER). */
+export type Conditions = { day: number; night: number; rain: number; mist: number; cloud: number; wind: number; flood: number };
 
 function phaseOf(time: number): TimeOfDay {
   if (time < 0.22 || time >= 0.8) return "night";
@@ -223,7 +234,11 @@ export class Environment {
   /** How much daylight reaches the hall (0..1), and its colour — what the glass walls glow with. */
   daylight = 1;
   readonly daylightColour = new THREE.Color();
-  readonly conditions: Conditions = { day: 1, night: 0, rain: 0, mist: 0, cloud: 0, wind: 0 };
+  readonly conditions: Conditions = { day: 1, night: 0, rain: 0, mist: 0, cloud: 0, wind: 0, flood: 0 };
+  /** Seconds the visitor has kept the weather locked to rain (0 when it isn't). */
+  private lockedRain = 0;
+  /** The development test button's flood (setFlood): on, off (draining), or not in use (null). */
+  private testFlood: boolean | null = null;
   /**
    * The hall's ceiling lamps, 0 (off) to 1 (on): off while daylight alone lights the hall (a clear
    * day), on at night and under cloud, rain or mist. They switch, with a short warm-up, not a dimmer.
@@ -352,6 +367,11 @@ export class Environment {
   }
 
   /** A visitor's pick holds until they choose "auto" again. */
+  /** For testing (a development-only button): flood now, or drain, without the rain and the wait. */
+  setFlood(on: boolean) {
+    this.testFlood = on;
+  }
+
   setWeather(weather: Weather | "auto") {
     if (weather === "auto") {
       this.auto = true;
@@ -430,6 +450,14 @@ export class Environment {
         }
       }
     }
+    // Only a visitor's own rain, held long enough, floods the land; lifting it lets the water drain.
+    this.lockedRain = !this.auto && this.weather === "rain" ? this.lockedRain + dt : 0;
+    const flooding = this.testFlood ?? this.lockedRain >= FLOOD_AFTER;
+    const speed = this.testFlood === null ? 1 : FLOOD_TEST_SPEED;
+    this.conditions.flood = THREE.MathUtils.clamp(this.conditions.flood + ((flooding ? 1 / FLOOD_RISE : -1 / FLOOD_DRAIN) * speed * dt), 0, 1);
+    // A test flood that has drained away hands back to the normal rule (the visitor's locked-in rain).
+    if (this.testFlood === false && this.conditions.flood === 0) this.testFlood = null;
+
     // Weather changes roll in over several seconds.
     const target = WEATHER_PARAMS[this.weather];
     for (const key of Object.keys(target) as (keyof WeatherParams)[]) this.params[key] = damp(this.params[key], target[key], 0.35, dt);
@@ -536,7 +564,9 @@ export class Environment {
     this.sky.position.copy(camera.position);
 
     const rainMaterial = this.rain.material;
-    rainMaterial.uniforms.uOpacity.value = THREE.MathUtils.smoothstep(rain, 0.05, 0.6) * (0.35 + day * 0.25);
+    // Once the flood is over the visitor's head, outside the glass is underwater: no rain falling there.
+    const submerged = THREE.MathUtils.smoothstep(this.conditions.flood, 0.12, 0.25);
+    rainMaterial.uniforms.uOpacity.value = THREE.MathUtils.smoothstep(rain, 0.05, 0.6) * (0.35 + day * 0.25) * (1 - submerged);
     this.rain.visible = !reducedMotion && rainMaterial.uniforms.uOpacity.value > 0.01;
     if (this.rain.visible) {
       rainMaterial.uniforms.uTime.value = u.uTime.value;

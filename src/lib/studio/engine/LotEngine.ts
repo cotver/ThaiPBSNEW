@@ -573,6 +573,11 @@ export class LotEngine {
     this.environment?.setWeather(weather);
   }
 
+  /** For testing (the development-only flood button): flood the land now, or drain it. */
+  setFlood(on: boolean) {
+    this.environment?.setFlood(on);
+  }
+
   /** Run the sky to a time of day, or back to the visitor's real clock ("auto"). */
   setTime(time: TimeOfDay | "auto") {
     this.environment?.setTime(time);
