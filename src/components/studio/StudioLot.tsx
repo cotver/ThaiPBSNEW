@@ -153,7 +153,14 @@ async function StudioLotRooms() {
       : []),
   ].filter((room) => room.programs.length);
 
-  const rooms = [featured, ...studioRooms, ...brandTiles, ...rows];
+  // StudiosShowcase's sections down the right of the hall, the rest of /home down the left, each side in
+  // /home order (LotEngine pairs them across the hall). Listed in walking order — each facing pair in turn,
+  // left then right — so the nav, the 1–9 keys and "Next room" go down the hall instead of zigzagging back.
+  const left: LotRoom[] = [featured, ...brandTiles, ...rows].map((room) => ({ ...room, side: "left" as const }));
+  const right: LotRoom[] = studioRooms.map((room) => ({ ...room, side: "right" as const }));
+  const rooms: LotRoom[] = Array.from({ length: Math.max(left.length, right.length) }, (_, slot) => [left[slot], right[slot]])
+    .flat()
+    .filter((room): room is LotRoom => Boolean(room));
   // List view: the /home page itself (HomePage, which /home renders too, so any change to the home page
   // shows here as well) inside the same wrappers the site shell gives it, since the site's own shell is
   // hidden around the gallery. Its intro card plays as on /home (once per session), so the two match.
@@ -165,5 +172,7 @@ async function StudioLotRooms() {
     </div>
   );
 
-  return <LotExperience data={{ rooms }} fontFamily={plexThai.style.fontFamily} listView={listView} />;
+  // The list view is the /home page, so its walk follows /home's order: the showcase right after Featured.
+  const listRooms = [left[0], ...right, ...left.slice(1)].filter((room): room is LotRoom => Boolean(room));
+  return <LotExperience data={{ rooms, listRooms }} fontFamily={plexThai.style.fontFamily} listView={listView} />;
 }

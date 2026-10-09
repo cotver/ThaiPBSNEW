@@ -12,6 +12,7 @@ import { Exhibits } from "./Exhibits";
 import { CameraRig, FOCUS_FOV } from "./CameraRig";
 import { ENTRANCE_Z, FRONT, Hall, NAVE_HALF_WIDTH } from "./Hall";
 import { LedWall } from "./LedWall";
+import { maintenanceWall } from "./Maintenance";
 import { disposeTree } from "./math";
 import { Nature } from "./Nature";
 import { Room, type FocusView, type RoomConfig } from "./Room";
@@ -42,6 +43,8 @@ export type LotEngineEvents = {
   onTravel: (progress: number, nearest: LotSectionId, atRoom: boolean) => void;
   /** The weather outside changed (on its own or by setWeather), or night fell or the day broke. */
   onEnvironmentChange?: (state: EnvironmentState) => void;
+  /** Frames actually drawn per second, measured over the last half second while running. */
+  onFps?: (fps: number) => void;
 };
 
 export type LotEngineOptions = LotEngineEvents & {
@@ -58,7 +61,12 @@ function yieldToBrowser() {
   return scheduler?.yield ? scheduler.yield() : new Promise<void>((resolve) => setTimeout(resolve, 0));
 }
 
-const ROOM_SPACING = 13;
+/**
+ * Down the hall, rooms come in facing pairs, one on each wall, this far apart (metres). A wall is up to
+ * 14m long, so 22m leaves an 8m gap between neighbours on the same side: a stretch of glass to see the
+ * land outside through, with the banner (Exhibits) hanging in it.
+ */
+const SLOT_SPACING = 22;
 /** How bright the hall's lamps run when they are on (a fraction of full), by night and on dull days alike. */
 const LAMP_LEVEL = 0.38;
 /**
@@ -88,14 +96,32 @@ const LOOK_SWIPE_TURN = Math.PI;
 const SWIPE_THRESHOLD = 6;
 const ACCENTS = ["#c9a24a", "#2f6f86", "#b5462f", "#5d7a3a", "#7a4a8c", "#b07a3a"];
 
-/** Rooms alternate left and right down the nave, one per /home section, in the same order. */
-function roomLayout(index: number) {
-  const side = index % 2 === 0 ? -1 : 1;
-  return { side, x: side * 7.5, z: -1 - index * ROOM_SPACING, facing: side < 0 ? Math.PI / 2 : -Math.PI / 2 };
+type WallPlace = { side: -1 | 1; slot: number; x: number; z: number; facing: number };
+
+/** A wall in slot `slot` (0 nearest the entrance) on the left (-1) or right (+1) of the nave, facing across it. */
+function wallPlace(slot: number, side: -1 | 1): WallPlace {
+  return { side, slot, x: side * 7.5, z: -1 - slot * SLOT_SPACING, facing: side < 0 ? Math.PI / 2 : -Math.PI / 2 };
 }
 
-function hallEnd(roomCount: number) {
-  return roomLayout(Math.max(0, roomCount - 1)).z - 12;
+/**
+ * Where every room hangs: the Studios showcase's rooms down the right wall and the rest down the left,
+ * each side in /home order, so the two sides face each other in pairs. Where one side runs out first,
+ * its remaining slots are closed walls (maintenanceWall), so the hall stays balanced to the end.
+ */
+function hallPlan(rooms: LotData["rooms"]) {
+  const filled = { left: 0, right: 0 };
+  const places = rooms.map((room) => (room.side === "right" ? wallPlace(filled.right++, 1) : wallPlace(filled.left++, -1)));
+  const slots = Math.max(1, filled.left, filled.right);
+  const closed: WallPlace[] = [];
+  for (let slot = filled.left; slot < slots; slot += 1) closed.push(wallPlace(slot, -1));
+  for (let slot = filled.right; slot < slots; slot += 1) closed.push(wallPlace(slot, 1));
+  return { places, closed, slots };
+}
+
+type HallPlan = ReturnType<typeof hallPlan>;
+
+function hallEnd(plan: HallPlan) {
+  return wallPlace(plan.slots - 1, -1).z - 12;
 }
 
 /**
@@ -205,9 +231,9 @@ function roomShape(room: LotData["rooms"][number]): keyof typeof GRIDS | "screen
   return room.itemShape ?? "landscape";
 }
 
-function roomConfigs(data: LotData): RoomConfig[] {
+function roomConfigs(data: LotData, plan: HallPlan): RoomConfig[] {
   return data.rooms.map((room, index) => {
-    const { x, z, facing } = roomLayout(index);
+    const { x, z, facing } = plan.places[index];
     const base = { id: room.id, position: [x, z] as [number, number], facing, height: 5.6, kicker: "", title: room.title, sub: room.thai, accent: ACCENTS[index % ACCENTS.length] };
     const shape = roomShape(room);
     if (shape === "screen") {
@@ -311,6 +337,8 @@ export class LotEngine {
   private governorWarmup = true;
   /** Paused while a page covers the whole gallery (setPaused); not restarted by the tab becoming visible. */
   private paused = false;
+  /** Which wall and slot each room hangs in, and the closed walls that fill the shorter side (hallPlan). */
+  private readonly plan: HallPlan;
 
   constructor(options: LotEngineOptions) {
     this.options = options;
@@ -329,7 +357,8 @@ export class LotEngine {
 
     const { width, height } = this.size();
     this.renderer.setSize(width, height, false);
-    this.rig = new CameraRig(width / height, hallEnd(options.data.rooms.length));
+    this.plan = hallPlan(options.data.rooms);
+    this.rig = new CameraRig(width / height, hallEnd(this.plan));
     this.rig.resize(width / height);
     this.rig.onFocusSettled = (focused) => this.handleFocusSettled(focused);
 
@@ -337,7 +366,7 @@ export class LotEngine {
     // the haze's colour follow the sky outside the glass (Environment), which draws over the background.
     this.scene.background = new THREE.Color("#2b2620");
     // Thin enough that the end wall still reads from the foyer (~78% clear), however long the hall is.
-    const walkLength = 25 - hallEnd(options.data.rooms.length);
+    const walkLength = 25 - hallEnd(this.plan);
     this.scene.fog = new THREE.FogExp2("#2e2822", Math.min(0.011, 0.5 / walkLength));
     // The hall's own lamps are the two ceiling strips (Hall), switched by Environment: on at night and in
     // dull weather, off on a clear day. This is only the faint bounce they leave in the shadows.
@@ -355,8 +384,9 @@ export class LotEngine {
     const { options } = this;
     const high = options.quality === "high";
     const { width, height } = this.size();
-    const configs = roomConfigs(options.data);
-    const steps = configs.length + 4;
+    const { plan } = this;
+    const configs = roomConfigs(options.data, plan);
+    const steps = configs.length + 5;
     let step = 0;
     const advance = async () => {
       step += 1;
@@ -364,20 +394,20 @@ export class LotEngine {
       await yieldToBrowser();
       if (this.disposed) throw new Error("Gallery disposed while building");
     };
-    const benches = options.data.rooms.map((_, index): [number, number, string] => [roomLayout(index).side * 3.4, roomLayout(index).z, ACCENTS[index % ACCENTS.length]]);
-    const back = hallEnd(options.data.rooms.length);
+    const benches = plan.places.map((place, index): [number, number, string] => [place.side * 3.4, place.z, ACCENTS[index % ACCENTS.length]]);
+    const back = hallEnd(plan);
     this.environment = new Environment({ quality: options.quality, hallHalfWidth: NAVE_HALF_WIDTH });
     this.environment.onChange = (state) => options.onEnvironmentChange?.(state);
     this.environment.uniforms.uHallBounds.value.set(NAVE_HALF_WIDTH, FRONT, back);
     this.environment.setHallBox(new THREE.Box3(new THREE.Vector3(-NAVE_HALF_WIDTH - 0.5, -0.5, back - 0.5), new THREE.Vector3(NAVE_HALF_WIDTH + 0.5, 7.5, FRONT + 0.5)));
     this.scene.add(this.environment.group);
     this.hall = new Hall({ benches, back, font: options.font, outdoor: this.environment.uniforms });
-    // The floor inlay changes colour halfway between one room and the next.
+    // The floor inlay changes colour halfway between one pair of rooms and the next.
     this.hall.addInlays(
-      options.data.rooms.map((_, index) => ({
-        from: roomLayout(index).z + ROOM_SPACING / 2,
-        to: roomLayout(index).z - ROOM_SPACING / 2,
-        colour: ACCENTS[index % ACCENTS.length],
+      Array.from({ length: plan.slots }, (_, slot) => ({
+        from: wallPlace(slot, -1).z + SLOT_SPACING / 2,
+        to: wallPlace(slot, -1).z - SLOT_SPACING / 2,
+        colour: ACCENTS[slot % ACCENTS.length],
       })),
     );
     this.scene.add(this.hall.group);
@@ -404,6 +434,11 @@ export class LotEngine {
       this.exhibits.addRoom(room, index);
       await advance();
     }
+    // The shorter side's empty slots: closed walls, curtain drawn and fenced off.
+    for (const place of plan.closed) {
+      this.scene.add(maintenanceWall({ x: place.x, z: place.z, facing: place.facing, width: 13, height: 5.6, font: options.font, seed: place.slot * 7 + (place.side > 0 ? 3 : 0) }));
+    }
+    await advance();
 
     this.loadingManager = new THREE.LoadingManager();
     await advance();
@@ -442,6 +477,9 @@ export class LotEngine {
     // Very low tier: skip rAF callbacks to hold VERY_LOW_FPS; the skipped time is carried into the next frame.
     const minFrame = this.options.quality === "verylow" ? 1 / VERY_LOW_FPS - 0.002 : 0;
     let carried = 0;
+    // Frame-rate readout (onFps): frames drawn since `fpsSince`, reported every half second.
+    let fpsFrames = 0;
+    let fpsSince = -1;
     // Frames right after a (re)start are slow for reasons that pass (shaders, uploads); don't judge them.
     this.governorWarmup = true;
     this.governorFrames = 0;
@@ -455,6 +493,13 @@ export class LotEngine {
       if (carried < minFrame) return;
       this.render(THREE.MathUtils.clamp(carried, 0, 1 / 20));
       carried = 0;
+      if (fpsSince < 0) fpsSince = timestamp;
+      fpsFrames += 1;
+      if (timestamp - fpsSince >= 500) {
+        this.options.onFps?.(Math.round((fpsFrames * 1000) / (timestamp - fpsSince)));
+        fpsFrames = 0;
+        fpsSince = timestamp;
+      }
     };
     this.frame = requestAnimationFrame(tick);
   }

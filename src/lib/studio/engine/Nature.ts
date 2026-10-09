@@ -67,6 +67,8 @@ function seasonBlossoms(month: number) {
   const season = seasons.find((entry) => entry.months.includes(month)) ?? seasons[0];
   return { colours: season.colours.map((hex) => new THREE.Color(hex)), share: season.share };
 }
+/** Seconds between one plane passing the hall and the next (Nature.updatePlane): every 5 minutes. */
+const FLIGHT_INTERVAL = 5 * 60;
 /** How many ripples the water can show at once. */
 const RIPPLES = 8;
 const WATER_Y = -0.45;
@@ -225,6 +227,20 @@ export class Nature {
   private readonly occupied = new Set<string>();
   private readonly walkers: Walker[] = [];
   private owl?: { root: THREE.Group; head: THREE.Object3D; presence: number; look: number; timer: number };
+  /** An airliner that now and then crosses the sky beside the hall (buildPlane, updatePlane). */
+  private plane?: {
+    root: THREE.Group;
+    navLights: THREE.Mesh[];
+    strobe: THREE.Mesh;
+    from: THREE.Vector3;
+    to: THREE.Vector3;
+    /** 0..1 along the current flight; the flight is over at 1. */
+    progress: number;
+    duration: number;
+    /** Seconds until the next flight (counting down between flights). */
+    wait: number;
+    flying: boolean;
+  };
   private started = false;
   private readonly rabbits: Rabbit[] = [];
   private readonly ducks: Duck[] = [];
@@ -284,6 +300,7 @@ export class Nature {
     this.buildFireflies(pick(150, 70, 24));
     this.buildPetals(pick(240, 110, 40));
     this.buildKites();
+    this.buildPlane();
     this.buildGardenLights();
     this.buildFish();
   }
@@ -1305,6 +1322,89 @@ export class Nature {
     this.gardenLights = { caps, pools, thresholds, level: -1 };
   }
 
+  /**
+   * A low-poly airliner, white with a Thai PBS orange tail, about the size of a real one (37m long, 34m
+   * span) — far enough out that it reads as a plane passing, not a model. Nose along +z, so lookAt aims it.
+   * Wingtip lights (red port, green starboard) and a white tail strobe show at night.
+   */
+  private buildPlane() {
+    const parts = (geometries: THREE.BufferGeometry[]) => mergeGeometries(geometries.map((geometry) => geometry.toNonIndexed()));
+    const along = (geometry: THREE.BufferGeometry) => geometry.rotateX(Math.PI / 2); // a cylinder/cone's axis from y to z
+    const body = parts([
+      along(new THREE.CylinderGeometry(2, 2, 30, 12)),
+      along(new THREE.ConeGeometry(2, 5, 12)).translate(0, 0, 17.5),
+      along(new THREE.ConeGeometry(2, 7, 12)).rotateY(Math.PI).translate(0, 0.4, -18.5),
+      new THREE.BoxGeometry(34, 0.45, 5).translate(0, -0.9, 1),
+      new THREE.BoxGeometry(12, 0.35, 3).translate(0, 0.6, -17),
+    ]);
+    const tail = parts([new THREE.BoxGeometry(0.45, 6.5, 4.2).translate(0, 4.1, -17.4)]);
+    const engines = parts([-6.5, 6.5].map((x) => along(new THREE.CylinderGeometry(1, 1, 4.2, 10)).translate(x, -2.1, 3.5)));
+    // Far out over the land, so some of the distance haze shows on it, as on the hills.
+    const root = new THREE.Group();
+    root.add(
+      new THREE.Mesh(body, outdoorMaterial(this.uniforms, { color: "#f1f2f4", flat: true, haze: 0.25 })),
+      new THREE.Mesh(tail, outdoorMaterial(this.uniforms, { color: THAI_PBS_ORANGE, flat: true, haze: 0.25 })),
+      new THREE.Mesh(engines, outdoorMaterial(this.uniforms, { color: "#8d929a", flat: true, haze: 0.25 })),
+    );
+    const lamp = (colour: string, x: number, y: number, z: number) => {
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(1.1, 8, 6), new THREE.MeshBasicMaterial({ color: colour, toneMapped: false }));
+      mesh.position.set(x, y, z);
+      root.add(mesh);
+      return mesh;
+    };
+    // Facing +z with y up, +x is the left (port) wing.
+    const navLights = [lamp("#ff2a2a", 17, -0.9, 1), lamp("#2aff6a", -17, -0.9, 1)];
+    const strobe = lamp("#ffffff", 0, 7.6, -19);
+    root.visible = false;
+    root.traverse((child) => (child.raycast = () => {}));
+    this.group.add(root);
+    // The first one comes by soon after the gallery opens, so a visitor is likely to see it.
+    this.plane = { root, navLights, strobe, from: new THREE.Vector3(), to: new THREE.Vector3(), progress: 0, duration: 1, wait: 12 + Math.random() * 18, flying: false };
+  }
+
+  /**
+   * Every 5 minutes (FLIGHT_INTERVAL), a plane flies the length of the hall on one side, 160–280m out and
+   * 95–145m up — in view through the side glass as you walk and look about. Not in heavy rain (low cloud),
+   * and not with reduced motion.
+   */
+  private updatePlane(dt: number, time: number, conditions: Conditions) {
+    const plane = this.plane;
+    if (!plane) return;
+    if (!plane.flying) {
+      plane.wait -= dt;
+      if (plane.wait > 0) return;
+      if (conditions.rain > 0.6) {
+        plane.wait = 20; // under low cloud: try again in a while
+        return;
+      }
+      const side = Math.random() < 0.5 ? -1 : 1;
+      const direction = Math.random() < 0.5 ? -1 : 1;
+      const x = side * (this.hall.halfWidth + 160 + Math.random() * 120);
+      const y = 95 + Math.random() * 50;
+      const reach = 650;
+      plane.from.set(x, y, this.centreZ - direction * reach);
+      // A gentle climb and a slight drift across, so no two passes look the same.
+      plane.to.set(x + side * (Math.random() * 60), y + 6 + Math.random() * 10, this.centreZ + direction * reach);
+      plane.duration = plane.from.distanceTo(plane.to) / (50 + Math.random() * 12);
+      plane.progress = 0;
+      plane.flying = true;
+      plane.root.visible = true;
+    }
+    plane.progress += dt / plane.duration;
+    if (plane.progress >= 1) {
+      plane.flying = false;
+      plane.root.visible = false;
+      plane.wait = FLIGHT_INTERVAL;
+      return;
+    }
+    plane.root.position.lerpVectors(plane.from, plane.to, plane.progress);
+    plane.root.lookAt(plane.to);
+    // Navigation lights after dusk; the strobe flashes briefly about once a second.
+    const lit = conditions.night > 0.35;
+    for (const light of plane.navLights) light.visible = lit;
+    plane.strobe.visible = lit && time % 1.1 < 0.08;
+  }
+
   private updateKites(dt: number, time: number) {
     // Up on breezy, dry days; down in rain, still air, and at night.
     const wind = this.uniforms.uWind.value;
@@ -1456,6 +1556,7 @@ export class Nature {
     this.updatePetals(dt, time, night);
     this.updateWater(dt);
     this.updateKites(dt, time);
+    this.updatePlane(dt, time, conditions);
     this.updateGardenLights(night);
   }
 

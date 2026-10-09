@@ -116,6 +116,7 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
   const listRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<LotEngine | null>(null);
   const reelFillRef = useRef<HTMLSpanElement>(null);
+  const fpsRef = useRef<HTMLSpanElement>(null);
   const markerRefs = useRef(new Map<LotSectionId, HTMLButtonElement>());
   const selectedRef = useRef<LotSectionId | null>(null);
   const pendingStage = useRef<LotSectionId | null>(initialStage && data.rooms.some((room) => room.id === initialStage) ? initialStage : null);
@@ -192,6 +193,9 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
           },
           onScreenChange: (section, index) => setScreenSlides((slides) => ({ ...slides, [section]: index })),
           onEnvironmentChange: setOutdoors,
+          onFps: (fps) => {
+            if (fpsRef.current) fpsRef.current.textContent = `${fps} FPS`;
+          },
           onTravel: (progress, near, atRoom) => {
             setNearest(near);
             setAtRoom(atRoom);
@@ -325,7 +329,7 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
             {listView}
           </div>
         ) : null}
-        {walkSlot && mode === "sheet" ? createPortal(<ListWalk rooms={data.rooms} rootRef={listRef} />, walkSlot) : null}
+        {walkSlot && mode === "sheet" ? createPortal(<ListWalk rooms={data.listRooms} rootRef={listRef} />, walkSlot) : null}
         {failed ? <p className={styles.listNotice}>The 3D gallery could not start on this device, so here is the home page.</p> : null}
         {capabilities?.webgl && !failed ? (
           <button aria-label="Walk the gallery in 3D" className={`${styles.roundButton} ${styles.walkButton}`} data-cursor="Walk the gallery in 3D" onClick={enterLot} title="Walk the gallery in 3D" type="button">
@@ -385,7 +389,8 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
           <span>Scroll to walk</span>
           <span>Move the mouse to look around</span>
           <span>Click a room to step in</span>
-          <span>1–{Math.min(9, data.rooms.length)} · Esc</span>
+          {/* Frames per second this device is drawing, written straight in by onFps (no re-render). */}
+          <span ref={fpsRef}>— FPS</span>
         </div>
 
         <SoundControl />

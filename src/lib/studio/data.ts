@@ -87,6 +87,11 @@ export type LotRoom = {
   kind: LotRoomKind;
   /** Section title exactly as /home shows it. */
   title: string;
+  /**
+   * Which wall of the hall it hangs on: the Studios showcase's sections (StudiosShowcase) on the right,
+   * everything else on the left, each side in /home order. Left when unset.
+   */
+  side?: "left" | "right";
   thai: string;
   blurb: string;
   /** featured / row rooms. */
@@ -109,7 +114,11 @@ export type LotRoom = {
   brandTiles?: CategoryTile[];
 };
 
-export type LotData = { rooms: LotRoom[] };
+/**
+ * `rooms` in walking order (down the hall, pair by pair). `listRooms` is the same rooms in /home page
+ * order, for the list view, which is the /home page itself.
+ */
+export type LotData = { rooms: LotRoom[]; listRooms: LotRoom[] };
 
 /** A programme opens where /home opens it: its title page. */
 export function lotProgramHref(slug: string) {

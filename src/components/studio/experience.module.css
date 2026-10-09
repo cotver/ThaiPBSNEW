@@ -248,10 +248,12 @@
   white-space: nowrap;
 }
 
+/* The hint text sits above the round buttons, which share the HUD's bottom row (bottom: 0). */
 .hint {
   display: grid;
   justify-items: end;
   gap: 4px;
+  margin-bottom: 70px; /* a 54px button + 16px gap */
   color: var(--muted);
   font-family: var(--mono);
   font-size: 10px;
@@ -263,7 +265,7 @@
 .listToggle {
   position: absolute;
   right: 0;
-  bottom: calc(100% + 16px);
+  bottom: 0;
 }
 
 /* The weather and the time of day outside the glass, beside "2D". */
@@ -271,7 +273,7 @@
 .timeToggle {
   position: absolute;
   right: 66px;
-  bottom: calc(100% + 16px);
+  bottom: 0;
   align-content: center;
   gap: 1px;
 }
@@ -287,7 +289,7 @@
 .qualityControl {
   position: absolute;
   right: 264px;
-  bottom: calc(100% + 16px);
+  bottom: 0;
 }
 
 .qualityToggle {
@@ -370,7 +372,7 @@
 .soundControl {
   position: absolute;
   right: 198px;
-  bottom: calc(100% + 16px);
+  bottom: 0;
 }
 
 .soundSlider {
