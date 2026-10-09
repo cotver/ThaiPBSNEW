@@ -444,42 +444,27 @@ export function brandPlateTexture(text: string, font: string, background = "#f2e
   return toTexture(element);
 }
 
-/** Construction-barrier board: red and white diagonal stripes, tiled along the board's length. */
-export function hazardStripeTexture() {
-  const [element, context] = canvas(256, 64);
-  context.fillStyle = "#f4f1ea";
-  context.fillRect(0, 0, 256, 64);
-  context.fillStyle = "#c8161d";
-  for (let x = -64; x < 256 + 64; x += 64) {
-    context.beginPath();
-    context.moveTo(x, 64);
-    context.lineTo(x + 32, 64);
-    context.lineTo(x + 64, 0);
-    context.lineTo(x + 32, 0);
-    context.closePath();
-    context.fill();
-  }
-  const texture = toTexture(element);
-  texture.wrapS = THREE.RepeatWrapping;
-  return texture;
-}
-
-/** The plate hung on a closed wall's fence: closed for maintenance, in both scripts. */
+/** A closed screen's sign, as at a cinema: gold and cream on black in a double gold rule, in both scripts. */
 export function maintenanceSignTexture(font: string) {
   const [element, context] = canvas(768, 320);
-  context.fillStyle = "#ffcc00";
+  const gold = "#d4af5a";
+  context.fillStyle = "#120d0b";
   context.fillRect(0, 0, 768, 320);
-  context.strokeStyle = INK;
-  context.lineWidth = 14;
+  context.strokeStyle = gold;
+  context.lineWidth = 6;
   context.strokeRect(14, 14, 740, 292);
-  context.fillStyle = INK;
+  context.lineWidth = 2;
+  context.strokeRect(28, 28, 712, 264);
   context.textAlign = "center";
   context.textBaseline = "middle";
-  context.font = `700 30px ${MONO}`;
-  context.fillText("C L O S E D", 384, 66);
-  fitFont(context, "Under maintenance", font, 800, 84, 680);
-  context.fillText("Under maintenance", 384, 152);
-  context.font = `600 52px ${font}`;
-  context.fillText("ปิดปรับปรุงชั่วคราว", 384, 240);
+  context.fillStyle = gold;
+  context.font = `600 30px ${MONO}`;
+  context.fillText("C L O S E D", 384, 78);
+  context.fillStyle = "#f2ede4";
+  fitFont(context, "Under maintenance", font, 700, 80, 640);
+  context.fillText("Under maintenance", 384, 160);
+  context.fillStyle = gold;
+  context.font = `600 48px ${font}`;
+  context.fillText("ปิดปรับปรุงชั่วคราว", 384, 238);
   return toTexture(element);
 }

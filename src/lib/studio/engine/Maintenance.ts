@@ -1,11 +1,11 @@
 import * as THREE from "three";
-import { hazardStripeTexture, maintenanceSignTexture, plasterTexture } from "./signage";
+import { maintenanceSignTexture, plasterTexture } from "./signage";
 
 /**
  * A closed room: fills a slot on the side of the hall that has run out of rooms, so the hall stays
  * symmetrical — the Studios sections hang on the right and the rest on the left, and the shorter side
- * ends in walls like this. A plaster wall like a room's, its red curtain drawn shut, and a row of
- * construction barriers in front carrying a "closed for maintenance" plate. Not a room: nothing on it
+ * ends in walls like this. A plaster wall like a room's, its red curtain drawn shut, and a cinema's
+ * brass-and-velvet rope barrier in front with a framed "closed for maintenance" sign. Not a room: nothing on it
  * can be pointed at, walked to or opened.
  */
 export function maintenanceWall(options: { x: number; z: number; facing: number; width: number; height: number; font: string; seed: number }) {
@@ -60,55 +60,60 @@ export function maintenanceWall(options: { x: number; z: number; facing: number;
   fringe.position.set(0, height - 0.47, 0.32);
   face.add(fringe);
 
-  // Construction barriers across the front: striped boards on white A-frame legs, with the sign on the middle one.
-  const stripes = hazardStripeTexture();
-  const legMaterial = new THREE.MeshStandardMaterial({ color: "#eeeae2", roughness: 0.6 });
-  const footMaterial = new THREE.MeshStandardMaterial({ color: "#2a2a2a", roughness: 0.8 });
-  const barrierWidth = 2.4;
-  const gap = 0.35;
-  const count = Math.max(1, Math.floor((width - 1.2 + gap) / (barrierWidth + gap)));
-  const rowWidth = count * barrierWidth + (count - 1) * gap;
+  // A cinema queue barrier across the front: polished brass posts with red velvet ropes sagging between them,
+  // and a framed "closed" sign on its own stand in the middle, as at a closed screen.
+  const brass = new THREE.MeshStandardMaterial({ color: "#c9a24a", roughness: 0.28, metalness: 0.85 });
+  const rope = new THREE.MeshStandardMaterial({ color: "#8a0f18", roughness: 0.9 });
   const fenceZ = 1.5;
-  const boardGeometry = new THREE.BoxGeometry(barrierWidth, 0.2, 0.035);
-  const legGeometry = new THREE.BoxGeometry(0.06, 1.12, 0.06);
-  const footGeometry = new THREE.BoxGeometry(0.1, 0.06, 0.62);
-  for (let i = 0; i < count; i += 1) {
-    const x = -rowWidth / 2 + barrierWidth / 2 + i * (barrierWidth + gap);
-    const barrier = new THREE.Group();
-    barrier.position.set(x, 0, fenceZ + (i % 2) * 0.12);
-    for (const y of [0.98, 0.62]) {
-      const material = new THREE.MeshStandardMaterial({ map: stripes.clone(), roughness: 0.55 });
-      material.map!.repeat.set(barrierWidth / 0.8, 1);
-      material.map!.needsUpdate = true;
-      const board = new THREE.Mesh(boardGeometry, material);
-      board.position.set(0, y, 0);
-      barrier.add(board);
-    }
-    for (const side of [-1, 1]) {
-      // Each end stands on a splayed pair of legs (an A-frame seen side-on) and a rubber foot.
-      for (const lean of [-1, 1]) {
-        const leg = new THREE.Mesh(legGeometry, legMaterial);
-        leg.position.set(side * (barrierWidth / 2 - 0.12), 0.55, lean * 0.12);
-        leg.rotation.x = lean * 0.22;
-        barrier.add(leg);
-      }
-      const foot = new THREE.Mesh(footGeometry, footMaterial);
-      foot.position.set(side * (barrierWidth / 2 - 0.12), 0.03, 0);
-      barrier.add(foot);
-    }
-    if (i === Math.floor(count / 2)) {
-      const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.625), new THREE.MeshStandardMaterial({ map: maintenanceSignTexture(options.font), roughness: 0.5 }));
-      sign.position.set(0, 1.42, 0.03);
-      barrier.add(sign);
-      const hanger = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.3, 0.03), legMaterial);
-      for (const side of [-0.55, 0.55]) {
-        const strap = hanger.clone();
-        strap.position.set(side, 1.1, 0.02);
-        barrier.add(strap);
-      }
-    }
-    face.add(barrier);
+  const ropeY = 0.93;
+  const span = width - 1.4;
+  const posts = Math.max(2, Math.round(span / 2.6) + 1);
+  const baseGeometry = new THREE.CylinderGeometry(0.17, 0.19, 0.04, 24);
+  const poleGeometry = new THREE.CylinderGeometry(0.024, 0.024, 0.95, 12);
+  const knobGeometry = new THREE.SphereGeometry(0.05, 16, 12);
+  const collarGeometry = new THREE.CylinderGeometry(0.04, 0.04, 0.05, 12);
+  const postXs = Array.from({ length: posts }, (_, i) => -span / 2 + (i * span) / (posts - 1));
+  for (const x of postXs) {
+    const base = new THREE.Mesh(baseGeometry, brass);
+    base.position.set(x, 0.02, fenceZ);
+    const pole = new THREE.Mesh(poleGeometry, brass);
+    pole.position.set(x, 0.515, fenceZ);
+    const collar = new THREE.Mesh(collarGeometry, brass);
+    collar.position.set(x, ropeY, fenceZ);
+    const knob = new THREE.Mesh(knobGeometry, brass);
+    knob.position.set(x, 1.02, fenceZ);
+    face.add(base, pole, collar, knob);
   }
+  // Each rope hangs in a gentle curve between neighbouring posts (about 18cm of sag), with a brass end on each post.
+  const hookGeometry = new THREE.SphereGeometry(0.03, 10, 8);
+  for (let i = 0; i < postXs.length - 1; i += 1) {
+    const from = new THREE.Vector3(postXs[i] + 0.045, ropeY, fenceZ);
+    const to = new THREE.Vector3(postXs[i + 1] - 0.045, ropeY, fenceZ);
+    const sag = new THREE.Vector3((from.x + to.x) / 2, ropeY - 0.36, fenceZ);
+    const curve = new THREE.QuadraticBezierCurve3(from, sag, to);
+    face.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.022, 8, false), rope));
+    for (const end of [from, to]) {
+      const hook = new THREE.Mesh(hookGeometry, brass);
+      hook.position.copy(end);
+      face.add(hook);
+    }
+  }
+  // The sign: a brass-framed board on a stand just in front of the ropes, tilted back to be read from the hall.
+  const stand = new THREE.Group();
+  stand.position.set(0, 0, fenceZ + 0.55);
+  const standBase = new THREE.Mesh(baseGeometry, brass);
+  standBase.position.y = 0.02;
+  const standPole = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 1.1, 12), brass);
+  standPole.position.y = 0.57;
+  const board = new THREE.Group();
+  board.position.y = 1.32;
+  board.rotation.x = -0.26;
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(1.32, 0.6, 0.03), brass);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.5), new THREE.MeshStandardMaterial({ map: maintenanceSignTexture(options.font), roughness: 0.55 }));
+  sign.position.z = 0.017;
+  board.add(frame, sign);
+  stand.add(standBase, standPole, board);
+  face.add(stand);
 
   // Nothing here is a room: keep it out of pointer picking (the engine only raycasts room hit targets anyway).
   group.traverse((object) => {

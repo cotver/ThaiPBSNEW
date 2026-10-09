@@ -94,6 +94,11 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
   const urlWantsList = searchParams.get("view") === "list";
   const [wantsList, setWantsList] = useState(urlWantsList);
   if (pathname === lotGalleryHref && urlWantsList !== wantsList) setWantsList(urlWantsList);
+  // ?view=studio: the visitor chose the 3D walk on a device that defaults to the list (a phone). Kept in the
+  // URL so a reload — such as the quality picker's — brings them back to 3D instead of the default.
+  const urlWantsLot = searchParams.get("view") === "studio";
+  const [wantsLot, setWantsLot] = useState(urlWantsLot);
+  if (pathname === lotGalleryHref && urlWantsLot !== wantsLot) setWantsLot(urlWantsLot);
 
   const capabilities = useSyncExternalStore(noSubscription, readCapabilities, noCapabilities);
   // The header (from the layout) owns the slot; the gallery fills it with the walk controls.
@@ -110,7 +115,11 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
   const [failed, setFailed] = useState(false);
   /** The weather and light outside the glass, for the weather button. */
   const [outdoors, setOutdoors] = useState<EnvironmentState | null>(null);
-  const mode: Mode = !capabilities ? "detecting" : failed ? "sheet" : override ?? (!capabilities.webgl || capabilities.compact || wantsList ? "sheet" : "lot");
+  const mode: Mode = !capabilities
+    ? "detecting"
+    : failed
+      ? "sheet"
+      : (override ?? (!capabilities.webgl ? "sheet" : wantsLot ? "lot" : capabilities.compact || wantsList ? "sheet" : "lot"));
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -312,7 +321,8 @@ export function LotExperience({ data, fontFamily, listView }: { data: LotData; f
     cue("open");
     setFailed(false);
     setOverride("lot");
-    window.history.replaceState(null, "", lotGalleryHref);
+    // Where the list is the default (phones), remember the choice in the URL so a reload stays in 3D.
+    window.history.replaceState(null, "", capabilities?.compact ? `${lotGalleryHref}?view=studio` : lotGalleryHref);
   };
 
   if (mode === "sheet" || mode === "detecting") {

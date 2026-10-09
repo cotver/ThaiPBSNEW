@@ -18,8 +18,8 @@ function clockTime() {
   const now = new Date();
   return (now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds() + now.getMilliseconds() / 1000) / 86400;
 }
-/** How long the sky keeps one weather before it drifts to another (auto weather), in seconds. */
-const WEATHER_SPELL: [number, number] = [70, 140];
+/** How long the sky keeps one weather before it drifts to another (auto weather), in seconds: 5–10 minutes. */
+const WEATHER_SPELL: [number, number] = [5 * 60, 10 * 60];
 
 type WeatherParams = { cloud: number; sun: number; rain: number; mist: number; wind: number; gloom: number };
 const WEATHER_PARAMS: Record<Weather, WeatherParams> = {
