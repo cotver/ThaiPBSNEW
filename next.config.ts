@@ -11,6 +11,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  deprecated: {
+    // Next 16.4 strict matching counts the (site) @marketEventModal catch-all against /admin and /prototype
+    // pages in other route groups and fails the build. Remove once that modal no longer uses a root catch-all.
+    looseRouteMatching: true,
+  },
   experimental: {
     // Almost every page is force-dynamic, whose prefetches expire at once (default 0s), so each hover over a
     // card re-requested its page (?_rsc=) and re-rendered it on the server. Reuse a prefetch for 30s instead.

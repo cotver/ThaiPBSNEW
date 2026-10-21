@@ -3,7 +3,7 @@ import { ContentRow } from "@/components/ContentRow";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { SectionContactLink } from "@/components/SectionContacts";
 import { StudiosShowcase } from "@/components/StudiosShowcase";
-import { SHOW_HERO_CAROUSEL } from "@/lib/features";
+import { SHOW_HERO_CAROUSEL, SHOW_STUDIOS_SHOWCASE } from "@/lib/features";
 import type { Title } from "@/lib/content";
 import type { CategoryTile, TitleCollections, TypeProgramRow, YearProgramRow } from "@/lib/payload-content";
 
@@ -23,13 +23,13 @@ export function HomeSections({
 }) {
   return (
     <>
-      <StudiosShowcase showCurtain={false} />
       {SHOW_HERO_CAROUSEL ? (
         <>
           <HeroCarousel titles={collections.heroes} />
           {collections.heroes.length ? <SectionContactLink className="px-5 sm:px-8 lg:px-10" section="hero-carousel" /> : null}
         </>
       ) : null}
+      {SHOW_STUDIOS_SHOWCASE ? <StudiosShowcase showCurtain={false} /> : null}
 
       <section className="relative z-10 space-y-8 px-5 pb-16 sm:px-8 lg:px-10" data-home-content>
         <BrandTiles categories={categories} />

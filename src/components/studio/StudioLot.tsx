@@ -4,6 +4,7 @@ import { getStudiosShowcaseData } from "@/components/StudiosShowcase";
 import type { StudiosCatalogCategory } from "@/components/StudiosCatalog";
 import { siteContentClassName, siteShellClassName } from "@/components/site-shell";
 import type { Title } from "@/lib/content";
+import { SHOW_HERO_CAROUSEL, SHOW_STUDIOS_SHOWCASE } from "@/lib/features";
 import { marketEventGroupHref, marketEventImage } from "@/lib/market-events";
 import { marketCompanyLogo, marketLogoFrame } from "@/lib/market-logos";
 import { toLotProgram, type LotLinkItem, type LotRoom } from "@/lib/studio/data";
@@ -70,8 +71,10 @@ function studiosCategoriesRoom(categories: StudiosCatalogCategory[], otherCatego
 
 /**
  * One gallery room per /home section, in the same order and under the same conditions:
- * - HeroCarousel always renders (with its own empty state), so Featured is always a room.
- * - StudiosShowcase renders each sub-section only when it has content, and nothing at all when all are empty.
+ * - HeroCarousel sits behind SHOW_HERO_CAROUSEL; when shown it always renders (with its own empty state),
+ *   so Featured is then always a room.
+ * - StudiosShowcase sits behind SHOW_STUDIOS_SHOWCASE; when shown it renders each sub-section only when it
+ *   has content, and nothing at all when all are empty.
  * - BrandTiles renders nothing without categories.
  * - Each ContentRow renders nothing when it has no titles.
  * - The hidden catalogue rows sit behind the same SHOW_HIDDEN_CATALOG_SECTIONS flag.
@@ -83,7 +86,7 @@ async function StudioLotRooms() {
     getStudiosShowcaseData(),
   ]);
 
-  const featured: LotRoom = {
+  const featured: LotRoom[] = !SHOW_HERO_CAROUSEL ? [] : [{
     id: "featured",
     kind: "featured",
     title: "Featured",
@@ -91,10 +94,10 @@ async function StudioLotRooms() {
     blurb: collections.heroes.length ? "The headline programs, on the big screen." : "No programs yet.",
     programs: collections.heroes.map(toLotProgram),
     items: [],
-  };
+  }];
 
   // StudiosShowcase — same sub-sections, same conditions, same limits, same links.
-  const studioRooms: LotRoom[] = [
+  const studioRooms: LotRoom[] = !SHOW_STUDIOS_SHOWCASE ? [] : [
     links("studios-journal", "ThaiPBS Journal", "สตูดิโอ", "Featured stories from Thai PBS Studios.",
       studios.featuredArticles.map((article) => ({
         id: `journal-${article.id}`,
@@ -156,8 +159,10 @@ async function StudioLotRooms() {
   // StudiosShowcase's sections down the right of the hall, the rest of /home down the left, each side in
   // /home order (LotEngine pairs them across the hall). Listed in walking order — each facing pair in turn,
   // left then right — so the nav, the 1–9 keys and "Next room" go down the hall instead of zigzagging back.
-  const left: LotRoom[] = [featured, ...brandTiles, ...rows].map((room) => ({ ...room, side: "left" as const }));
-  const right: LotRoom[] = studioRooms.map((room) => ({ ...room, side: "right" as const }));
+  // With the showcase hidden there is nothing for the right wall, so the rest of /home alternates across both.
+  const homeRooms = [...featured, ...brandTiles, ...rows];
+  const left: LotRoom[] = (studioRooms.length ? homeRooms : homeRooms.filter((_, index) => index % 2 === 0)).map((room) => ({ ...room, side: "left" as const }));
+  const right: LotRoom[] = (studioRooms.length ? studioRooms : homeRooms.filter((_, index) => index % 2 === 1)).map((room) => ({ ...room, side: "right" as const }));
   const rooms: LotRoom[] = Array.from({ length: Math.max(left.length, right.length) }, (_, slot) => [left[slot], right[slot]])
     .flat()
     .filter((room): room is LotRoom => Boolean(room));
@@ -172,7 +177,7 @@ async function StudioLotRooms() {
     </div>
   );
 
-  // The list view is the /home page, so its walk follows /home's order: the showcase right after Featured.
-  const listRooms = [left[0], ...right, ...left.slice(1)].filter((room): room is LotRoom => Boolean(room));
+  // The list view is the /home page, so its walk follows /home's order (HomeSections): the showcase right after Featured.
+  const listRooms = [...featured, ...studioRooms, ...brandTiles, ...rows];
   return <LotExperience data={{ rooms, listRooms }} fontFamily={plexThai.style.fontFamily} listView={listView} />;
 }

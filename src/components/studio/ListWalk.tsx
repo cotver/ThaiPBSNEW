@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { LotRoom, LotSectionId } from "@/lib/studio/data";
 import { cue } from "@/lib/studio/sound";
 import { WalkNav } from "./WalkNav";
@@ -51,6 +51,13 @@ export function ListWalk({ rooms, rootRef }: { rooms: LotRoom[]; rootRef: RefObj
   const fillRef = useRef<HTMLSpanElement>(null);
   const [current, setCurrent] = useState<LotSectionId | null>(rooms[0]?.id ?? null);
   const [hovered, setHovered] = useState<LotSectionId | null>(null);
+  // Rooms whose section is actually on the page (a hidden or empty section has none), so the nav lists only those.
+  // Kept as a space-joined id list so re-measuring with the same rooms doesn't re-render.
+  const [shown, setShown] = useState<string>("");
+  const shownRooms = useMemo(() => {
+    const ids = shown.split(" ");
+    return shown ? rooms.filter((room) => ids.includes(room.id)) : rooms;
+  }, [rooms, shown]);
   // While a click-scroll glides to its section, keep that room highlighted instead of every room it passes.
   const gliding = useRef<{ id: LotSectionId; until: number } | null>(null);
 
@@ -60,6 +67,7 @@ export function ListWalk({ rooms, rootRef }: { rooms: LotRoom[]; rootRef: RefObj
       frame = 0;
       const root = rootRef.current;
       if (!root) return;
+      setShown(rooms.filter((room) => findSection(root, room)).map((room) => room.id).join(" "));
       const max = document.documentElement.scrollHeight - window.innerHeight;
       if (fillRef.current) fillRef.current.style.transform = `scaleX(${max > 0 ? Math.min(1, window.scrollY / max) : 0})`;
       const glide = gliding.current;
@@ -118,7 +126,7 @@ export function ListWalk({ rooms, rootRef }: { rooms: LotRoom[]; rootRef: RefObj
       near={current}
       onHoverRoom={setHovered}
       onSelect={select}
-      rooms={rooms}
+      rooms={shownRooms}
     />
   );
 }
