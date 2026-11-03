@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { AppShell } from "@/components/AppShell";
 import { CinematicGlobal } from "@/components/cinema/CinematicGlobal";
+import { LivePreviewRefresh } from "@/components/LivePreviewRefresh";
 import { getStudiosShowcaseData } from "@/components/StudiosShowcase";
 import { watchlistNavigationEnabled } from "@/lib/feature-flags";
 import { getColumnNavItems, getTypeNavItems } from "@/lib/payload-content";
@@ -44,6 +45,7 @@ export default async function RootLayout({
           {children}
           {marketEventModal}
           <CinematicGlobal />
+          <LivePreviewRefresh />
         </AppShell>
       </body>
     </html>

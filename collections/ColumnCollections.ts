@@ -2,6 +2,7 @@ import { BlocksFeature, EXPERIMENTAL_TableFeature, lexicalEditor } from '@payloa
 import type { Access, Block, CollectionBeforeChangeHook, CollectionBeforeDeleteHook, CollectionConfig } from 'payload'
 import { relatedStoriesField } from './RelatedStoryFields.ts'
 import { siteOnlyFiles } from './siteOnlyFiles.ts'
+import { marketEventPath, previewAdminConfig, slugPath } from '../src/lib/admin-preview.ts'
 import { contactSectionOptionLabel, contactSections } from '../src/lib/contact-sections.ts'
 
 const COLUMN_GROUP = 'Column'
@@ -165,7 +166,7 @@ export const ColumnMedia: CollectionConfig = {
   labels: { singular: 'Media', plural: 'Media' },
   admin: columnAdmin({
     useAsTitle: 'filename',
-    defaultColumns: ['filename', 'alt', 'caption', 'updatedAt'],
+    defaultColumns: ['filename', 'preview', 'alt', 'caption', 'updatedAt'],
   }),
   access: editableAccess,
   upload: {
@@ -173,6 +174,12 @@ export const ColumnMedia: CollectionConfig = {
     mimeTypes: ['image/*'],
   },
   fields: [
+    {
+      name: 'preview',
+      type: 'ui',
+      label: 'Preview',
+      admin: { components: { Cell: '@/components/admin/MediaThumbnailCell#MediaThumbnailCell', Field: false } },
+    },
     { name: 'alt', type: 'text' },
     { name: 'caption', type: 'text' },
     { name: 'credit', type: 'text' },
@@ -355,6 +362,7 @@ export const ColumnArticles: CollectionConfig = {
   labels: { singular: 'Article', plural: 'Articles' },
   versions: { drafts: true },
   admin: columnAdmin({
+    ...previewAdminConfig(slugPath('/article')),
     useAsTitle: 'titleTh',
     defaultColumns: [
       'titleTh',
@@ -596,6 +604,7 @@ export const MarketEventGroups: CollectionConfig = {
   labels: { singular: 'Market & Event Group', plural: 'Market & Event Groups' },
   orderable: true,
   admin: columnAdmin({
+    ...previewAdminConfig(slugPath('/studios/events')),
     useAsTitle: 'name',
     defaultColumns: ['name', 'slug', 'coverImage', 'updatedAt'],
     listSearchableFields: ['name'],
@@ -610,7 +619,7 @@ export const MarketEventGroups: CollectionConfig = {
       name: 'slug', type: 'text', required: true, unique: true, index: true,
       hooks: { beforeValidate: [({ value, data }) => value || marketEventSlugify(data?.name)] },
     },
-    { name: 'coverImage', label: 'Cover image', type: 'upload', relationTo: 'column-media', required: true },
+    { name: 'coverImage', label: 'Cover image', type: 'upload', relationTo: 'column-media', required: true, admin: { components: { Cell: '@/components/admin/UploadThumbnailCell#UploadThumbnailCell' } } },
     { name: 'order', type: 'number', required: true, defaultValue: 0, admin: { hidden: true } },
   ],
 }
@@ -618,7 +627,7 @@ export const MarketEventGroups: CollectionConfig = {
 export const MarketEventContent: CollectionConfig = {
   slug: 'market-event-content',
   labels: { singular: 'Market & Event', plural: 'Market & Events' },
-  admin: columnAdmin({ useAsTitle: 'name', defaultColumns: ['name', 'marketEventGroup', 'dateTime', 'location', 'updatedAt'] }),
+  admin: columnAdmin({ ...previewAdminConfig(marketEventPath), useAsTitle: 'name', defaultColumns: ['name', 'coverImage', 'marketEventGroup', 'dateTime', 'location', 'updatedAt'] }),
   defaultSort: '-dateTime',
   access: editableAccess,
   fields: [
@@ -631,7 +640,7 @@ export const MarketEventContent: CollectionConfig = {
     { name: 'programs', type: 'relationship', relationTo: 'programs', hasMany: true },
     { name: 'dateTime', label: 'Date & time', type: 'date', admin: { date: { pickerAppearance: 'dayAndTime' } } },
     { name: 'location', type: 'text' },
-    { name: 'coverImage', label: 'Cover image', type: 'upload', relationTo: 'column-media' },
+    { name: 'coverImage', label: 'Cover image', type: 'upload', relationTo: 'column-media', admin: { components: { Cell: '@/components/admin/UploadThumbnailCell#UploadThumbnailCell' } } },
     {
       name: 'images', label: 'Event images', type: 'array',
       fields: [

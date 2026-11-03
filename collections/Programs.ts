@@ -1,4 +1,5 @@
 import type { CollectionBeforeDeleteHook, CollectionConfig } from 'payload'
+import { previewAdminConfig, slugPath } from '../src/lib/admin-preview.ts'
 import {
   syncProgramTypeFlags,
 } from './hooks.ts'
@@ -6,8 +7,9 @@ import {
 export const Programs: CollectionConfig = {
       slug: 'programs',
       admin: {
+        ...previewAdminConfig(slugPath('/title')),
         useAsTitle: '_displayTitle',
-        defaultColumns: ['programId', 'titleTh', 'titleEn', 'programContentType', 'producers', 'directors', 'artists', 'writers', 'createdAt', 'updatedAt'],
+        defaultColumns: ['programId', 'coverImage', 'titleTh', 'titleEn', 'programContentType', 'producers', 'directors', 'artists', 'writers', 'createdAt', 'updatedAt'],
         listSearchableFields: [
           'programId',
           'titleTh',
@@ -282,13 +284,13 @@ export const Programs: CollectionConfig = {
           name: 'image',
           type: 'upload',
           relationTo: 'media',
-          admin: { description: 'Image' },
+          admin: { description: 'Image', components: { Cell: '@/components/admin/UploadThumbnailCell#UploadThumbnailCell' } },
         },
         {
           name: 'coverImage',
           type: 'upload',
           relationTo: 'media',
-          admin: { description: 'Cover image' },
+          admin: { description: 'Cover image', components: { Cell: '@/components/admin/UploadThumbnailCell#UploadThumbnailCell' } },
         },
         {
           name: 'trailer',

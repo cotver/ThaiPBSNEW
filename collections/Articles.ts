@@ -1,3 +1,4 @@
+import { previewAdminConfig, slugPath } from '../src/lib/admin-preview.ts'
 import type { CollectionBeforeValidateHook, CollectionConfig } from 'payload'
 import { ValidationError } from 'payload'
 
@@ -143,6 +144,7 @@ export const Articles: CollectionConfig = {
     drafts: true,
   },
   admin: {
+    ...previewAdminConfig(slugPath('/home/studio/news')),
     useAsTitle: '_displayTitle',
     defaultColumns: ['titleTh', 'program', 'targetType', 'isFeatured', 'status', 'publishedDate', 'updatedAt'],
     listSearchableFields: ['titleTh', 'titleEn', 'slug', '_displayTitle'],
@@ -237,20 +239,6 @@ export const Articles: CollectionConfig = {
               ],
             },
             {
-              name: 'slug',
-              type: 'text',
-              required: true,
-              unique: true,
-              index: true,
-              admin: { description: 'URL path. Generated from the Thai or English title when left blank.' },
-              hooks: {
-                beforeValidate: [
-                  ({ value, siblingData }) =>
-                    slugify(String(value || siblingData?.titleTh || siblingData?.titleEn || '')),
-                ],
-              },
-            },
-            {
               type: 'row',
               fields: [
                 { name: 'excerptTh', label: 'Excerpt (Thai)', type: 'textarea' },
@@ -291,68 +279,6 @@ export const Articles: CollectionConfig = {
                 },
               ],
             },
-            {
-              name: 'categories',
-              type: 'relationship',
-              relationTo: 'categories',
-              hasMany: true,
-            },
-            {
-              name: 'tags',
-              type: 'text',
-              hasMany: true,
-              admin: { description: 'Add one or more article tags.' },
-            },
-            {
-              name: 'author',
-              type: 'text',
-              admin: { description: 'Article author or editorial team.' },
-            },
-            {
-              name: 'publishedDate',
-              type: 'date',
-              admin: {
-                readOnly: true,
-                date: { pickerAppearance: 'dayAndTime' },
-                description: 'Automatically set the first time the article is published.',
-              },
-            },
-            {
-              name: 'status',
-              type: 'select',
-              required: true,
-              defaultValue: 'draft',
-              options: [
-                { label: 'Draft', value: 'draft' },
-                { label: 'Published', value: 'published' },
-              ],
-            },
-            {
-              type: 'row',
-              fields: [
-                {
-                  name: 'isFeatured',
-                  label: 'Featured in hero',
-                  type: 'checkbox',
-                  defaultValue: false,
-                  index: true,
-                  admin: {
-                    description: 'Show this article in the final prototype hero.',
-                  },
-                },
-                {
-                  name: 'featuredUntil',
-                  label: 'Featured until',
-                  type: 'date',
-                  index: true,
-                  admin: {
-                    condition: (_data, siblingData) => Boolean(siblingData?.isFeatured),
-                    date: { pickerAppearance: 'dayAndTime' },
-                    description: 'Optional. Leave empty to keep this article featured indefinitely.',
-                  },
-                },
-              ],
-            },
             { name: 'contentTh', label: 'Content (Thai)', type: 'richText', required: true },
             { name: 'contentEn', label: 'Content (English)', type: 'richText' },
           ],
@@ -378,6 +304,78 @@ export const Articles: CollectionConfig = {
           ],
         },
       ],
+    },
+    // Publishing settings, shown in the right-hand sidebar (see sidebarFieldsByCollection in payload.config.ts).
+    {
+      name: 'status',
+      type: 'select',
+      required: true,
+      defaultValue: 'draft',
+      options: [
+        { label: 'Draft', value: 'draft' },
+        { label: 'Published', value: 'published' },
+      ],
+    },
+    {
+      name: 'publishedDate',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        date: { pickerAppearance: 'dayAndTime' },
+        description: 'Automatically set the first time the article is published.',
+      },
+    },
+    {
+      name: 'slug',
+      type: 'text',
+      required: true,
+      unique: true,
+      index: true,
+      admin: { description: 'URL path. Generated from the Thai or English title when left blank.' },
+      hooks: {
+        beforeValidate: [
+          ({ value, siblingData }) =>
+            slugify(String(value || siblingData?.titleTh || siblingData?.titleEn || '')),
+        ],
+      },
+    },
+    {
+      name: 'isFeatured',
+      label: 'Featured in hero',
+      type: 'checkbox',
+      defaultValue: false,
+      index: true,
+      admin: {
+        description: 'Show this article in the final prototype hero.',
+      },
+    },
+    {
+      name: 'featuredUntil',
+      label: 'Featured until',
+      type: 'date',
+      index: true,
+      admin: {
+        condition: (_data, siblingData) => Boolean(siblingData?.isFeatured),
+        date: { pickerAppearance: 'dayAndTime' },
+        description: 'Optional. Leave empty to keep this article featured indefinitely.',
+      },
+    },
+    {
+      name: 'categories',
+      type: 'relationship',
+      relationTo: 'categories',
+      hasMany: true,
+    },
+    {
+      name: 'tags',
+      type: 'text',
+      hasMany: true,
+      admin: { description: 'Add one or more article tags.' },
+    },
+    {
+      name: 'author',
+      type: 'text',
+      admin: { description: 'Article author or editorial team.' },
     },
   ],
 }

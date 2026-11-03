@@ -36,3 +36,235 @@ body:has([data-view="programs-manager-edit"]) {
   [data-view^="programs-manager"] :is(button, a) { min-height: 44px; }
   [data-view^="programs-manager"] .grid > * { min-width: 0; }
 }
+
+/* WordPress-style dashboard, sidebar link and post title (ported from IP_Web). */
+
+/* Welcome dashboard (src/components/admin/WelcomeDashboard.tsx) */
+.ip-dashboard {
+  display: grid;
+  gap: calc(var(--base) * 1.5);
+  margin-bottom: calc(var(--base) * 2);
+}
+
+.ip-dashboard__welcome {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--base);
+  justify-content: space-between;
+}
+
+.ip-dashboard__title {
+  margin: 0;
+}
+
+.ip-dashboard__lead {
+  color: var(--theme-elevation-600);
+  margin: calc(var(--base) * 0.25) 0 0;
+}
+
+.ip-dashboard__site-link,
+.ip-view-site-link {
+  color: var(--theme-text);
+  font-weight: 500;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.ip-view-site-link {
+  display: block;
+  margin-top: var(--base);
+}
+
+.ip-dashboard__actions {
+  display: grid;
+  gap: calc(var(--base) * 0.75);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.ip-dashboard__action {
+  background: var(--theme-elevation-50);
+  border: 1px solid var(--theme-elevation-100);
+  border-radius: var(--style-radius-m);
+  color: var(--theme-text);
+  display: grid;
+  gap: calc(var(--base) * 0.25);
+  padding: var(--base);
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    background: var(--theme-elevation-100);
+    border-color: var(--theme-elevation-250);
+  }
+}
+
+.ip-dashboard__action--primary {
+  background: var(--theme-elevation-1000);
+  border-color: var(--theme-elevation-1000);
+  color: var(--theme-elevation-0);
+
+  .ip-dashboard__action-description {
+    color: var(--theme-elevation-200);
+  }
+
+  &:hover {
+    background: var(--theme-elevation-800);
+    border-color: var(--theme-elevation-800);
+  }
+}
+
+.ip-dashboard__action-label {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.ip-dashboard__action-description {
+  color: var(--theme-elevation-600);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.ip-dashboard__recent {
+  border: 1px solid var(--theme-elevation-100);
+  border-radius: var(--style-radius-m);
+  padding: var(--base);
+}
+
+.ip-dashboard__recent-header {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: calc(var(--base) * 0.5);
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.ip-dashboard__recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    align-items: center;
+    border-top: 1px solid var(--theme-elevation-100);
+    display: grid;
+    gap: var(--base);
+    grid-template-columns: 1fr auto auto;
+    padding: calc(var(--base) * 0.5) 0;
+  }
+
+  li:first-child {
+    border-top: 0;
+  }
+
+  a {
+    color: var(--theme-text);
+    overflow: hidden;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.ip-dashboard__status {
+  border-radius: 999px;
+  font-size: 0.75rem;
+  padding: 2px 10px;
+}
+
+.ip-dashboard__status--published {
+  background: var(--theme-success-100);
+  color: var(--theme-success-800);
+}
+
+.ip-dashboard__status--draft {
+  background: var(--theme-warning-100);
+  color: var(--theme-warning-800);
+}
+
+.ip-dashboard__date,
+.ip-dashboard__empty {
+  color: var(--theme-elevation-500);
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 640px) {
+  .ip-dashboard__recent-list li {
+    grid-template-columns: 1fr auto;
+  }
+
+  .ip-dashboard__date {
+    display: none;
+  }
+}
+
+/* Larger, clearer article title input, like a WordPress post title. */
+.collection-edit--articles input#field-titleTh,
+.collection-edit--articles input#field-titleEn {
+  font-size: 1.5rem;
+  font-weight: 600;
+  padding-block: calc(var(--base) * 0.6);
+}
+
+/* Live Preview device sizes (src/components/admin/LivePreviewDeviceFit.tsx). The page renders at the
+   exact device size and is scaled down to fit the panel, so the website sees the real screen width. */
+.live-preview-window__main.ipj-device-fit {
+  overflow: hidden;
+  position: relative;
+}
+
+.ipj-device-fit > div {
+  align-items: flex-start;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ipj-device-fit > div > div {
+  flex-shrink: 0;
+  height: calc(var(--ipj-device-height) * var(--ipj-device-scale)) !important;
+  margin: 0 !important;
+  overflow: hidden;
+  transform: none !important;
+  width: calc(var(--ipj-device-width) * var(--ipj-device-scale)) !important;
+}
+
+.ipj-device-fit .iframe-loader__container {
+  flex: none;
+  height: var(--ipj-device-height) !important;
+  transform: scale(var(--ipj-device-scale));
+  transform-origin: top left;
+  width: var(--ipj-device-width) !important;
+}
+
+.ipj-device-fit .iframe-loader__container iframe {
+  height: 100% !important;
+  transform: none !important;
+  width: 100% !important;
+}
+
+.ipj-device-fit::after {
+  bottom: 2px;
+  color: var(--theme-elevation-500);
+  content: attr(data-device-label);
+  font-size: 11px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  text-align: center;
+}
+
+/* The device size is always fitted to the panel, so Payload's zoom menu has no effect there. */
+.live-preview-window--has-breakpoint .live-preview-toolbar-controls__zoom {
+  display: none;
+}

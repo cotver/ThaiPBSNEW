@@ -1,7 +1,7 @@
 import sharp from 'sharp'
 import { BlocksFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import { postgresAdapter } from '@payloadcms/db-postgres'
-import { buildConfig, type CollectionConfig } from 'payload'
+import { buildConfig, type CollectionConfig, type Field } from 'payload'
 import { ArticleEmbedBlock } from './blocks/ArticleEmbedBlock.ts'
 import { ArticleImageGroupBlock } from './blocks/ArticleImageGroupBlock.ts'
 import {
@@ -35,6 +35,7 @@ import { Episodes } from './collections/Episodes.ts'
 import { Articles } from './collections/Articles.ts'
 import { columnCollections } from './collections/ColumnCollections.ts'
 import { ColumnRelatedStories } from './globals/ColumnRelatedStories.ts'
+import { livePreviewBreakpoints } from './src/lib/admin-preview.ts'
 
 const payloadDatabaseUrl = process.env.PAYLOAD_DATABASE_URL || process.env.DATABASE_URL || ''
 const payloadDbSchema = process.env.PAYLOAD_DB_SCHEMA || 'payload'
@@ -43,7 +44,71 @@ if (process.env.NODE_ENV === 'production' && payloadSecret.length < 32) {
   // The secret signs auth tokens; a known fallback would let anyone forge admin sessions.
   throw new Error('PAYLOAD_SECRET must be set (at least 32 characters) in production')
 }
-const groupProgramCollections = (collections: CollectionConfig[]): CollectionConfig[] =>
+// Collections with Live Preview get the device-size fitter in their edit view.
+const withLivePreviewDeviceFit = (collection: CollectionConfig): CollectionConfig => {
+  if (!collection.admin?.livePreview) return collection
+
+  return {
+    ...collection,
+    admin: {
+      ...collection.admin,
+      components: {
+        ...collection.admin.components,
+        edit: {
+          ...collection.admin.components?.edit,
+          beforeDocumentControls: [
+            ...(collection.admin.components?.edit?.beforeDocumentControls || []),
+            '@/components/admin/LivePreviewDeviceFit#LivePreviewDeviceFit',
+          ],
+        },
+      },
+    },
+  }
+}
+
+// WordPress-style two-column edit view: content on the left, these settings in the right sidebar.
+// Only top-level fields (or rows of them) can move to the sidebar; they keep their order in the collection.
+const sidebarFieldsByCollection: Record<string, string[]> = {
+  programs: [
+    'programId', 'slug', 'programContentType', 'type', 'categories', 'genre', 'genre_sub', 'tags',
+    'comingSoon', 'comingSoonDate', 'image', 'coverImage',
+    'is_IP', 'is_Feature', 'is_NEW', 'is_Schedule', 'isNewHits', 'is_special_programs', 'is_old_series',
+    'is_continue', 'is_discontinued', 'is_global_programs', 'is_global_international', 'is_global_thai_dub',
+    'is_normal_programs', 'is_Detail',
+  ],
+  seasons: ['program', 'season', 'comingSoon', 'comingSoonDate', 'coverImage'],
+  episodes: ['season', 'ep', 'comingSoon', 'comingSoonDate', 'firstRun', 'coverImage'],
+  articles: ['status', 'publishedDate', 'slug', 'isFeatured', 'featuredUntil', 'categories', 'tags', 'author'],
+  categories: ['slug', 'link', 'isActive', 'appShellActive', 'showHeaderSection', 'showTitle', 'image', 'video'],
+  'column-articles': [
+    'slug', 'articlePDF', 'categories', 'subcategories', 'tags', 'author', 'isFeature', 'isNewEpisodes',
+    'comingSoon', 'isPressReleases', 'isMarketsAndEvents', 'publishedDate',
+  ],
+  'market-event-groups': ['slug', 'coverImage'],
+  'market-event-content': ['slug', 'marketEventGroup', 'programs', 'dateTime', 'location', 'coverImage'],
+  vipaPrograms: [
+    'isNEW', 'isSchedule', 'isNewHits', 'is_special_programs', 'is_old_series', 'isFeature', 'is_IP',
+    'isThaiProgram', 'isInterProgram', 'image', 'coverImage', 'genre', 'tags', 'firstRun',
+  ],
+  heroImages: ['image', 'genre', 'subGenre', 'showDetails', 'isActive'],
+}
+
+const withSidebarFields = (collection: CollectionConfig): CollectionConfig => {
+  const names = sidebarFieldsByCollection[collection.slug]
+  if (!names) return collection
+
+  const inSidebar = (field: Field): boolean =>
+    field.type === 'row' ? field.fields.some(inSidebar) : 'name' in field && names.includes(field.name)
+
+  return {
+    ...collection,
+    fields: collection.fields.map((field) =>
+      inSidebar(field) ? ({ ...field, admin: { ...field.admin, position: 'sidebar' } } as Field) : field,
+    ),
+  }
+}
+
+const groupProgramCollections =(collections: CollectionConfig[]): CollectionConfig[] =>
   collections.map((collection) =>
     isProgramsGroupCollection(collection.slug)
       ? {
@@ -76,9 +141,14 @@ export default buildConfig({
   admin: {
     user: 'users',
     suppressHydrationWarning: true,
+    livePreview: {
+      breakpoints: livePreviewBreakpoints,
+    },
     components: {
+      beforeDashboard: ['@/components/admin/WelcomeDashboard#WelcomeDashboard'],
       afterNavLinks: [
         '@/components/admin/ProgramsManagerNavLink#ProgramsManagerNavLink',
+        '@/components/admin/ViewSiteLink#ViewSiteLink',
       ],
       views: {
         ProgramsManagerAdd: {
@@ -139,7 +209,7 @@ export default buildConfig({
       Episodes,
       Articles,
       ...columnCollections,
-    ]),
+    ]).map(withLivePreviewDeviceFit).map(withSidebarFields),
   ),
   globals: [ColumnRelatedStories],
 

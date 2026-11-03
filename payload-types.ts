@@ -2733,10 +2733,6 @@ export interface Article {
   _displayTitle?: string | null;
   titleTh: string;
   titleEn?: string | null;
-  /**
-   * URL path. Generated from the Thai or English title when left blank.
-   */
-  slug: string;
   excerptTh?: string | null;
   excerptEn?: string | null;
   descriptionTh?: string | null;
@@ -2761,28 +2757,6 @@ export interface Article {
         }[]
       | null;
   };
-  categories?: (number | Category)[] | null;
-  /**
-   * Add one or more article tags.
-   */
-  tags?: string[] | null;
-  /**
-   * Article author or editorial team.
-   */
-  author?: string | null;
-  /**
-   * Automatically set the first time the article is published.
-   */
-  publishedDate?: string | null;
-  status: 'draft' | 'published';
-  /**
-   * Show this article in the final prototype hero.
-   */
-  isFeatured?: boolean | null;
-  /**
-   * Optional. Leave empty to keep this article featured indefinitely.
-   */
-  featuredUntil?: string | null;
   contentTh: {
     root: {
       type: string;
@@ -2818,6 +2792,32 @@ export interface Article {
   seoDescriptionTh?: string | null;
   seoDescriptionEn?: string | null;
   socialSharingImage?: (number | null) | Media;
+  status: 'draft' | 'published';
+  /**
+   * Automatically set the first time the article is published.
+   */
+  publishedDate?: string | null;
+  /**
+   * URL path. Generated from the Thai or English title when left blank.
+   */
+  slug: string;
+  /**
+   * Show this article in the final prototype hero.
+   */
+  isFeatured?: boolean | null;
+  /**
+   * Optional. Leave empty to keep this article featured indefinitely.
+   */
+  featuredUntil?: string | null;
+  categories?: (number | Category)[] | null;
+  /**
+   * Add one or more article tags.
+   */
+  tags?: string[] | null;
+  /**
+   * Article author or editorial team.
+   */
+  author?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -4578,7 +4578,6 @@ export interface ArticlesSelect<T extends boolean = true> {
   _displayTitle?: T;
   titleTh?: T;
   titleEn?: T;
-  slug?: T;
   excerptTh?: T;
   excerptEn?: T;
   descriptionTh?: T;
@@ -4599,13 +4598,6 @@ export interface ArticlesSelect<T extends boolean = true> {
               id?: T;
             };
       };
-  categories?: T;
-  tags?: T;
-  author?: T;
-  publishedDate?: T;
-  status?: T;
-  isFeatured?: T;
-  featuredUntil?: T;
   contentTh?: T;
   contentEn?: T;
   seoTitleTh?: T;
@@ -4613,6 +4605,14 @@ export interface ArticlesSelect<T extends boolean = true> {
   seoDescriptionTh?: T;
   seoDescriptionEn?: T;
   socialSharingImage?: T;
+  status?: T;
+  publishedDate?: T;
+  slug?: T;
+  isFeatured?: T;
+  featuredUntil?: T;
+  categories?: T;
+  tags?: T;
+  author?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

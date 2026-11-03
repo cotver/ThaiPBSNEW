@@ -1,3 +1,4 @@
+import { MediaThumbnailCell as MediaThumbnailCell_fa26a7a5b7282e2bc4dccc115dfbb3b9 } from '@/components/admin/MediaThumbnailCell'
 import { RscEntryLexicalCell as RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { RscEntryLexicalField as RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { LexicalDiffComponent as LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
@@ -24,8 +25,12 @@ import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { CategoryIconExamples as CategoryIconExamples_b523a60436e231e8028f45fb821ae986 } from '@/components/admin/CategoryIconExamples'
 import { CategoriesOrderSort as CategoriesOrderSort_1c96ba076fcfb008507722993a39cab0 } from '@/components/admin/CategoriesOrderSort'
+import { LivePreviewDeviceFit as LivePreviewDeviceFit_8cf438086a6a60a6c869c9388c9e3aac } from '@/components/admin/LivePreviewDeviceFit'
+import { UploadThumbnailCell as UploadThumbnailCell_6fd59b1a2306db4bf31bef80d6254375 } from '@/components/admin/UploadThumbnailCell'
 import { TableFeatureClient as TableFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ProgramsManagerNavLink as ProgramsManagerNavLink_b391bd0651932e45973bc03105096664 } from '@/components/admin/ProgramsManagerNavLink'
+import { ViewSiteLink as ViewSiteLink_4825072285f9364e3016113bb30951e2 } from '@/components/admin/ViewSiteLink'
+import { WelcomeDashboard as WelcomeDashboard_e427326a692ae2f557a19d79d0501bfb } from '@/components/admin/WelcomeDashboard'
 import { ProgramsManagerAddView as ProgramsManagerAddView_c24a2935f47214c10fcdfdd61d5e800d } from '@/components/admin/ProgramsManagerAdd'
 import { ProgramsManagerListView as ProgramsManagerListView_0eea9a97cb0c5b7b7afc1166f7e27f87 } from '@/components/admin/ProgramsManagerList'
 import { ProgramsManagerEditView as ProgramsManagerEditView_79e588422170ad992ac75727f2124400 } from '@/components/admin/ProgramsManagerEdit'
@@ -33,6 +38,7 @@ import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } f
 
 /** @type import('payload').ImportMap */
 export const importMap = {
+  "@/components/admin/MediaThumbnailCell#MediaThumbnailCell": MediaThumbnailCell_fa26a7a5b7282e2bc4dccc115dfbb3b9,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalCell": RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalField": RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#LexicalDiffComponent": LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e,
@@ -59,8 +65,12 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@/components/admin/CategoryIconExamples#CategoryIconExamples": CategoryIconExamples_b523a60436e231e8028f45fb821ae986,
   "@/components/admin/CategoriesOrderSort#CategoriesOrderSort": CategoriesOrderSort_1c96ba076fcfb008507722993a39cab0,
+  "@/components/admin/LivePreviewDeviceFit#LivePreviewDeviceFit": LivePreviewDeviceFit_8cf438086a6a60a6c869c9388c9e3aac,
+  "@/components/admin/UploadThumbnailCell#UploadThumbnailCell": UploadThumbnailCell_6fd59b1a2306db4bf31bef80d6254375,
   "@payloadcms/richtext-lexical/client#TableFeatureClient": TableFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@/components/admin/ProgramsManagerNavLink#ProgramsManagerNavLink": ProgramsManagerNavLink_b391bd0651932e45973bc03105096664,
+  "@/components/admin/ViewSiteLink#ViewSiteLink": ViewSiteLink_4825072285f9364e3016113bb30951e2,
+  "@/components/admin/WelcomeDashboard#WelcomeDashboard": WelcomeDashboard_e427326a692ae2f557a19d79d0501bfb,
   "@/components/admin/ProgramsManagerAdd#ProgramsManagerAddView": ProgramsManagerAddView_c24a2935f47214c10fcdfdd61d5e800d,
   "@/components/admin/ProgramsManagerList#ProgramsManagerListView": ProgramsManagerListView_0eea9a97cb0c5b7b7afc1166f7e27f87,
   "@/components/admin/ProgramsManagerEdit#ProgramsManagerEditView": ProgramsManagerEditView_79e588422170ad992ac75727f2124400,

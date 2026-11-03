@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { previewAdminConfig, slugPath } from '../src/lib/admin-preview.ts'
 
 const categoryIconOptions = [
   { label: 'Home', value: 'home' },
@@ -19,6 +20,7 @@ export const Categories: CollectionConfig = {
   slug: 'categories',
   orderable: true,
   admin: {
+    ...previewAdminConfig(slugPath('/category')),
     useAsTitle: 'name',
     defaultColumns: [
       'name',

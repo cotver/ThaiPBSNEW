@@ -4,7 +4,7 @@ export const Media: CollectionConfig = {
       slug: 'media',
       admin: {
         useAsTitle: 'title',
-        defaultColumns: ['title', 'alt', 'filename', 'updatedAt'],
+        defaultColumns: ['title', 'preview', 'alt', 'filename', 'updatedAt'],
       },
       access: {
         read: () => true,
@@ -19,6 +19,12 @@ export const Media: CollectionConfig = {
         // allow-list that exact public hostname only.
       },
       fields: [
+        {
+          name: 'preview',
+          type: 'ui',
+          label: 'Preview',
+          admin: { components: { Cell: '@/components/admin/MediaThumbnailCell#MediaThumbnailCell', Field: false } },
+        },
         {
           name: 'title',
           type: 'text',
