@@ -814,6 +814,20 @@ export function canEditField(
   return permissionSources(context).some((source) => sourceAllowsField(source, collection, field))
 }
 
+/**
+ * Business-only fields that anonymous REST/GraphQL readers must not see, even though the rest of the
+ * document is public. The site reads these collections through the local API with overrideAccess, so
+ * hiding them here does not change any public page. Add fields here to keep them CMS-only.
+ */
+const privateFieldsByCollection: Partial<Record<ManagedCollection, readonly string[]>> = {
+  programs: ['comment', 'rightsTerritoriesAvailable'],
+  seasons: ['sellPricing'],
+}
+
+function isPrivateField(collection: ManagedCollection, field: string): boolean {
+  return privateFieldsByCollection[collection]?.includes(field) ?? false
+}
+
 export function fieldAccess(collection: ManagedCollection, field: string): {
   read: FieldAccess
   create: FieldAccess
@@ -823,6 +837,7 @@ export function fieldAccess(collection: ManagedCollection, field: string): {
     read: async ({ req }) => {
       const context = await getPermissionContext(req)
       if (collection === 'users') return isSuperAdmin(context)
+      if (isPrivateField(collection, field)) return Boolean(context.user)
       return true
     },
     create: async ({ req }) =>

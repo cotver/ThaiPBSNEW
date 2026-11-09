@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 
-import { fetchAirflow, getCookieCached, isSameOrigin, resolveAirflowStaticUrl } from "@/lib/airflow-auth";
+import { fetchAirflow, getCookieCached, hasCmsUser, isSameOrigin, resolveAirflowStaticUrl } from "@/lib/airflow-auth";
+import { isPublishedAirflowFile } from "@/lib/airflow-published";
 
 function isDirectNavigation(req: Request) {
   const fetchDest = req.headers.get("sec-fetch-dest")?.toLowerCase();
@@ -36,6 +37,11 @@ export async function GET(req: Request) {
   }
   const resolved = resolveAirflowStaticUrl(path);
   if (!resolved) return new Response("Invalid path", { status: 400 });
+  // The header checks above only deter hotlinking; scripts can skip or fake them. The real gate:
+  // anonymous callers (including Next's image optimizer) get only files the CMS publishes.
+  if (!(await isPublishedAirflowFile(resolved)) && !(await hasCmsUser(req))) {
+    return new Response("Not found", { status: 404 });
+  }
   const upstreamUrl = resolved.toString();
 
   let upstream: Response;

@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 
-import { fetchAirflow, getCookieCached, isSameOrigin, resolveAirflowStaticUrl } from "@/lib/airflow-auth";
+import { fetchAirflow, getCookieCached, hasCmsUser, isSameOrigin, resolveAirflowStaticUrl } from "@/lib/airflow-auth";
+import { isPublishedAirflowFile } from "@/lib/airflow-published";
 
 function isDirectNavigation(req: Request): boolean {
   const fetchDest = req.headers.get("sec-fetch-dest")?.toLowerCase();
@@ -12,7 +13,8 @@ function isDirectNavigation(req: Request): boolean {
 /**
  * GET /api/airflow/video?url=<encoded-full-url>
  * Proxies video request to Airflow static URL with auth cookie.
- * Only allows same-origin requests (no direct link access).
+ * Only allows same-origin requests (no direct link access), and only for files the CMS publishes
+ * unless the caller is a signed-in CMS user.
  */
 export async function GET(req: Request) {
   if (isDirectNavigation(req)) return new Response("Forbidden", { status: 403 });
@@ -35,6 +37,11 @@ export async function GET(req: Request) {
 
   const resolved = resolveAirflowStaticUrl(rawUrl);
   if (!resolved) return new Response("Invalid url", { status: 400 });
+  // Referer/Origin can be faked outside a browser. Anonymous visitors may only stream videos the
+  // CMS publishes; any other Airflow file needs a signed-in CMS user (the admin video picker).
+  if (!(await isPublishedAirflowFile(resolved)) && !(await hasCmsUser(req))) {
+    return new Response("Not found", { status: 404 });
+  }
   const upstreamUrl = resolved.toString();
 
   const range = req.headers.get("range");
