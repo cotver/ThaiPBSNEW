@@ -382,7 +382,9 @@ export const ColumnArticles: CollectionConfig = {
     ],
   }),
   access: {
-    read: ({ req }) => (req.user ? true : { _status: { equals: 'published' } }),
+    // Drafts are for the people who write Column articles, not every CMS account.
+    read: (args) => (columnManager(args) === true ? true : { _status: { equals: 'published' } }),
+    readVersions: columnManager,
     create: columnManager,
     update: columnManager,
     delete: columnManager,

@@ -698,17 +698,22 @@ export async function getAssignedProgramIds(req: Parameters<Access>[0]['req']): 
   return ownedIdsFor(context, 'programs')
 }
 
+// Collections whose rows belong to a program, and the path from each row to that program.
+const programOwnedPaths: Partial<Record<ManagedCollection, string>> = {
+  articles: 'program',
+  seasons: 'program',
+  episodes: 'season.program',
+}
+
 function programScopeWhere(context: PermissionContext, collection: ManagedCollection): boolean | Where {
   if (isSuperAdmin(context)) return true
-  const ids =
-    collection === 'articles'
-      ? ownedIdsFor(context, 'programs')
-      : ownedIdsFor(context, collection)
+  const programPath = programOwnedPaths[collection]
+  const ids = programPath ? ownedIdsFor(context, 'programs') : ownedIdsFor(context, collection)
   if (ids.length === 0) return true
 
-  if (collection === 'articles') {
+  if (programPath) {
     return {
-      program: {
+      [programPath]: {
         in: ids,
       },
     }
@@ -718,6 +723,58 @@ function programScopeWhere(context: PermissionContext, collection: ManagedCollec
     id: {
       in: ids,
     },
+  }
+}
+
+/**
+ * Read/update/delete access is scoped with a `where`, but create cannot be, and an update could move an
+ * owned row onto another program. Reject writes whose program is outside the user's owned programs.
+ */
+function enforceOwnedProgramOnWrite(collection: ManagedCollection): CollectionBeforeChangeHook {
+  return async ({ data, originalDoc, req }) => {
+    const permissionReq = req as PermissionRequest
+    if (!req.user || isRelationshipSyncing(permissionReq)) return data
+
+    const context = await getPermissionContext(req)
+    if (isSuperAdmin(context)) return data
+    const ownedIds = ownedIdsFor(context, 'programs')
+    if (ownedIds.length === 0) return data
+
+    const source = { ...(originalDoc ?? {}), ...(data ?? {}) } as Record<string, unknown>
+    let programId: number | string | null
+    if (collection === 'episodes') {
+      const seasonId = idFromRelation(source.season as RelationValue)
+      const season = seasonId == null
+        ? null
+        : ((await req.payload.findByID({
+            collection: 'seasons',
+            id: seasonId,
+            depth: 0,
+            overrideAccess: true,
+            req,
+          }).catch(() => null)) as { program?: RelationValue } | null)
+      programId = idFromRelation(season?.program)
+    } else {
+      programId = idFromRelation(source.program as RelationValue)
+    }
+
+    if (programId == null || !ownedIds.some((id) => String(id) === String(programId))) {
+      throw new Forbidden(req.t)
+    }
+    return data
+  }
+}
+
+/** Same rules as `read`, for drafts/versions. Version rows keep the document's fields under `version.`. */
+function versionReadAccess(collection: ManagedCollection): Access {
+  return async ({ req }) => {
+    const context = await getPermissionContext(req)
+    if (!context.user || !canUseCollection(context, collection, 'read')) return false
+    const scope = programScopeWhere(context, collection)
+    if (typeof scope === 'boolean') return scope
+    return Object.fromEntries(
+      Object.entries(scope).map(([path, condition]) => [path === 'id' ? 'parent' : `version.${path}`, condition]),
+    ) as Where
   }
 }
 
@@ -943,15 +1000,27 @@ function withFieldPermission(collection: ManagedCollection, field: Field): Field
 export function withCollectionPermissions<T extends CollectionConfig[]>(collections: T): T {
   return collections.map((collection) => {
     const slug = collection.slug
-    const isProgramsGroup = collection.admin?.group === 'Programs'
-    const securedCollection = isManagedCollection(slug)
+    const isManaged = isManagedCollection(slug)
+    // Editors get blanket write access only on Programs-group collections outside the managed
+    // permission system. On managed ones, collectionAccess() grants editors access but still applies
+    // the owned-program scope, which a blanket `true` here would skip.
+    const editorBypass = collection.admin?.group === 'Programs' && !isManaged
+    const securedCollection = isManaged
       ? {
           ...collection,
           access: {
             ...(collection.access ?? {}),
             ...collectionAccess(slug),
+            // Payload's default lets any logged-in user read every draft version.
+            ...(collection.versions ? { readVersions: versionReadAccess(slug) } : {}),
           },
           fields: collection.fields?.map((field) => withFieldPermission(slug, field)) ?? [],
+          hooks: programOwnedPaths[slug]
+            ? {
+                ...collection.hooks,
+                beforeChange: [enforceOwnedProgramOnWrite(slug), ...(collection.hooks?.beforeChange ?? [])],
+              }
+            : collection.hooks,
         }
       : collection
 
@@ -962,9 +1031,9 @@ export function withCollectionPermissions<T extends CollectionConfig[]>(collecti
       // not participate in the granular role/field permission system above.
       access: {
         ...(securedCollection.access ?? {}),
-        create: requireCMSAuthentication(securedCollection.access?.create, isProgramsGroup),
-        update: requireCMSAuthentication(securedCollection.access?.update, isProgramsGroup),
-        delete: requireCMSAuthentication(securedCollection.access?.delete, isProgramsGroup),
+        create: requireCMSAuthentication(securedCollection.access?.create, editorBypass),
+        update: requireCMSAuthentication(securedCollection.access?.update, editorBypass),
+        delete: requireCMSAuthentication(securedCollection.access?.delete, editorBypass),
       },
     }
   }) as T

@@ -7,6 +7,19 @@ const securityHeaders = [
   // Keeps the full Referer on same-origin requests, which the Airflow proxy checks.
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+  // Isolates the site's window from pages it opens or that open it (blocks window.opener tricks).
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  // A minimal CSP that cannot break scripts, styles or embeds: no plugins, no <base> hijacking,
+  // forms post only here, and only this site may frame its pages (the admin Live Preview).
+  {
+    key: "Content-Security-Policy",
+    value: "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'",
+  },
+  // HSTS only when the site has a trusted certificate; with the current self-signed one, browsers
+  // would refuse to let visitors through at all. Set ENABLE_HSTS=true after switching certificates.
+  ...(process.env.ENABLE_HSTS === "true"
+    ? [{ key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }]
+    : []),
 ];
 
 const nextConfig: NextConfig = {

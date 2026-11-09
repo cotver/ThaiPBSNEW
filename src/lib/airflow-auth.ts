@@ -189,8 +189,10 @@ export function isSameOrigin(req: Request): boolean {
 
   // When reached via localhost (e.g. cloudflared tunnel --url http://localhost),
   // we cannot rely on Origin/Referer (they may be missing or show tunnel URL).
-  // Allow requests so the tunnel works. Set AIRFLOW_ALLOWED_ORIGINS in production.
+  // Allow requests so the tunnel works, but only in development: in production anyone on the LAN
+  // could reach :3008 with "Host: localhost" and skip the check. Set AIRFLOW_ALLOWED_ORIGINS there.
   if (
+    process.env.NODE_ENV !== "production" &&
     !allowedFromEnv &&
     (effectiveOrigin.startsWith("http://localhost") ||
       effectiveOrigin.startsWith("http://127."))

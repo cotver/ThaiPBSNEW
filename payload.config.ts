@@ -132,6 +132,11 @@ export default buildConfig({
   }),
   cookiePrefix: process.env.PAYLOAD_COOKIE_PREFIX || 'thaipbsnew',
 
+  // Nothing in the site or admin uses GraphQL. Leaving it on only adds a second public API to secure.
+  graphQL: {
+    disable: true,
+  },
+
   routes: {
     admin: '/admin',
     api: '/api',
